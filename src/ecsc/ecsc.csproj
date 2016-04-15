@@ -97,9 +97,6 @@
     <Reference Include="Flame.XmlDocs">
       <HintPath>..\..\libs\Flame.XmlDocs.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core">
-      <HintPath>..\..\libs\FSharp.Core.dll</HintPath>
-    </Reference>
     <Reference Include="ICSharpCode.TextEditor">
       <HintPath>..\..\libs\ICSharpCode.TextEditor.dll</HintPath>
     </Reference>
