@@ -5,3 +5,9 @@
 
 # vshost
 *.vshost.*
+
+
+# Output
+obj/
+bin/
+*.userprefs
