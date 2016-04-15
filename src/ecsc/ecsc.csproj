@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{ED89870C-B5B0-4012-B0E1-2AB28FB4C4FE}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ecsc</RootNamespace>
+    <AssemblyName>ecsc</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Externalconsole>true</Externalconsole>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Externalconsole>true</Externalconsole>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Flame.Analysis">
+      <HintPath>..\..\libs\Flame.Analysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cecil">
+      <HintPath>..\..\libs\Flame.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.CodeDescription">
+      <HintPath>..\..\libs\Flame.CodeDescription.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Compiler">
+      <HintPath>..\..\libs\Flame.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cpp">
+      <HintPath>..\..\libs\Flame.Cpp.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame">
+      <HintPath>..\..\libs\Flame.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.DSProject">
+      <HintPath>..\..\libs\Flame.DSProject.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front.Common">
+      <HintPath>..\..\libs\Flame.Front.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front">
+      <HintPath>..\..\libs\Flame.Front.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Functional">
+      <HintPath>..\..\libs\Flame.Functional.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Intermediate">
+      <HintPath>..\..\libs\Flame.Intermediate.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Markdown">
+      <HintPath>..\..\libs\Flame.Markdown.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.MIPS">
+      <HintPath>..\..\libs\Flame.MIPS.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Optimization">
+      <HintPath>..\..\libs\Flame.Optimization.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Python">
+      <HintPath>..\..\libs\Flame.Python.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Recompilation">
+      <HintPath>..\..\libs\Flame.Recompilation.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.RT">
+      <HintPath>..\..\libs\Flame.RT.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Syntax">
+      <HintPath>..\..\libs\Flame.Syntax.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.TextContract">
+      <HintPath>..\..\libs\Flame.TextContract.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Verification">
+      <HintPath>..\..\libs\Flame.Verification.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Wasm">
+      <HintPath>..\..\libs\Flame.Wasm.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.XmlDocs">
+      <HintPath>..\..\libs\Flame.XmlDocs.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\libs\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.TextEditor">
+      <HintPath>..\..\libs\ICSharpCode.TextEditor.dll</HintPath>
+    </Reference>
+    <Reference Include="LeMP">
+      <HintPath>..\..\libs\LeMP.exe</HintPath>
+    </Reference>
+    <Reference Include="LeMP.StdMacros">
+      <HintPath>..\..\libs\LeMP.StdMacros.dll</HintPath>
+    </Reference>
+    <Reference Include="LLLPG">
+      <HintPath>..\..\libs\LLLPG.exe</HintPath>
+    </Reference>
+    <Reference Include="vshost">
+      <HintPath>..\..\libs\LLLPG.vshost.exe</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Binary">
+      <HintPath>..\..\libs\Loyc.Binary.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Collections">
+      <HintPath>..\..\libs\Loyc.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Ecs">
+      <HintPath>..\..\libs\Loyc.Ecs.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Essentials">
+      <HintPath>..\..\libs\Loyc.Essentials.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Syntax">
+      <HintPath>..\..\libs\Loyc.Syntax.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Utilities">
+      <HintPath>..\..\libs\Loyc.Utilities.dll</HintPath>
+    </Reference>
+    <Reference Include="LoycCore.Tests">
+      <HintPath>..\..\libs\LoycCore.Tests.exe</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\..\libs\Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Mdb">
+      <HintPath>..\..\libs\Mono.Cecil.Mdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Pdb">
+      <HintPath>..\..\libs\Mono.Cecil.Pdb.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil.Rocks">
+      <HintPath>..\..\libs\Mono.Cecil.Rocks.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Pixie">
+      <HintPath>..\..\libs\Pixie.dll</HintPath>
+    </Reference>
+    <Reference Include="Pixie.Xml">
+      <HintPath>..\..\libs\Pixie.Xml.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>
