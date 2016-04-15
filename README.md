@@ -1,2 +1,2 @@
 # ecsc
-A Flame front-end for EC#
+A Flame front-end for EC# (WIP)
