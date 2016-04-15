@@ -1,0 +1,252 @@
+<?xml version="1.0"?>
+<doc>
+  <assembly>
+    <name>Flame.Markdown</name>
+  </assembly>
+  <members>
+    <member name="T:Flame.Markdown.MarkdownDocumentationParser">
+      <summary> #summary
+ A documentation parser that parses markdown docs.
+</summary>
+    </member>
+    <member name="F:Flame.Markdown.MarkdownDocumentationParser.InitialIndentation">
+      <summary> The initial indentation level.
+ This is set to one instead of zero
+ because documentation comments usually start with a space.
+</summary>
+    </member>
+    <member name="T:Flame.Markdown.MarkdownParser">
+      <summary> #summary
+ A markdown parser for code documentation.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.GetAttributeTitle(Pixie.IMarkupNode)">
+      <summary> #summary
+ Figures out whether the given node is an attribute title.
+ If so, said title is returned. Otherwise, null.
+
+ #remarks
+ Top-level titles that look like this:
+
+     #title
+     # title
+
+ are converted to named attributes.
+ These are not:
+
+     #title with whitespace
+
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ToAttributes(System.Collections.Generic.IReadOnlyList`1{Pixie.IMarkupNode})">
+      <summary> #summary
+ Creates description attributes that represent the given list of
+ nodes.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.Parse(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a top-level markdown code node.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseAll(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses top-level markdown nodes until the token stream is empty.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseLeadingWhitespace(Flame.Markdown.Tokenizer)">
+      <summary> #summary
+ Parses the token stream's leading whitespace, and returns its length.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.EndsParagraph(Flame.Markdown.Tokenizer)">
+      <summary> #summary
+ Discovers whether this sequence of tokens terminates a paragraph, i.e.
+ it may contain some whitespace and at least one newline or an end-of-stream token.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ContainsWhitespace(System.String)">
+      <summary> #summary
+ Finds out if the given string contains any whitespace characters.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseTitle(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a markdown title, which may be interpreted as a node type.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseParagraph(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a markdown paragraph.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseCodeBlock(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a markdown preformatted code block.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseList(Flame.Markdown.Tokenizer,System.Int32,System.Boolean)">
+      <summary> #summary
+ Parses a markdown list, which may or may not be numbered.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseParagraphItem(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a markdown paragraph item.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseLineContents(Flame.Markdown.Tokenizer)">
+      <summary> #summary
+ Parses the contents of a line of markdown code, up to and including
+ the trailing newline or end-of-stream token.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseFragment(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a fragment of markup code, which extends no further than the
+ given end index.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseInterruptedFragment(System.Text.StringBuilder,Flame.Markdown.Tokenizer,System.String,System.Int32)">
+      <summary> #summary
+ Parses a fragment that was interrupted by a region.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ToCodeNode(System.String,System.String)">
+      <summary> #summary
+ Creates a node that represents the given string as preformatted code.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseInlineCode(System.Text.StringBuilder,Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses a fragment that was interrupted by inline preformatted code.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseCode(Flame.Markdown.Tokenizer,System.Int32)">
+      <summary> #summary
+ Parses preformatted markdown code until the given end index.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.MarkdownParser.ParseRegion(Flame.Markdown.Tokenizer,Flame.Markdown.TokenType,System.String,System.Int32)">
+      <summary> #summary
+ Parses a markdown 'region', such as `Why, *hello*, there, random citizen.`
+ If the region's starting tag does not match an ending tag, a text node is
+ returned.
+</summary>
+    </member>
+    <member name="F:Flame.Markdown.MarkdownParser.MinCodeBlockIndent">
+      <summary> The minimally required indent for a code block.
+</summary>
+    </member>
+    <member name="F:Flame.Markdown.MarkdownParser.GroupNodeType">
+      <summary> The node type for "groups": markup nodes which contain only children,
+ and are logically equivalent to a list of these children.
+</summary>
+    </member>
+    <member name="T:Flame.Markdown.Tokenizer">
+      <summary> #summary
+ A markdown tokenizer.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.#ctor(System.String)">
+      <summary> #summary
+ Creates a new tokenizer that tokenizes the given
+ string.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.IsNewline(System.Char)">
+      <summary> #summary
+ Tests whether the given character is a newline character or not.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.IsWhitespace(System.Char)">
+      <summary> #summary
+ Finds out if the given character is strictly whitespace, i.e.
+ whitespace but not a newline character.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.ParseWhitespace">
+      <summary> #summary
+ Parses a non-newline whitespace token.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.ParseSingleCharacter(Flame.Markdown.TokenType)">
+      <summary> #summary
+ Parses a token that is exactly one character long.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.ParseExtendedCharacter(Flame.Markdown.TokenType,Flame.Markdown.TokenType,System.Char)">
+      <summary> #summary
+ Parses a token that may be either one or two characters long, depending
+ on the character that immediately trails the first character.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.ParseText">
+      <summary> #summary
+ Parses a text token.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.ParseEscaped">
+      <summary> #summary
+ Parses an escaped character.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.GetToken(System.Int32)">
+      <summary> #summary
+ Gets the token with the given index.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.Peek">
+      <summary> #summary
+ Peeks ahead by one token.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.FindNext(Flame.Markdown.TokenType)">
+      <summary> #summary
+ Finds the index of the next token with the given type.
+ `-1` is returned if no token of said type could be found.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.FindEnd">
+      <summary> #summary
+ Finds the end of the token stream.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.Seek(System.Int32)">
+      <summary> #summary
+ Advances the token stream's position by the given number of tokens.
+</summary>
+    </member>
+    <member name="M:Flame.Markdown.Tokenizer.Next">
+      <summary> #summary
+ Parses the next token.
+</summary>
+    </member>
+    <member name="P:Flame.Markdown.Tokenizer.Current">
+      <summary> #summary
+ Gets the current token.
+</summary>
+    </member>
+    <member name="P:Flame.Markdown.Tokenizer.CurrentIndex">
+      <summary> #summary
+ Gets the index of the current token in the token stream.
+</summary>
+    </member>
+    <member name="P:Flame.Markdown.Tokenizer.IsEmpty">
+      <summary> #summary
+ Gets a boolean value that tells if the tokenizer stream
+ is empty.
+</summary>
+    </member>
+    <member name="P:Flame.Markdown.Tokenizer.CurrentCharacter">
+      <summary> #summary
+ Gets the current character in the tokenizer stream.
+</summary>
+    </member>
+    <member name="P:Flame.Markdown.Tokenizer.Text">
+      <summary> #summary
+ The string to tokenize.
+</summary>
+    </member>
+  </members>
+</doc>

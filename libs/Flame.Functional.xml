@@ -1,0 +1,2189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doc>
+<assembly><name>Flame.Functional</name></assembly>
+<members>
+<member name="T:Flame.Functional.AccessedExpression.Global">
+<summary>
+ No expression is accessed: the type member is static.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedExpression.Generic">
+<summary>
+ The accessed type is generic.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedExpression.Value">
+<summary>
+ The accessed type is a value type.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedExpression.Reference">
+<summary>
+ The accessed type is a reference type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.AccessedExpression.Describe(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.String})">
+<summary>
+ Gets a user-friendly member prefix for this accessed member.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedExpression">
+<summary>
+ Defines a number of categories for types
+ whose type members are accessed.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedMember`1.Static">
+<summary>
+ The given type member is a static member.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedMember`1.Extension">
+<summary>
+ The given type member is an extension member.
+</summary>
+</member>
+<member name="T:Flame.Functional.AccessedMember`1.Instance">
+<summary>
+ The given type member is an instance member.
+</summary>
+</member>
+<member name="P:Flame.Functional.AccessedMember`1.MemberPrefix">
+<summary>
+ Gets a user-friendly member prefix for this accessed member.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.AccessedMember`1">
+<summary>
+ Defines a way of classifying type members.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.DefaultConversionRules.Flame-Functional-IConversionRules-HasImplicitConversion(Flame.IType,Flame.IType)">
+<summary>
+ Finds out whether a value of the given source type
+ can be converted implicitly to the given target type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.DefaultConversionRules.Flame-Functional-IConversionRules-ConvertImplicit(Flame.Compiler.IExpression,Flame.IType)">
+<summary>
+ Converts the given expression to the given type implicitly.
+</summary>
+</member>
+<member name="M:Flame.Functional.DefaultConversionRules.Flame-Functional-IConversionRules-ConvertExplicit(Flame.Compiler.IExpression,Flame.IType)">
+<summary>
+ Converts the given expression to the given type explicitly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.DefaultConversionRules">
+<summary>
+ Defines a set of default conversion rules.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.DescribedAssembly">
+<summary>
+ Defines a simple described assembly type.
+ This type is mutable such that we can first define the assembly&apos;s type hierarchy without
+ evaluating anything, then perform a bait-and-switch on this assembly&apos;s main namespace, 
+ and some time after that evaluate all associated types.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionScope.Type">
+<summary>
+ Gets the enclosing type of the function associated with this function scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionScope.Parameters">
+<summary>
+ Gets this function scope&apos;s parameters.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionScope.Global">
+<summary>
+ Gets this local scope&apos;s associated global scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionScope.Function">
+<summary>
+ Gets the function associated with this function scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionScope.GetVariable(System.String)">
+<summary>
+ Gets the parameter with the given name, if any.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionScope.DeclaresDirectly(System.String)">
+<summary>
+ Finds out if this function scope declares a
+ parameter with the given name directly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionScope">
+<summary>
+ Defines a scope as declared by a function.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.ReturnType">
+<summary>
+ Gets this functional-style accessor&apos;s return type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.Parameters">
+<summary>
+ Gets this functional-style accessor&apos;s parameters.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.LazyBody">
+<summary>
+ Gets this functional-style accessor&apos;s body statement, with lazy evaluation.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.LazyBaseMethods">
+<summary>
+ Gets this functional-style accessor&apos;s base methods,
+ with a lazy evaluation scheme.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.DeclaringProperty">
+<summary>
+ Gets this functional-style accessor&apos;s property type.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.Body">
+<summary>
+ Gets this functional-style accessor&apos;s body statement.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.BaseMethods">
+<summary>
+ Gets this functional-style accessor&apos;s base methods.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalAccessor.AccessorType">
+<summary>
+ Gets this functional-style accessor&apos;s accessor type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalAccessor.WithReturnType(System.Lazy{Flame.IType})">
+<summary>
+ Sets this functional accessor&apos;s return type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalAccessor.WithParameter(System.Lazy{Flame.IParameter})">
+<summary>
+ Adds this parameter to this functional accessor.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalAccessor.WithBody(Microsoft.FSharp.Core.FSharpFunc{Flame.IMethod,Flame.Compiler.IStatement})">
+<summary>
+ Sets this functional-style accessor&apos;s body.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalAccessor.WithBaseMethods(Microsoft.FSharp.Core.FSharpFunc{Flame.IAccessor,System.Collections.Generic.IEnumerable{Flame.IMethod}})">
+<summary>
+ Sets this functional-style accessor&apos;s base methods.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalAccessor">
+<summary>
+ Defines a functional-style accessor.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalBinder.Environment">
+<summary>
+ Gets this binder&apos;s environment.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.UseNamespace(Flame.INamespace)">
+<summary>
+ Uses the given namespace, and all enclosing namespaces, when resolving names.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.UseNamespace(Flame.Functional.TypeName)">
+<summary>
+ Uses the given namespace when resolving names.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.MapNamespace(System.String,Flame.Functional.TypeName)">
+<summary>
+ Maps the given name to the given namespace.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.Bind(System.String)">
+<summary>
+ Binds the given name to a type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.Bind(Flame.Functional.TypeName)">
+<summary>
+ Binds the given name to a type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalBinder.AliasType(Flame.Functional.TypeName,System.Lazy{Flame.IType})">
+<summary>
+ Aliases the given type to the given type name.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalBinder">
+<summary>
+ Defines a functional binder type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalField.InitialValue">
+<summary>
+ Gets this functional-style field&apos;s initial value.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalField.FieldType">
+<summary>
+ Gets this functional-style field&apos;s field type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalField.WithInitialValue(System.Lazy{Flame.Compiler.IExpression})">
+<summary>
+ Sets this functional-style field&apos;s initial value.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalField.WithFieldType(System.Lazy{Flame.IType})">
+<summary>
+ Sets this functional-style field&apos;s field type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalField">
+<summary>
+ Defines a functional-style field that is possibly initialized.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMemberBase.IsStatic">
+<summary>
+ Figures out whether this functional-style member is static.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMemberBase.DeclaringType">
+<summary>
+ Gets this functional-style member&apos;s declaring type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalMemberBase">
+<summary>
+ Defines a base class for functional-style members.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMemberHeader.Name">
+<summary>
+ Gets this functional-style member header&apos;s name.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMemberHeader.Attributes">
+<summary>
+ Gets this functional-style member header&apos;s attributes.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalMemberHeader.WithAttribute(System.Lazy{Flame.IAttribute})">
+<summary>
+ Adds an attribute to this functional-style member header.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalMemberHeader">
+<summary>
+ A header for function members.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.ReturnType">
+<summary>
+ Gets this functional-style method&apos;s return type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.Parameters">
+<summary>
+ Gets this functional-style method&apos;s parameters.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.LazyBody">
+<summary>
+ Gets this functional-style method&apos;s body statement, with lazy evaluation.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.LazyBaseMethods">
+<summary>
+ Gets this functional-style method&apos;s base methods,
+ with a lazy evaluation scheme.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.IsConstructor">
+<summary>
+ Finds out if this functional-style method is a constructor or not.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.GenericParameters">
+<summary>
+ Gets this functional-style method&apos;s generic parameters.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.CreateBody">
+<summary>
+ Gets this functional-style method&apos;s body-generating function.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.Body">
+<summary>
+ Gets this functional-style method&apos;s body statement.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.BaseMethods">
+<summary>
+ Gets this functional-style method&apos;s base methods.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.AsMethod">
+<summary>
+ Gets this functional method as a non-constructor method.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalMethod.AsConstructor">
+<summary>
+ Gets this functional method as a constructor.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalMethod.WithReturnType(Microsoft.FSharp.Core.FSharpFunc{Flame.IMethod,Flame.IType})">
+<summary>
+ Sets this functional method&apos;s return type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalMethod.WithParameters(Microsoft.FSharp.Core.FSharpFunc{Flame.IMethod,System.Collections.Generic.IEnumerable{Flame.IParameter}})">
+<summary>
+ Sets this functional method&apos;s parameters.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalMethod.WithGenericParameters(Microsoft.FSharp.Core.FSharpFunc{Flame.IGenericMember,System.Collections.Generic.IEnumerable{Flame.IGenericParameter}})">
+<summary>
+ Sets this functional method&apos;s generic parameters.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalMethod.WithBody(Microsoft.FSharp.Core.FSharpFunc{Flame.IMethod,Flame.Compiler.IStatement})">
+<summary>
+ Sets this functional-style method&apos;s body.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalMethod.WithBaseMethods(Microsoft.FSharp.Core.FSharpFunc{Flame.IMethod,System.Collections.Generic.IEnumerable{Flame.IMethod}})">
+<summary>
+ Sets this functional-style method&apos;s base method function.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalMethod">
+<summary>
+ Defines a functional-style method.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalNamespace.Types">
+<summary>
+ Gets all types this functional-style namespace contains directly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalNamespace.Namespaces">
+<summary>
+ Gets all child namespaces this functional-style namespace contains directly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalNamespace.Name">
+<summary>
+ Gets this functional-style namespace&apos;s name.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalNamespace.DeclaringAssembly">
+<summary>
+ Gets this functional-style namespace&apos;s declaring assembly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalNamespace.WithType(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespace,Flame.IType})">
+<summary>
+ Sets this functional-style field&apos;s initial value.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalNamespace.WithNamespace(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespaceBranch,Flame.INamespaceBranch})">
+<summary>
+ Sets this functional-style field&apos;s field type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalNamespace">
+<summary>
+ Defines a functional-style namespace.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalProperty.PropertyType">
+<summary>
+ Gets this functional-style property&apos;s return type.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalProperty.LazyAccessors">
+<summary>
+ Gets this functional-style property&apos;s accessors, with lazy evaluation.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalProperty.IndexerParameters">
+<summary>
+ Gets this functional-style property&apos;s indexer parameters.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalProperty.Accessors">
+<summary>
+ Gets this functional-style property&apos;s accessors, with lazy evaluation.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalProperty.WithPropertyType(System.Lazy{Flame.IType})">
+<summary>
+ Sets this functional property&apos;s type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalProperty.WithIndexerParameter(System.Lazy{Flame.IParameter})">
+<summary>
+ Adds this indexer parameter to this function property.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalProperty.WithAccessor(Microsoft.FSharp.Core.FSharpFunc{Flame.IProperty,Flame.IAccessor})">
+<summary>
+ Adds an accessor to this functional-style property.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalProperty">
+<summary>
+ Defines a functional-style property.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.Properties">
+<summary>
+ Gets this functional type&apos;s properties.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalType.NestedTypes">
+<summary>
+ Gets this functional type&apos;s nested types.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalType.NestedNamespaces">
+<summary>
+ Gets this functional type&apos;s nested namespaces.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.Name">
+<summary>
+ Gets the type&apos;s &quot;formal&quot; name, i.e., the header&apos;s name with a suffix that
+ identifies the number of type parameters the type takes.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.Methods">
+<summary>
+ Gets this functional type&apos;s methods.
+</summary>
+</member>
+<member name="P:Flame.Functional.FunctionalType.Members">
+<summary>
+ Gets this functional type&apos;s members.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.GenericParameters">
+<summary>
+ Gets this functional type&apos;s generic parameters.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.Fields">
+<summary>
+ Gets this functional type&apos;s fields.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.FunctionalType.BaseTypes">
+<summary>
+ Gets this functional type&apos;s base types.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalType.Flame-Functional-IFunctionalNamespace-WithType(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespace,Flame.IType})">
+<summary>
+ Adds a nested type to this functional-style type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithProperty(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,Flame.IProperty})">
+<summary>
+ Adds a property to this functional-style type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithNestedType(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespace,Flame.IType})">
+<summary>
+ Adds a nested type to this functional-style type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithNestedNamespace(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespaceBranch,Flame.INamespaceBranch})">
+<summary>
+ Adds a nested namespace to this functional-style type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithMethod(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,Flame.IMethod})">
+<summary>
+ Adds a method to this functional-style type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithHeader(Flame.Functional.FunctionalMemberHeader)">
+<summary>
+ Sets this type&apos;s header.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithGenericParameters(Microsoft.FSharp.Core.FSharpFunc{Flame.IGenericMember,System.Collections.Generic.IEnumerable{Flame.IGenericParameter}})">
+<summary>
+ Sets this functional-style type&apos;s generic parameters.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithField(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,Flame.IField})">
+<summary>
+ Adds a field to this functional-style type.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithBaseTypes(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.Collections.Generic.IEnumerable{Flame.IType}})">
+<summary>
+ Sets this this functional-style type&apos;s base types.
+</summary>
+</member>
+<member name="M:Flame.Functional.FunctionalType.WithAttribute(System.Lazy{Flame.IAttribute})">
+<summary>
+ Adds an attribute to this functional-style type.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.FunctionalType">
+<summary>
+ Provides common functionality for objects that support
+ constructing types in a functional fashion.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.GlobalScope.TypeNamer">
+<summary>
+ Gets this global scope&apos;s type namer.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.Log">
+<summary>
+ Gets this global scope&apos;s log.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.GetParameters">
+<summary>
+ Gets the given method&apos;s parameters, as a map of names mapped to variables.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.GetAllMembers">
+<summary>
+ Gets all instance, static and extension
+ type members for the given type.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.Environment">
+<summary>
+ Gets this global scope&apos;s environment.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.ConversionRules">
+<summary>
+ Gets this global scope&apos;s conversion rules.
+</summary>
+</member>
+<member name="P:Flame.Functional.GlobalScope.Binder">
+<summary>
+ Gets this global scope&apos;s binder.
+</summary>
+</member>
+<member name="M:Flame.Functional.GlobalScope.WithBinder(Flame.Functional.FunctionalBinder)">
+<summary>
+ Creates a new global scope with the given binder.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.GlobalScope">
+<summary>
+ Defines a &quot;global scope&quot;, i.e. a scope outside function.
+</summary>
+</member>
+<member name="M:Flame.Functional.IConversionRules.HasImplicitConversion(Flame.IType,Flame.IType)">
+<summary>
+ Finds out whether a value of the given source type
+ can be converted implicitly to the given target type.
+</summary>
+</member>
+<member name="M:Flame.Functional.IConversionRules.ConvertImplicit(Flame.Compiler.IExpression,Flame.IType)">
+<summary>
+ Converts the given expression to the given type implicitly.
+</summary>
+</member>
+<member name="M:Flame.Functional.IConversionRules.ConvertExplicit(Flame.Compiler.IExpression,Flame.IType)">
+<summary>
+ Converts the given expression to the given type explicitly.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.IFunctionalNamespace.WithType(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespace,Flame.IType})">
+<summary>
+ Adds a type to this functional-style namespace.
+</summary>
+</member>
+<member name="M:Flame.Functional.IFunctionalNamespace.WithNamespace(Microsoft.FSharp.Core.FSharpFunc{Flame.INamespaceBranch,Flame.INamespaceBranch})">
+<summary>
+ Adds a child namespace to this functional-style namespace.
+</summary>
+</member>
+<member name="T:Flame.Functional.IFunctionalNamespace">
+<summary>
+ Defines a functional-style namespace.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.LazyApplicationArray`2.Append(Microsoft.FSharp.Core.FSharpFunc{`0,`1})">
+<summary>
+ Appends an item to the array.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.LazyApplicationArray`2">
+<summary>
+ A type that is dedicated to building a lazy array, one
+ array item at a time. This type is purely functional:
+ it does not contain any mutable state.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.LazyArrayBuilder`1.Value">
+<summary>
+ Gets the lazy array&apos;s value.
+</summary>
+</member>
+<member name="P:Flame.Functional.LazyArrayBuilder`1.ListOfLazy">
+<summary>
+ Gets a list of lazy objects.
+</summary>
+</member>
+<member name="P:Flame.Functional.LazyArrayBuilder`1.LazyArray">
+<summary>
+ Gets the lazy array.
+</summary>
+</member>
+<member name="P:Flame.Functional.LazyArrayBuilder`1.IsValueCreated">
+<summary>
+ Finds out if this lazy array has already been created.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.LazyArrayBuilder`1.Append(System.Lazy{`0})">
+<summary>
+ Appends an item to the array.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.LazyArrayBuilder`1">
+<summary>
+ A type that is dedicated to building a lazy array, one
+ array item at a time. This type is purely functional:
+ it does not contain any mutable state.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.LazyNamespaceBinder">
+<summary>
+ A lazy namespace binder that performs a root namespace lookup
+ every time a type is bound or requested.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.LocalScope.ReleaseStatement">
+<summary>
+ Creates a release statement for this local scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.Parent">
+<summary>
+ Gets this local scope&apos;s parent scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.Locals">
+<summary>
+ Gets this local scope&apos;s locals.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.IsRoot">
+<summary>
+ Gets a boolean value that tells if this local scope is the root local scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.Global">
+<summary>
+ Gets this local scope&apos;s associated global scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.Function">
+<summary>
+ Gets this local scope&apos;s associated function scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.ControlTag">
+<summary>
+ Gets the enclosing control flow block&apos;s tag.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.ChildScope">
+<summary>
+ Creates a child scope.
+</summary>
+</member>
+<member name="P:Flame.Functional.LocalScope.AllLocals">
+<summary>
+ Gets all local variables and parameters
+ that belong to this local scope and
+ its parents.
+</summary>
+</member>
+<member name="M:Flame.Functional.LocalScope.WithVariable(Flame.Compiler.IVariable,System.String)">
+<summary>
+ Registers the given variable with this
+ local scope under the given name.
+</summary>
+</member>
+<member name="M:Flame.Functional.LocalScope.GetVariable(System.String)">
+<summary>
+ Gets the variable with the given name.
+</summary>
+</member>
+<member name="M:Flame.Functional.LocalScope.FlowChildScope(Flame.Compiler.UniqueTag)">
+<summary>
+ Creates a child scope with the given control flow tag.
+</summary>
+</member>
+<member name="M:Flame.Functional.LocalScope.DeclaresDirectly(System.String)">
+<summary>
+ Finds out if this local scope declares a
+ variable with the given name directly.
+</summary>
+</member>
+<member name="M:Flame.Functional.LocalScope.DeclareVariable(Flame.IType,System.String)">
+<summary>
+ Declares a variable of the given type and name.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.LocalScope">
+<summary>
+ Defines a scope within a function.
+ Note: a local scope&apos;s variables are stored as an immutable dictionary.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.ResultExpression.Expression">
+<summary>
+ Gets this result expression&apos;s inner expression.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.ResultExpression">
+<summary>
+ Defines an expression that represents the result of an imperative (void) block.
+
+ This information is discarded on optimization.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.TypeName.Tail">
+<summary>
+ Gets this type name&apos;s &quot;tail&quot; type name.
+</summary>
+</member>
+<member name="P:Flame.Functional.TypeName.Start">
+<summary>
+ Gets this type name, without the last element.
+</summary>
+</member>
+<member name="P:Flame.Functional.TypeName.Path">
+<summary>
+ Gets this type name&apos;s &quot;path&quot;.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="P:Flame.Functional.TypeName.IsEmpty">
+<summary>
+ Checks if this type name is empty.
+</summary>
+</member>
+<member name="P:Flame.Functional.TypeName.Head">
+<summary>
+ Gets this type name&apos;s &quot;head&quot; element.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.TypeName.Append(Flame.Functional.TypeName)">
+<summary>
+ Appends the given type name to this type name, and returns the result.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.VariableExpression">
+<summary>
+ Defines an expression that implements IVariableNode by
+ explicitly containing a variable and variable action.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessNamedMembers(Flame.Functional.LocalScope,System.String,Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses all type members with the given name on the given expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessMembers(Flame.Functional.LocalScope,System.Collections.Generic.IEnumerable{Flame.ITypeMember},Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses the given sequence of type members on the given expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstructorDelegates(Flame.Functional.LocalScope,Flame.IType,Flame.Functional.AccessedExpression)">
+<summary>
+ Computes the intersection expression of the constructor delegates
+ for the given type and constructed instance expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.NewInstanceDelegates(Flame.Functional.LocalScope,Flame.IType)">
+<summary>
+ Computes the intersection expression of the new type instance
+ delegates for the given type.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.IntersectedMemberAccess(Flame.Functional.LocalScope,System.Collections.Generic.IEnumerable{Flame.ITypeMember},Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses the given sequence of type members on the given expression, and computes their intersection.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AllOfType``2(System.Collections.Generic.IEnumerable{``0})">
+<summary>
+ Checks if all elements of the given sequence are of a
+ specific type.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessMember(Flame.Functional.LocalScope,Flame.ITypeMember,Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses a single type member on the given expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessProperty(Flame.Functional.LocalScope,Flame.IMethod,Flame.IMethod,Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses a property on a target expression with no index arguments, within the given local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessIndexedProperty(Flame.Functional.LocalScope,Flame.IMethod,Flame.IMethod,Flame.Functional.AccessedExpression,System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Accesses a property on a target expression with the given index arguments, within the given local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessMethod(Flame.Functional.LocalScope,Flame.IMethod,Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses a method on a target expression, within the given local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.GetAddress(Flame.Compiler.IExpression)">
+<summary>
+ Gets the address of the given expression, or creates a copy
+ of said expression, and creates the address of a temporary backing variable.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessField(Flame.Functional.LocalScope,Flame.IField,Flame.Functional.AccessedExpression)">
+<summary>
+ Accesses a field on a target expression, within the given local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.GetAccessedMember``1(``0)">
+<summary>
+ Analyzes the given expression as the type member in a member access operation.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.GetAccessedExpression(Flame.Compiler.IExpression)">
+<summary>
+ Analyzes the given expression as the target of a member access operation.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.NewInitializedArray(Flame.IType,System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates a new array of the given element type, and initializes it with
+ the given sequence of expressions, which represent the array&apos;s items.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.NewArray(Flame.IType,System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates a new array of the given element types and dimensions.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Index(Flame.Functional.LocalScope,Flame.Compiler.IExpression,System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Indexes the given expression with the given arguments.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Invoke(Flame.Functional.LocalScope,Flame.Compiler.IExpression,System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates an expression that represents the invocation of the given function on the
+ given sequence of arguments. The scope provided is used to apply conversion rules.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.InstantiateGenericDelegates(Flame.Functional.LocalScope,Flame.Compiler.IExpression,System.Collections.Generic.IEnumerable{Flame.IType})">
+<summary>
+ Instatiates the given generic delegates expression with the given type arguments.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.RecursiveLambda(Microsoft.FSharp.Core.FSharpFunc{Flame.Functional.LocalScope,Flame.Compiler.IExpression},Flame.IMethod,System.String,Flame.Functional.LocalScope)">
+<summary>
+ Creates a capture-by-value lambda that captures all locals based on the given
+ body creation function, lambda signature, and enclosing scope.
+ A recursive delegate for this lambda function is bound to the given
+ recursion identifier.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Lambda(Microsoft.FSharp.Core.FSharpFunc{Flame.Functional.LocalScope,Flame.Compiler.IExpression},Flame.IMethod,Flame.Functional.LocalScope)">
+<summary>
+ Creates a capture-by-value lambda that captures all locals based on the given
+ body creation function, lambda signature, and enclosing scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.MaybeRecLambda(Microsoft.FSharp.Core.FSharpFunc{Flame.Functional.LocalScope,Flame.Compiler.IExpression},Flame.IMethod,Microsoft.FSharp.Core.FSharpOption{System.String},Flame.Functional.LocalScope)">
+<summary>
+ Creates a capture-by-value lambda that captures all locals based on the given
+ body creation function, lambda signature, and enclosing scope. If a name is provided,
+ then a recursive delegate is bound to that name.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.This(System.String,Flame.Functional.LocalScope)">
+<summary>
+ Gets the &apos;this&apos; parameter in the given scope.
+ Note that the &apos;this&apos; parameter is defined as
+ a local variable. Its name is given by the given
+ variable identifier string.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Binary(Flame.Operator,Flame.Functional.LocalScope,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates a binary expression.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Quickbind(Flame.Functional.LocalScope,Flame.Compiler.IExpression,System.String)">
+<summary>
+ Declares and binds an expression to a variable.
+</summary>
+</member>
+<member name="">
+
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Cast(Flame.Functional.LocalScope,Flame.Compiler.IExpression,Flame.IType)">
+<summary>
+ Casts an expression to a type, based on the conversion rules given by the local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Dereference(Flame.Functional.LocalScope,Flame.Compiler.IExpression)">
+<summary>
+ Dereferences the given pointer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AddressOf(Flame.Compiler.IExpression)">
+<summary>
+ Gets the address of the given expression, as a reference pointer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Assign(Flame.Functional.LocalScope,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Assigns the given right hand side to the left hand side.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.AccessLocal(System.String,Flame.Functional.LocalScope)">
+<summary>
+ Loads the local variable with the given name, if any such
+ local exists in the given local scope.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.GetVariableOrExpressionVariable(Flame.Compiler.IExpression)">
+<summary>
+ Gets the variable captured by the given expression.
+ If this cannot be done, an expression variable
+ is created that wraps the given expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.GetVariable(Flame.Compiler.IExpression)">
+<summary>
+ Tries to get the variable captured by the given expression.
+ This function will reach across metadata node boundaries.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.DeclareLocal(Flame.Functional.LocalScope,Flame.IType,System.String)">
+<summary>
+ Declares a local variable of the given type, name and body.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Warning(Flame.Compiler.LogEntry,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression thaet represents a technically correct node,
+ that probably doesn&apos;t do what it was intended to do.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.VoidError(Flame.Compiler.LogEntry)">
+<summary>
+ Creates an expression that represents an erroneous node,
+ and contains the given error message.
+ The resulting expression&apos;s type is void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.IsError(Flame.Compiler.IExpression)">
+<summary>
+ Determines if the given expression is an error expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Intersection(System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Gets the intersection expression of the given sequence of expressions.
+ An intersection expression may be used when resolving overloads, but
+ code generators do not support them.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Source(Flame.Compiler.SourceLocation,Flame.Compiler.IExpression)">
+<summary>
+ Tags the given expression with the given source code location.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Errors(Flame.Compiler.IExpression,System.Collections.Generic.IEnumerable{Flame.Compiler.LogEntry})">
+<summary>
+ Creates an expression that represents an node with
+ zero or more error messages attached to it.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Error(Flame.Compiler.LogEntry,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that represents an erroneous node,
+ and contains the given error message.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Unknown(Flame.IType)">
+<summary>
+ Creates an unknown expression: an expression that cannot be represented by any code sequence,
+ which will therefore throw when calling its `Emit` implementation. Instead, it acts like
+ a non-constant expression which can be used to create a well-typed node tree, for debugging
+ or optimization purposes.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Default(Flame.IType)">
+<summary>
+ Creates an expression that represents the default value of the
+ given type.
+</summary>
+</member>
+<member name="P:Flame.Functional.ExpressionBuilder.Void">
+<summary>
+ Creates a void expression.
+</summary>
+</member>
+<member name="P:Flame.Functional.ExpressionBuilder.Null">
+<summary>
+ Creates a null expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantBoolean(System.Boolean)">
+<summary>
+ Creates an expression that captures the given boolean constant.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantChar(System.Char)">
+<summary>
+ Creates an expression that captures the given character constant.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantString(System.String)">
+<summary>
+ Creates an expression that captures the given string constant.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantFloat64(System.Double)">
+<summary>
+ Creates an expression that captures the given constant double-precision float.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantFloat32(System.Single)">
+<summary>
+ Creates an expression that captures the given constant single-precision float.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantUInt64(System.UInt64)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantInt64(System.Int64)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantUInt32(System.UInt32)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantInt32(System.Int32)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantUInt16(System.UInt16)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantInt16(System.Int16)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantUInt8(System.Byte)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ConstantInt8(System.SByte)">
+<summary>
+ Creates an expression that captures the given constant integer.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Scope(Flame.Compiler.IExpression,Flame.Functional.LocalScope)">
+<summary>
+ Creates an expression that assigns the given local scope to the given
+ inner expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Use(Flame.Compiler.IExpression,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that first performs an initialization,
+ then creates its return value, and subsequently performs
+ a finalization step.
+ This can be used to create RAII-style blocks.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Finalize(Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that first creates its return value,
+ and then performs a finalization action.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Initialize(Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that first performs an initialization,
+ then creates its return value, and subsequently performs
+ a finalization step.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Result(Flame.Compiler.IExpression)">
+<summary>
+ Creates a result expression, which can be used
+ in imperative-style void blocks.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Comma(System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates a comma expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.VoidBlock(System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates an imperative block expression: said expression will
+ always return void, unless it contains a `ResultExpression`.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ExpressionBlock(System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression})">
+<summary>
+ Creates a functional block expression whose result is the
+ result of the first non-void child in the block, if any.
+ Otherwise void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Block(System.Collections.Generic.IEnumerable{Flame.Compiler.IExpression},Microsoft.FSharp.Core.FSharpFunc{Flame.Compiler.IExpression,System.Boolean})">
+<summary>
+ Creates a block expression whose result is dependent
+ on the given predicate: the value of the last
+ child expression that satisfies it will be returned by the block.
+ If no child expression satisfies the predicate, void is returned.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.partitionAtLast``1(Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean},System.Collections.Generic.IEnumerable{``0})">
+<summary>
+ Partitions the given sequence into two new sequences, the first of which containing
+ all elements in the original sequence that precede the last element that matches the predicate.
+ The second sequence represents all elements in the original sequence starting at the last element
+ that matches the predicate.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Pop(Flame.Compiler.IExpression)">
+<summary>
+ Discards this expression&apos;s value.
+ The resulting expression is of type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Continue(Flame.Functional.LocalScope)">
+<summary>
+ Creates a continue expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Break(Flame.Functional.LocalScope)">
+<summary>
+ Creates a break expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.For(Flame.Compiler.UniqueTag,Flame.Compiler.IExpression,Flame.Compiler.IExpression,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates a for loop expression,
+ which has type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Tagged(Flame.Compiler.UniqueTag,Flame.Compiler.IExpression)">
+<summary>
+ Creates a new tagged block expression.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.DoWhile(Flame.Compiler.UniqueTag,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates a do-while loop expression,
+ which has type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.While(Flame.Compiler.UniqueTag,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates a while loop expression,
+ which has type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.If(Flame.Functional.LocalScope,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates an if-then expression,
+ which has type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Select(Flame.Functional.LocalScope,Flame.Compiler.IExpression,Flame.Compiler.IExpression,Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that selects one of two expressions
+ to evaluate based on the given condition.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Throw(Flame.Compiler.IExpression)">
+<summary>
+ Creates an expression that throws the given value.
+</summary>
+</member>
+<member name="P:Flame.Functional.ExpressionBuilder.ReturnVoid">
+<summary>
+ Creates a return expression that returns void.
+ The return expression is of type void, as well.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.Return(Flame.Functional.LocalScope,Flame.Compiler.IExpression)">
+<summary>
+ Creates a return expression that returns the given value.
+ Return expressions are of type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ReturnUnchecked(Flame.Compiler.IExpression)">
+<summary>
+ Creates a return expression that returns the given value, without
+ inserting an implicit conversion to the declaring method&apos;s return type.
+ Return expressions are of type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ToExpression(Flame.Compiler.IStatement)">
+<summary>
+ Converts the given statement to an expression of type void.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ToStatement(Flame.Compiler.IExpression)">
+<summary>
+ Converts the given expression to a statement.
+</summary>
+</member>
+<member name="M:Flame.Functional.ExpressionBuilder.ChangesState(Flame.Compiler.IExpression)">
+<summary>
+ Conservatively tries to determine whether the given
+ expression may change the local or global state.
+</summary>
+</member>
+<member name="T:Flame.Functional.ExpressionBuilder">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="">
+
+</member>
+<member name="T:Flame.Functional.LazyHelpers">
+
+</member>
+<member name="M:Flame.Functional.MemberHelpers.InheritAttributes``1(System.Collections.Generic.IEnumerable{Flame.IType},``0,System.Collections.Generic.IEnumerable{Flame.IAttribute})">
+<summary>
+ Inherits all attributes of the given types from the declaring member that are not present in the
+ sequence of pre-existing attributes, and concatenates these attributes with said pre-existing attributes.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.IsAbstractOrInterface``1(``0)">
+<summary>
+ Tests if the given member is either abstract or an interface member.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.InferBaseAccessors(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.Collections.Generic.IEnumerable{Flame.IProperty}},Flame.IAccessor)">
+<summary>
+ Infers the given accesor&apos;s base accessors based on the given property-getting function.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.FilterBaseAccessors(System.Collections.Generic.IEnumerable{Flame.IProperty},Flame.IAccessor)">
+<summary>
+ Selects the given accessor&apos;s base accessors from a sequence of potential base properties.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.InferBaseProperties(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.Collections.Generic.IEnumerable{Flame.IProperty}},Flame.IProperty)">
+<summary>
+ Infers the given property&apos;s potential base properties for the given property-getting function.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.InferBaseMethods(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.Collections.Generic.IEnumerable{Flame.IMethod}},Flame.IMethod)">
+<summary>
+ Infers the given method&apos;s base methods for the given method-getting function.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.GetAllBaseMembers``1(Microsoft.FSharp.Core.FSharpFunc{Flame.IType,System.Collections.Generic.IEnumerable{``0}},Flame.IType)">
+<summary>
+ Gets all members defined by the given type&apos;s base types for the given member-getting function.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.IsShadowed``2(``0,``1)">
+<summary>
+ Tells if the first method shadows the second.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.IsImplementationOf``2(``0,``1)">
+<summary>
+ Tells if the first method implements the second.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.OfType``2(System.Collections.Generic.IEnumerable{``0})">
+<summary>
+ Selects all items that are of the given result type.
+</summary>
+</member>
+<member name="M:Flame.Functional.MemberHelpers.UpperBounds``1(Microsoft.FSharp.Core.FSharpFunc{``0,Microsoft.FSharp.Core.FSharpFunc{``0,System.Boolean}},System.Collections.Generic.IEnumerable{``0})">
+<summary>
+ Gets the finite set of upper bounds for the given finite set,
+ based on the given less-than function.
+</summary>
+</member>
+<member name="T:Flame.Functional.MemberHelpers">
+<summary>
+ Provides helper functions for members.
+</summary>
+</member>
+</members>
+</doc>

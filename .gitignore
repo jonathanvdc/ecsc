@@ -1,2 +1,7 @@
+
+# Debug databases
 *.pdb
 *.mdb
+
+# vshost
+*.vshost.*
