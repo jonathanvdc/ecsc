@@ -58,9 +58,6 @@
     <Reference Include="Flame.Front">
       <HintPath>..\..\libs\Flame.Front.dll</HintPath>
     </Reference>
-    <Reference Include="Flame.Functional">
-      <HintPath>..\..\libs\Flame.Functional.dll</HintPath>
-    </Reference>
     <Reference Include="Flame.Intermediate">
       <HintPath>..\..\libs\Flame.Intermediate.dll</HintPath>
     </Reference>
@@ -154,10 +151,19 @@
     <Reference Include="Pixie.Xml">
       <HintPath>..\..\libs\Pixie.Xml.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="EcsProjectHandler.cs" />
+    <Compile Include="AutoInitializationPass.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\Flame.Ecs\Flame.Ecs.csproj">
+      <Project>{DB650664-CFE1-42BC-969B-FEB22B028378}</Project>
+      <Name>Flame.Ecs</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

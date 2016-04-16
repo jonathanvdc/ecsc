@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Flame.Front;
 using Flame.Front.Cli;
+using Flame.Front.Projects;
 
 namespace ecsc
 {
@@ -12,7 +13,7 @@ namespace ecsc
 	{
 		public static void Main(string[] args)
 		{
-			// ProjectHandlers.RegisterHandler(new EcsProjectHandler());
+			ProjectHandlers.RegisterHandler(new EcsProjectHandler());
 			var compiler = new ConsoleCompiler("ecsc", "the direct EC# compiler", "https://github.com/jonathanvdc/ecsc/releases");
 			Environment.Exit(compiler.Compile(args));
 		}
