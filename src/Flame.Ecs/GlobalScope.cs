@@ -39,18 +39,6 @@ namespace Flame.Ecs
 			return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer);
 		}
 
-		private static MarkupNode[] HighlightEven(params string[] Text)
-		{
-			var results = new MarkupNode[Text.Length];
-			for (int i = 0; i < Text.Length; i++)
-			{
-				results[i] = new MarkupNode(
-					i % 2 == 0 ? NodeConstants.TextNodeType : NodeConstants.BrightNodeType,
-					Text[i]);
-			}
-			return results;
-		}
-
 		/// <summary>
 		/// Implicitly converts the given expression to the given type.
 		/// A diagnostic is issued if this is not a legal operation,
@@ -69,7 +57,7 @@ namespace Flame.Ecs
 				result = ConversionRules.TryConvertExplicit(From, To);
 				Log.LogError(new LogEntry(
 					"no implicit conversion", 
-					HighlightEven(
+					NodeHelpers.HighlightEven(
 						"cannot implicitly convert type '", TypeNamer.Convert(From.Type), "' to '", TypeNamer.Convert(To), "'." + 
 						(result != null ? " An explicit conversion exists. (are you missing a cast?)" : "")),
 					Location));
@@ -98,7 +86,7 @@ namespace Flame.Ecs
 			{
 				Log.LogError(new LogEntry(
 					"no conversion", 
-					HighlightEven("cannot convert type '", TypeNamer.Convert(From.Type), "' to '", TypeNamer.Convert(To), "'."),
+					NodeHelpers.HighlightEven("cannot convert type '", TypeNamer.Convert(From.Type), "' to '", TypeNamer.Convert(To), "'."),
 					Location));
 				
 				return new UnknownExpression(To);

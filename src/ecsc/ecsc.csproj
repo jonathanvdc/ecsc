@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
     <Externalconsole>true</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
+    <Commandlineparameters>-source=/media/jonathan/Quark/Code/ecsc/tests/cs/hello-world/HelloWorld.cs -platform clr</Commandlineparameters>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

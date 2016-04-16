@@ -72,6 +72,7 @@
     <Compile Include="ConversionRules.cs" />
     <Compile Include="QualifiedName.cs" />
     <Compile Include="QualifiedBinder.cs" />
+    <Compile Include="GlobalConverters.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
