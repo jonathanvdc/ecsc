@@ -91,7 +91,10 @@ namespace Flame.Ecs
 
 		public override int GetHashCode()
 		{
-			return Qualifier.GetHashCode() ^ Name.GetHashCode() << 1;
+			if (IsQualified)
+				return Qualifier.GetHashCode() ^ Name.GetHashCode() << 1;
+			else
+				return Qualifier.GetHashCode();
 		}
 
 		public override string ToString()

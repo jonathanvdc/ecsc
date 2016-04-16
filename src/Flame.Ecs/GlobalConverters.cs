@@ -1,5 +1,7 @@
 ﻿using System;
 using Loyc.Syntax;
+using Flame.Build;
+using Flame.Compiler;
 
 namespace Flame.Ecs
 {
@@ -8,13 +10,83 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Converts an '#import' directive.
 		/// </summary>
-		public static GlobalScope ConvertImportDirective(LNode Node, IMutableNamespace Namespace, GlobalScope Scope)
+		public static GlobalScope ConvertImportDirective(
+			LNode Node, IMutableNamespace Namespace, 
+			GlobalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
 				return Scope;
 			
 			var qualName = NodeHelpers.ToQualifiedName(Node.Args[0]);
 			return Scope.WithBinder(Scope.Binder.UseNamespace(qualName));
+		}
+
+		/// <summary>
+		/// Converts a type.
+		/// </summary>
+		public static GlobalScope ConvertTypeDefinition(
+			IAttribute TypeKind, LNode Node, IMutableNamespace Namespace, 
+			GlobalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+				return Scope;
+
+			// Convert the type's name.
+			var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
+			var descTy = Namespace.DefineType(name.Item1);
+
+			var innerScope = Scope;
+			foreach (var item in name.Item2(descTy))
+			{
+				// Create generic parameters.
+				descTy.AddGenericParameter(item);
+				innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+			}
+
+			foreach (var item in Node.Args[1].Args)
+			{
+				// Convert the base types.
+				var innerTy = Converter.ConvertType(item, Scope);
+				if (innerTy == null)
+				{
+					Scope.Log.LogError(new LogEntry(
+						"unresolved base type",
+						NodeHelpers.HighlightEven("could not resolve base type '", item.ToString(), "' for '", name.Item1, "'."),
+						NodeHelpers.ToSourceLocation(item.Range)));
+				}
+				else
+				{
+					descTy.AddBaseType(innerTy);
+				}
+			}
+
+			foreach (var item in Node.Args[2].Args)
+			{
+				// Convert the type definition's members.
+				innerScope = Converter.ConvertTypeMember(item, descTy, innerScope);
+			}
+
+			return Scope;
+		}
+
+		/// <summary>
+		/// Converts a '#class' node.
+		/// </summary>
+		public static GlobalScope ConvertClassDefinition(
+			LNode Node, IMutableNamespace Namespace, GlobalScope Scope,
+			NodeConverter Converter)
+		{
+			return ConvertTypeDefinition(PrimitiveAttributes.Instance.ReferenceTypeAttribute, Node, Namespace, Scope, Converter);
+		}
+
+		/// <summary>
+		/// Converts a '#struct' node.
+		/// </summary>
+		public static GlobalScope ConvertStructDefinition(
+			LNode Node, IMutableNamespace Namespace, GlobalScope Scope, 
+			NodeConverter Converter)
+		{
+			return ConvertTypeDefinition(PrimitiveAttributes.Instance.ValueTypeAttribute, Node, Namespace, Scope, Converter);
 		}
 	}
 }

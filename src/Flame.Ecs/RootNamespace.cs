@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Flame.Build;
 
 namespace Flame.Ecs
 {
@@ -11,16 +12,16 @@ namespace Flame.Ecs
 	/// An interface for namespaces that support inserting 
 	/// additional types and nested namespaces.
 	/// </summary>
-	public interface IMutableNamespace : INamespaceBranch
+	public interface IMutableNamespace
 	{
-		void AddType(IType Type);
-		void AddNamespace(INamespaceBranch Namespace);
+		DescribedType DefineType(string Name);
+		IMutableNamespace DefineNamespace(string Name);
 	}
 
 	/// <summary>
 	/// A base class for mutable namespaces.
 	/// </summary>
-	public abstract class MutableNamespaceBase : IMutableNamespace
+	public abstract class MutableNamespaceBase : IMutableNamespace, INamespaceBranch
 	{
 		public MutableNamespaceBase()
 		{
@@ -48,6 +49,20 @@ namespace Flame.Ecs
 		{
 			nsBranches.Add(Namespace);
 		}
+
+		public DescribedType DefineType(string Name)
+		{
+			var result = new DescribedType(Name, this);
+			AddType(result);
+			return result;
+		}
+
+		public IMutableNamespace DefineNamespace(string Name)
+		{
+			var result = new ChildNamespace(Name, this);
+			AddNamespace(result);
+			return result;
+		}
 	}
 
 	public class RootNamespace : MutableNamespaceBase
@@ -74,6 +89,57 @@ namespace Flame.Ecs
 		public override string Name
 		{
 			get { return ""; }
+		}
+	}
+
+	public class ChildNamespace : MutableNamespaceBase
+	{
+		public ChildNamespace(string Name, INamespace DeclaringNamespace)
+		{
+			this.DeclaringNamespace = DeclaringNamespace;
+			this.nsName = Name;
+		}
+
+		public INamespace DeclaringNamespace { get; private set; }
+		private string nsName;
+
+		public override IAssembly DeclaringAssembly { get { return DeclaringAssembly; } }
+
+		public override string FullName
+		{
+			get { return Name; }
+		}
+
+		public override IEnumerable<IAttribute> Attributes
+		{
+			get { return Enumerable.Empty<IAttribute>(); }
+		}
+
+		public override string Name
+		{
+			get { return nsName; }
+		}
+	}
+
+	public class TypeNamespace : IMutableNamespace
+	{
+		public TypeNamespace(DescribedType Type)
+		{
+			this.Type = Type;
+		}
+
+		public DescribedType Type { get; private set; }
+
+		public DescribedType DefineType(string Name)
+		{
+			var result = new DescribedType(Name, Type);
+			Type.AddNestedType(result);
+			return result;
+		}
+
+		public IMutableNamespace DefineNamespace(string Name)
+		{
+			return new TypeNamespace(DefineType(Name));
 		}
 	}
 }
