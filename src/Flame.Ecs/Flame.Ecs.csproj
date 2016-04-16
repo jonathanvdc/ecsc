@@ -70,6 +70,8 @@
     <Compile Include="LoycSourceDocument.cs" />
     <Compile Include="GlobalScope.cs" />
     <Compile Include="ConversionRules.cs" />
+    <Compile Include="QualifiedName.cs" />
+    <Compile Include="QualifiedBinder.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
