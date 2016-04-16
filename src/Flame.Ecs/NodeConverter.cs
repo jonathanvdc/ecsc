@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Loyc.Syntax;
 using Loyc;
 using Flame.Compiler;
 using Flame.Build;
+using Pixie;
 
 namespace Flame.Ecs
 {
 	using GlobalConverter = Func<LNode, IMutableNamespace, GlobalScope, NodeConverter, GlobalScope>;
 	using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
 	using TypeMemberConverter = Func<LNode, DescribedType, GlobalScope, NodeConverter, GlobalScope>;
+	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
 
 	/// <summary>
 	/// Defines a type that semantically analyzes a syntax tree by
@@ -22,11 +25,13 @@ namespace Flame.Ecs
 			this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
 			this.typeConverters = new Dictionary<Symbol, TypeConverter>();
 			this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
+			this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
 		}
 
 		private Dictionary<Symbol, GlobalConverter> globalConverters;
 		private Dictionary<Symbol, TypeConverter> typeConverters;
 		private Dictionary<Symbol, TypeMemberConverter> typeMemberConverters;
+		private Dictionary<Symbol, AttributeConverter> attrConverters;
 
 		/// <summary>
 		/// Tries to get the appropriate converter for the given
@@ -121,6 +126,113 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Converts an attribute node. Null is returned if that fails.
+		/// </summary>
+		public IAttribute ConvertAttribute(
+			LNode Node, GlobalScope Scope)
+		{
+			var conv = GetConverterOrDefault(attrConverters, Node);
+			if (conv == null)
+			{
+				LogCannotConvert(Node, Scope.Log);
+				return null;
+			}
+			else
+			{
+				return conv(Node, Scope, this);
+			}
+		}
+
+		/// <summary>
+		/// Converts the given sequence of attribute nodes.
+		/// A function is given that can be used to handle 
+		/// special cases. If such a special case has been 
+		/// handled, the function returns 'true'. Only nodes
+		/// for which the special case function returns 
+		/// 'false', are directly converted by this node converter. 
+		/// </summary>
+		public IEnumerable<IAttribute> ConvertAttributeList(
+			IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial, 
+			GlobalScope Scope)
+		{
+			foreach (var item in Attributes)
+			{
+				if (!HandleSpecial(item))
+				{
+					var result = ConvertAttribute(item, Scope);
+					if (result != null)
+						yield return result;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Converts the given sequence of attribute nodes.
+		/// A function is given that can be used to handle 
+		/// special cases. If such a special case has been 
+		/// handled, the function returns 'true'. Only nodes
+		/// for which the special case function returns 
+		/// 'false', are directly converted by this node converter. 
+		/// Additionally, access modifiers are treated separately.
+		/// </summary>
+		public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
+			IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
+			Func<LNode, bool> HandleSpecial, GlobalScope Scope)
+		{
+			var partitioned = NodeHelpers.Partition(Attributes, item => item.IsId && NodeHelpers.IsAccessModifier(item.Name));
+
+			var accModSet = new HashSet<Symbol>();
+			foreach (var item in partitioned.Item1)
+			{
+				var symbol = item.Name;
+				if (!accModSet.Add(symbol))
+				{
+					// Looks like this access modifier is a duplicate.
+					// Let's issue a warning.
+					Scope.Log.LogWarning(new LogEntry(
+						"duplicate access modifier",
+						EcsWarnings.DuplicateAccessModifierWarning.CreateMessage(new MarkupNode(
+							"#group",
+							NodeHelpers.HighlightEven("access modifier '", symbol.Name, "' is duplicated. "))),
+						NodeHelpers.ToSourceLocation(item.Range)));
+				}
+			}
+
+			var accMod = NodeHelpers.ToAccessModifier(accModSet);
+			if (!accMod.HasValue)
+			{
+				if (accModSet.Count != 0)
+				{
+					// The set of access modifiers we found was no good.
+					// Throw an error in the user's direction.
+					var first = partitioned.Item1.First();
+					var srcLoc = NodeHelpers.ToSourceLocation(first.Range);
+					var fragments = new List<string>();
+					fragments.Add("set of access modifiers '");
+					fragments.Add(first.Name.Name);
+					foreach (var item in partitioned.Item1.Skip(1))
+					{
+						srcLoc = srcLoc.Concat(NodeHelpers.ToSourceLocation(item.Range));
+						fragments.Add("', '");
+						fragments.Add(item.Name.Name);
+					}
+					fragments.Add("' could not be unambiguously resolved.");
+					Scope.Log.LogError(new LogEntry(
+						"ambiguous access modifiers",
+						NodeHelpers.HighlightEven(fragments.ToArray()),
+						srcLoc));
+				}
+
+				// Assume that the default access modifier was intended.
+				accMod = DefaultAccess;
+			}
+
+			yield return new AccessAttribute(accMod.Value);
+			foreach (var item in ConvertAttributeList(partitioned.Item2, HandleSpecial, Scope))
+				yield return item;
+		}
+
+		/// <summary>
 		/// Registers a global converter.
 		/// </summary>
 		public void AddConverter(Symbol Symbol, GlobalConverter Converter)
@@ -142,6 +254,22 @@ namespace Flame.Ecs
 		public void AddConverter(Symbol Symbol, TypeConverter Converter)
 		{
 			typeConverters[Symbol] = Converter;
+		}
+
+		/// <summary>
+		/// Registers an attribute converter.
+		/// </summary>
+		public void AddConverter(Symbol Symbol, AttributeConverter Converter)
+		{
+			attrConverters[Symbol] = Converter;
+		}
+
+		/// <summary>
+		/// Maps the given symbol to the given attribute.
+		/// </summary>
+		public void RegisterAttribute(Symbol Symbol, IAttribute Attribute)
+		{
+			AddConverter(Symbol, (node, scope, self) => Attribute);
 		}
 
 		/// <summary>

@@ -73,6 +73,9 @@
     <Compile Include="QualifiedName.cs" />
     <Compile Include="QualifiedBinder.cs" />
     <Compile Include="GlobalConverters.cs" />
+    <Compile Include="TypeMemberConverters.cs" />
+    <Compile Include="AttributeConverters.cs" />
+    <Compile Include="EcsWarnings.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

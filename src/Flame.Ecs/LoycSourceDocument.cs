@@ -9,7 +9,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A Flame source document wrapper for Loyc source files.
 	/// </summary>
-	public class LoycSourceDocument : ISourceDocument
+	public class LoycSourceDocument : ISourceDocument, IEquatable<LoycSourceDocument>
 	{
 		public LoycSourceDocument(ISourceFile SourceFile)
 		{
@@ -62,6 +62,26 @@ namespace Flame.Ecs
 				? Length
 				: ClampIndex(Length, Length, SourceFile.LineToIndex(Index + 2));
 			return Slice(thisLine, nextLine - thisLine);
+		}
+
+		public bool Equals(LoycSourceDocument Other)
+		{
+			return SourceFile == Other.SourceFile;
+		}
+
+		public override bool Equals(object obj)
+		{
+			return obj is LoycSourceDocument && Equals((LoycSourceDocument)obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return SourceFile.GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return SourceFile.ToString();
 		}
 	}
 }

@@ -119,6 +119,63 @@ namespace Flame.Ecs
 					name.Name, _ => Enumerable.Empty<IGenericParameter>());
 			}
 		}
+
+		/// <summary>
+		/// Partition the specified sequence based on 
+		/// the given predicate.
+		/// </summary>
+		public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(
+			IEnumerable<T> Sequence, Func<T, bool> Predicate)
+		{
+			var first = new List<T>();
+			var second = new List<T>();
+			foreach (var item in Sequence)
+			{
+				if (Predicate(item))
+					first.Add(item);
+				else
+					second.Add(item);
+			}
+			return Tuple.Create<IEnumerable<T>, IEnumerable<T>>(first, second);
+		}
+
+		/// <summary>
+		/// Determines if the given symbol is an access modifier attribute.
+		/// </summary>
+		public static bool IsAccessModifier(Symbol S)
+		{
+			return accessModifiers.Contains(S);
+		}
+
+		/// <summary>
+		/// Tries to find an access modifier that matches the given
+		/// set of access modifier symbols.
+		/// </summary>
+		public static AccessModifier? ToAccessModifier(HashSet<Symbol> Symbols)
+		{
+			AccessModifier result;
+			if (accModMap.TryGetValue(Symbols, out result))
+				return result;
+			else
+				return null;
+		}
+
+		private static readonly HashSet<Symbol> accessModifiers = new HashSet<Symbol>()
+		{
+			CodeSymbols.Private, CodeSymbols.Protected,
+			CodeSymbols.Internal, CodeSymbols.Public,
+			CodeSymbols.ProtectedIn, CodeSymbols.ProtectedIn,
+			CodeSymbols.FilePrivate
+		};
+
+		private static readonly IReadOnlyDictionary<HashSet<Symbol>, AccessModifier> accModMap = new Dictionary<HashSet<Symbol>, AccessModifier>(HashSet<Symbol>.CreateSetComparer())
+		{
+			{ new HashSet<Symbol>() { CodeSymbols.Private }, AccessModifier.Private },
+			{ new HashSet<Symbol>() { CodeSymbols.Protected }, AccessModifier.Protected },
+			{ new HashSet<Symbol>() { CodeSymbols.Internal }, AccessModifier.Assembly },
+			{ new HashSet<Symbol>() { CodeSymbols.Public }, AccessModifier.Public },
+			{ new HashSet<Symbol>() { CodeSymbols.Protected, CodeSymbols.Internal }, AccessModifier.ProtectedOrAssembly },
+		};
 	}
 }
 

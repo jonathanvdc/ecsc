@@ -43,6 +43,25 @@ namespace Flame.Ecs
 				innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
 			}
 
+			// Analyze the attribute list.
+			var convAttrs = Converter.ConvertAttributeListWithAccess(
+				Node.Attrs, AccessModifier.Assembly, node =>
+			{
+				if (node.IsIdNamed(CodeSymbols.Static))
+				{
+					descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}, Scope);
+			foreach (var item in convAttrs)
+			{
+				descTy.AddAttribute(item);
+			}
+
 			foreach (var item in Node.Args[1].Args)
 			{
 				// Convert the base types.
