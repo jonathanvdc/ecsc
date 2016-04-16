@@ -129,7 +129,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A data structure that represents a simple local scope.
 	/// </summary>
-	public class LocalScope : ILocalScope
+	public sealed class LocalScope : ILocalScope
 	{
 		public LocalScope(ILocalScope Parent)
 			: this(Parent, new List<LocalVariable>(), new Dictionary<string, LocalVariable>())
@@ -170,8 +170,8 @@ namespace Flame.Ecs
 		public IStatement Release()
 		{
 			var cleanup = new List<IStatement>();
-			foreach (var item in locals)
-				cleanup.Add(item.Value.CreateReleaseStatement());
+			foreach (var item in orderedVars)
+				cleanup.Add(item.CreateReleaseStatement());
 			return new BlockStatement(cleanup);
 		}
 
