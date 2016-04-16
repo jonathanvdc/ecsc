@@ -7,7 +7,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A type of object that maps qualified names to types.
 	/// </summary>
-	public class QualifiedBinder
+	public sealed class QualifiedBinder
 	{
 		private QualifiedBinder(
 			IBinder Binder, List<QualifiedName> namespaceUsings, 

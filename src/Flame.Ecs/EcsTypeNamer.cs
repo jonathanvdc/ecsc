@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Flame.Ecs
 {
-	public class EcsTypeNamer : TypeNamerBase
+	public sealed class EcsTypeNamer : TypeNamerBase
 	{
 		private EcsTypeNamer()
 		{

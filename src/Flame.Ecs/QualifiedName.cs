@@ -9,7 +9,7 @@ namespace Flame.Ecs
 	/// <remarks>
 	/// This data structure is essentially a singly linked list.
 	/// </remarks>
-	public class QualifiedName : IEquatable<QualifiedName>
+	public sealed class QualifiedName : IEquatable<QualifiedName>
 	{
 		public QualifiedName(string Qualifier, QualifiedName Name)
 		{

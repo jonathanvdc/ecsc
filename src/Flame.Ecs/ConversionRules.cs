@@ -32,7 +32,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// Conversion rules for the EC# programming language.
 	/// </summary>
-	public class EcsConversionRules : IConversionRules
+	public sealed class EcsConversionRules : IConversionRules
 	{
 		private EcsConversionRules() { }
 

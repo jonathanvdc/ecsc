@@ -10,7 +10,7 @@ namespace Flame.Ecs
 	/// A global scope: a scope that is not associated 
 	/// with any particular function.
 	/// </summary>
-	public class GlobalScope
+	public sealed class GlobalScope
 	{
 		public GlobalScope(
 			IBinder Binder, IConversionRules ConversionRules, 

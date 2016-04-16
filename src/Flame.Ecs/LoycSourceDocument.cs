@@ -9,7 +9,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A Flame source document wrapper for Loyc source files.
 	/// </summary>
-	public class LoycSourceDocument : ISourceDocument, IEquatable<LoycSourceDocument>
+	public sealed class LoycSourceDocument : ISourceDocument, IEquatable<LoycSourceDocument>
 	{
 		public LoycSourceDocument(ISourceFile SourceFile)
 		{

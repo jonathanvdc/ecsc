@@ -76,6 +76,7 @@
     <Compile Include="TypeMemberConverters.cs" />
     <Compile Include="AttributeConverters.cs" />
     <Compile Include="EcsWarnings.cs" />
+    <Compile Include="LocalScope.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -13,12 +13,13 @@ namespace Flame.Ecs
 	using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
 	using TypeMemberConverter = Func<LNode, DescribedType, GlobalScope, NodeConverter, GlobalScope>;
 	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
+	using ExpressionConverter = Func<LNode, ILocalScope, NodeConverter, IExpression>;
 
 	/// <summary>
 	/// Defines a type that semantically analyzes a syntax tree by
 	/// applying sub-converters to syntax nodes.
 	/// </summary>
-	public class NodeConverter
+	public sealed class NodeConverter
 	{
 		public NodeConverter()
 		{
@@ -59,7 +60,7 @@ namespace Flame.Ecs
 				NodeHelpers.HighlightEven(
 					"syntax node '", Node.Name.Name, 
 					"' could not be converted because its node type was not recognized " +
-					"as a known node type (in this context)."),
+					"as a known node type. (in this context)"),
 				NodeHelpers.ToSourceLocation(Node.Range)));
 		}
 
@@ -185,7 +186,7 @@ namespace Flame.Ecs
 			foreach (var item in partitioned.Item1)
 			{
 				var symbol = item.Name;
-				if (!accModSet.Add(symbol))
+				if (!accModSet.Add(symbol) && EcsWarnings.DuplicateAccessModifierWarning.UseWarning(Scope.Log.Options))
 				{
 					// Looks like this access modifier is a duplicate.
 					// Let's issue a warning.

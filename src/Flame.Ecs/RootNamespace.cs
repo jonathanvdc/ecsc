@@ -65,7 +65,7 @@ namespace Flame.Ecs
 		}
 	}
 
-	public class RootNamespace : MutableNamespaceBase
+	public sealed class RootNamespace : MutableNamespaceBase
 	{
 		public RootNamespace(IAssembly DeclaringAssembly)
 		{
@@ -92,7 +92,7 @@ namespace Flame.Ecs
 		}
 	}
 
-	public class ChildNamespace : MutableNamespaceBase
+	public sealed class ChildNamespace : MutableNamespaceBase
 	{
 		public ChildNamespace(string Name, INamespace DeclaringNamespace)
 		{
@@ -121,7 +121,7 @@ namespace Flame.Ecs
 		}
 	}
 
-	public class TypeNamespace : IMutableNamespace
+	public sealed class TypeNamespace : IMutableNamespace
 	{
 		public TypeNamespace(DescribedType Type)
 		{

@@ -11,7 +11,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A Loyc message sink that pipes its output to a Flame compiler log.
 	/// </summary>
-	public class CompilerLogMessageSink : IMessageSink
+	public sealed class CompilerLogMessageSink : IMessageSink
 	{
 		public CompilerLogMessageSink(ICompilerLog Log)
 		{
