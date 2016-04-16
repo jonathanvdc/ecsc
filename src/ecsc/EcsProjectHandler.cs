@@ -31,12 +31,7 @@ namespace ecsc
 {
 	public class EcsProjectHandler : IProjectHandler
 	{
-		static EcsProjectHandler()
-		{
-			converter = NodeConverter.DefaultNodeConverter;
-		}
-
-		private static NodeConverter converter;
+		private static readonly Lazy<NodeConverter> converter = new Lazy<NodeConverter>(() => NodeConverter.DefaultNodeConverter);
 
 		public IEnumerable<string> Extensions
 		{
@@ -209,7 +204,7 @@ namespace ecsc
 
 		public static INamespaceBranch ParseCompilationUnit(IEnumerable<LNode> Nodes, GlobalScope Scope, IAssembly DeclaringAssembly)
 		{
-			return converter.ConvertCompilationUnit(Scope, DeclaringAssembly, Nodes);
+			return converter.Value.ConvertCompilationUnit(Scope, DeclaringAssembly, Nodes);
 		}
 
 		public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
