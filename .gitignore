@@ -14,3 +14,6 @@ bin/
 
 # .fuse_hidden files
 .fuse_hidden*
+
+# Log files
+*.log
