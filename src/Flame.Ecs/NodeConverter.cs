@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Loyc.Syntax;
 using Loyc;
-using Flame.Compiler;
 using Flame.Build;
+using Flame.Compiler;
+using Flame.Compiler.Expressions;
 using Pixie;
 
 namespace Flame.Ecs
@@ -21,18 +22,24 @@ namespace Flame.Ecs
 	/// </summary>
 	public sealed class NodeConverter
 	{
-		public NodeConverter()
+		public NodeConverter(
+			Func<string, ILocalScope, IExpression> LookupUnqualifiedName)
 		{
+			this.LookupUnqualifiedName = LookupUnqualifiedName;
 			this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
 			this.typeConverters = new Dictionary<Symbol, TypeConverter>();
 			this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
 			this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
+			this.exprConverters = new Dictionary<Symbol, ExpressionConverter>();
 		}
 
 		private Dictionary<Symbol, GlobalConverter> globalConverters;
 		private Dictionary<Symbol, TypeConverter> typeConverters;
 		private Dictionary<Symbol, TypeMemberConverter> typeMemberConverters;
 		private Dictionary<Symbol, AttributeConverter> attrConverters;
+		private Dictionary<Symbol, ExpressionConverter> exprConverters;
+
+		public Func<string, ILocalScope, IExpression> LookupUnqualifiedName { get; private set; }
 
 		/// <summary>
 		/// Tries to get the appropriate converter for the given
@@ -234,6 +241,39 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Converts the given expression node.
+		/// </summary>
+		public IExpression ConvertExpression(LNode Node, ILocalScope Scope)
+		{
+			var conv = GetConverterOrDefault(exprConverters, Node);
+			if (conv == null)
+			{
+				if (Node.HasSpecialName || !Node.IsId)
+				{
+					LogCannotConvert(Node, Scope.Function.Global.Log);
+					return VoidExpression.Instance;
+				}
+				else
+				{
+					var result = LookupUnqualifiedName(Node.Name.Name, Scope);
+					if (result == null)
+					{
+						Scope.Function.Global.Log.LogError(new LogEntry(
+							"undefined identifier",
+							NodeHelpers.HighlightEven("identifier '", Node.Name.Name, "' was not defined in this scope."),
+							NodeHelpers.ToSourceLocation(Node.Range)));
+						return VoidExpression.Instance;
+					}
+					return result;
+				}
+			}
+			else
+			{
+				return conv(Node, Scope, this);
+			}
+		}
+
+		/// <summary>
 		/// Registers a global converter.
 		/// </summary>
 		public void AddConverter(Symbol Symbol, GlobalConverter Converter)
@@ -263,6 +303,14 @@ namespace Flame.Ecs
 		public void AddConverter(Symbol Symbol, AttributeConverter Converter)
 		{
 			attrConverters[Symbol] = Converter;
+		}
+
+		/// <summary>
+		/// Registers an expression converter.
+		/// </summary>
+		public void AddConverter(Symbol Symbol, ExpressionConverter Converter)
+		{
+			exprConverters[Symbol] = Converter;
 		}
 
 		/// <summary>
@@ -296,7 +344,7 @@ namespace Flame.Ecs
 		{
 			get
 			{
-				var result = new NodeConverter();
+				var result = new NodeConverter(ExpressionConverters.LookupUnqualifiedName);
 				result.AddConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
 				result.AddConverter(CodeSymbols.Class, GlobalConverters.ConvertClassDefinition);
 				result.AddConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
