@@ -15,8 +15,16 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IParameter ConvertParameter(LNode Node, GlobalScope Scope, NodeConverter Converter)
 		{
-			var paramTy = Converter.ConvertType(Node.Args[0], Scope);
 			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+			var paramTy = Converter.ConvertType(Node.Args[0], Scope);
+			if (paramTy == null)
+			{
+				Scope.Log.LogError(new LogEntry(
+					"unresolved parameter type",
+					NodeHelpers.HighlightEven("could not resolve parameter type '", Node.Args[0].ToString(), "' for parameter '", name.Item1, "'."),
+					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+				paramTy = PrimitiveTypes.Void;
+			}
 			var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
 			{
 				if (node.IsIdNamed(CodeSymbols.Ref) || node.IsIdNamed(CodeSymbols.Out))
