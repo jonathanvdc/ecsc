@@ -44,12 +44,21 @@ namespace Flame.Ecs
 				}
 
 				// Analyze the attribute list.
+				bool isClass = TypeKind.AttributeType.Equals(
+					PrimitiveAttributes.Instance.ReferenceTypeAttribute.AttributeType);
+				bool isVirtual = isClass;
 				var convAttrs = Converter.ConvertAttributeListWithAccess(
 					               Node.Attrs, AccessModifier.Assembly, node =>
 				{
 					if (node.IsIdNamed(CodeSymbols.Static))
 					{
 						descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
+						isVirtual = false;
+						return true;
+					}
+					else if (isClass && node.IsIdNamed(CodeSymbols.Sealed))
+					{
+						isVirtual = false;
 						return true;
 					}
 					else
@@ -60,6 +69,10 @@ namespace Flame.Ecs
 				foreach (var item in convAttrs)
 				{
 					descTy.AddAttribute(item);
+				}
+				if (isVirtual)
+				{
+					descTy.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
 				}
 
 				foreach (var item in Node.Args[1].Args)
