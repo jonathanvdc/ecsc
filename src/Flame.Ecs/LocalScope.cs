@@ -19,6 +19,12 @@ namespace Flame.Ecs
 		FunctionScope Function { get; }
 
 		/// <summary>
+		/// Gets this local scope's return type.
+		/// </summary>
+		/// <value>The type of the return value.</value>
+		IType ReturnType { get; }
+
+		/// <summary>
 		/// Gets the set of all local variable identifiers
 		/// that are defined in this scope.
 		/// </summary>
@@ -40,10 +46,12 @@ namespace Flame.Ecs
 	{
 		public FunctionScope(
 			GlobalScope Global, IType CurrentType, 
+			IType ReturnType,
 			IReadOnlyDictionary<string, IVariable> ParameterVariables)
 		{
 			this.Global = Global;
 			this.CurrentType = CurrentType;
+			this.ReturnType = ReturnType;
 			this.ParameterVariables = ParameterVariables;
 		}
 
@@ -59,6 +67,11 @@ namespace Flame.Ecs
 		/// its own generic parameters.
 		/// </summary>
 		public IType CurrentType { get; private set; }
+
+		/// <summary>
+		/// Gets the return type of this scope.
+		/// </summary>
+		public IType ReturnType { get; private set; }
 
 		/// <summary>
 		/// Gets a read-only dictionary that maps identifiers
@@ -121,6 +134,15 @@ namespace Flame.Ecs
 		/// Gets this local scope's function scope.
 		/// </summary>
 		public FunctionScope Function { get { return Parent.Function; } }
+
+		/// <summary>
+		/// Gets this local scope's return type.
+		/// </summary>
+		/// <value>The type of the return value.</value>
+		public IType ReturnType
+		{
+			get { return Parent.ReturnType; }
+		}
 
 		/// <summary>
 		/// Gets the set of all local variable identifiers

@@ -364,6 +364,7 @@ namespace Flame.Ecs
 
 				// Expressions
 				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
+				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
 
 				// Primitive types
 				result.AliasType(CodeSymbols.Int8, PrimitiveTypes.Int8);

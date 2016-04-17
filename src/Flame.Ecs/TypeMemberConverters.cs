@@ -96,11 +96,9 @@ namespace Flame.Ecs
 						"unresolved return type",
 						NodeHelpers.HighlightEven("could not resolve return type '", Node.Args[0].ToString(), "' for method '", name.Item1, "'."),
 						NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+					retType = PrimitiveTypes.Void;
 				}
-				else
-				{
-					methodDef.ReturnType = retType;
-				}
+				methodDef.ReturnType = retType;
 
 				// Resolve the parameters
 				var thisTy = ThisVariable.GetThisType(DeclaringType);
@@ -119,7 +117,7 @@ namespace Flame.Ecs
 				}
 
 				// Analyze the function body.
-				var funScope = new FunctionScope(innerScope, thisTy, paramVarDict);
+				var funScope = new FunctionScope(innerScope, thisTy, retType, paramVarDict);
 				var localScope = new LocalScope(funScope);
 				methodDef.Body = ExpressionConverters.AutoReturn(
 					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 

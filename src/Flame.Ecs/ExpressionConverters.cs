@@ -25,6 +25,11 @@ namespace Flame.Ecs
 			return new ExpressionStatement(Expression);
 		}
 
+		public static IExpression ToExpression(IStatement Statement)
+		{
+			return new InitializedExpression(Statement, VoidExpression.Instance);
+		}
+
 		/// <summary>
 		/// Appends a `return(void);` statement to the given function 
 		/// body expression, provided the return type is either `null` 
@@ -86,6 +91,26 @@ namespace Flame.Ecs
 				return new InitializedExpression(
 					new BlockStatement(preStmts).Simplify(), retExpr, 
 					new BlockStatement(postStmts).Simplify()).Simplify();
+			}
+		}
+
+		/// <summary>
+		/// Converts a return-expression (type #return).
+		/// </summary>
+		public static IExpression ConvertReturn(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (Node.ArgCount == 0)
+			{
+				return ToExpression(new ReturnStatement());
+			}
+			else
+			{
+				NodeHelpers.CheckArity(Node, 1, Scope.Function.Global.Log);
+
+				return ToExpression(new ReturnStatement(
+					Scope.Function.Global.ConvertImplicit(
+						Converter.ConvertExpression(Node.Args[0], Scope), 
+						Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
 			}
 		}
 	}
