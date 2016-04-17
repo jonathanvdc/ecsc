@@ -1,0 +1,5 @@
+
+public sealed class TestClass
+{
+
+}
