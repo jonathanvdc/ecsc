@@ -15,6 +15,7 @@ namespace Flame.Ecs
 	using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
 	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
 	using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
+	using LiteralConverter = Func<object, IExpression>;
 
 	/// <summary>
 	/// Defines a type that semantically analyzes a syntax tree by
@@ -23,14 +24,17 @@ namespace Flame.Ecs
 	public sealed class NodeConverter
 	{
 		public NodeConverter(
-			Func<string, ILocalScope, IExpression> LookupUnqualifiedName)
+			Func<string, ILocalScope, IExpression> LookupUnqualifiedName,
+			ExpressionConverter CallConverter)
 		{
 			this.LookupUnqualifiedName = LookupUnqualifiedName;
+			this.CallConverter = CallConverter;
 			this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
 			this.typeConverters = new Dictionary<Symbol, TypeConverter>();
 			this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
 			this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
 			this.exprConverters = new Dictionary<Symbol, ExpressionConverter>();
+			this.literalConverters = new Dictionary<Type, LiteralConverter>();
 		}
 
 		private Dictionary<Symbol, GlobalConverter> globalConverters;
@@ -38,8 +42,10 @@ namespace Flame.Ecs
 		private Dictionary<Symbol, TypeMemberConverter> typeMemberConverters;
 		private Dictionary<Symbol, AttributeConverter> attrConverters;
 		private Dictionary<Symbol, ExpressionConverter> exprConverters;
+		private Dictionary<Type, LiteralConverter> literalConverters;
 
 		public Func<string, ILocalScope, IExpression> LookupUnqualifiedName { get; private set; }
+		public ExpressionConverter CallConverter { get; private set; }
 
 		/// <summary>
 		/// Tries to get the appropriate converter for the given
@@ -248,28 +254,49 @@ namespace Flame.Ecs
 			var conv = GetConverterOrDefault(exprConverters, Node);
 			if (conv == null)
 			{
-				if (Node.HasSpecialName || !Node.IsId)
+				if (!Node.HasSpecialName)
 				{
-					LogCannotConvert(Node, Scope.Function.Global.Log);
-					return VoidExpression.Instance;
-				}
-				else
-				{
-					var result = LookupUnqualifiedName(Node.Name.Name, Scope);
-					if (result == null)
+					if (Node.IsId)
 					{
-						Scope.Function.Global.Log.LogError(new LogEntry(
-							"undefined identifier",
-							NodeHelpers.HighlightEven("identifier '", Node.Name.Name, "' was not defined in this scope."),
-							NodeHelpers.ToSourceLocation(Node.Range)));
-						return VoidExpression.Instance;
+						var result = LookupUnqualifiedName(Node.Name.Name, Scope);
+						if (result == null)
+						{
+							Scope.Function.Global.Log.LogError(new LogEntry(
+								"undefined identifier",
+								NodeHelpers.HighlightEven("identifier '", Node.Name.Name, "' was not defined in this scope."),
+								NodeHelpers.ToSourceLocation(Node.Range)));
+							return VoidExpression.Instance;
+						}
+						return SourceExpression.Create(result, NodeHelpers.ToSourceLocation(Node.Range));
 					}
-					return result;
+					else if (Node.IsCall)
+					{
+						return SourceExpression.Create(CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range));
+					}
+					else if (Node.IsLiteral)
+					{
+						object val = Node.Value;
+						LiteralConverter litConv;
+						if (literalConverters.TryGetValue(val.GetType(), out litConv))
+						{
+							return SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range));
+						}
+						else
+						{
+							Scope.Function.Global.Log.LogError(new LogEntry(
+								"unsupported literal type",
+								NodeHelpers.HighlightEven("literals of type '", val.GetType().FullName, "' are not supported."),
+								NodeHelpers.ToSourceLocation(Node.Range)));
+							return VoidExpression.Instance;
+						}
+					}
 				}
+				LogCannotConvert(Node, Scope.Function.Global.Log);
+				return VoidExpression.Instance;
 			}
 			else
 			{
-				return conv(Node, Scope, this);
+				return SourceExpression.Create(conv(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range));
 			}
 		}
 
@@ -314,6 +341,22 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Registers a literal converter.
+		/// </summary>
+		public void AddConverter(Type LiteralType, LiteralConverter Converter)
+		{
+			literalConverters[LiteralType] = Converter;
+		}
+
+		/// <summary>
+		/// Registers a literal converter.
+		/// </summary>
+		public void AddConverter<T>(Func<T, IExpression> Converter)
+		{
+			AddConverter(typeof(T), val => Converter((T)val));
+		}
+
+		/// <summary>
 		/// Maps the given symbol to the given attribute.
 		/// </summary>
 		public void AliasAttribute(Symbol Symbol, IAttribute Attribute)
@@ -352,7 +395,9 @@ namespace Flame.Ecs
 		{
 			get
 			{
-				var result = new NodeConverter(ExpressionConverters.LookupUnqualifiedName);
+				var result = new NodeConverter(
+					ExpressionConverters.LookupUnqualifiedName,
+					ExpressionConverters.ConvertCall);
 
 				// Global entities
 				result.AddConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
@@ -365,6 +410,21 @@ namespace Flame.Ecs
 				// Expressions
 				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
 				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
+
+				// Literals
+				result.AddConverter<sbyte>(val => new Int8Expression(val));
+				result.AddConverter<short>(val => new Int16Expression(val));
+				result.AddConverter<int>(val => new Int32Expression(val));
+				result.AddConverter<long>(val => new Int64Expression(val));
+				result.AddConverter<byte>(val => new UInt8Expression(val));
+				result.AddConverter<ushort>(val => new UInt16Expression(val));
+				result.AddConverter<uint>(val => new UInt32Expression(val));
+				result.AddConverter<ulong>(val => new UInt64Expression(val));
+				result.AddConverter<float>(val => new Float32Expression(val));
+				result.AddConverter<double>(val => new Float64Expression(val));
+				result.AddConverter<bool>(val => new BooleanExpression(val));
+				result.AddConverter<char>(val => new CharExpression(val));
+				result.AddConverter<string>(val => new StringExpression(val));
 
 				// Primitive types
 				result.AliasType(CodeSymbols.Int8, PrimitiveTypes.Int8);

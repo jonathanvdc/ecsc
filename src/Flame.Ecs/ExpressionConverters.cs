@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
 using Loyc.Syntax;
-using System.Collections.Generic;
+using Pixie;
+using Flame.Build;
 
 namespace Flame.Ecs
 {
@@ -111,6 +114,125 @@ namespace Flame.Ecs
 					Scope.Function.Global.ConvertImplicit(
 						Converter.ConvertExpression(Node.Args[0], Scope), 
 						Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
+			}
+		}
+
+		private static string CreateExpectedSignatureDescription(
+			TypeConverterBase<string> TypeNamer, IType ReturnType, 
+			IType[] ArgumentTypes)
+		{
+			// Create a method signature, then turn that
+			// into a delegate, and finally feed that to
+			// the type namer.
+
+			var descMethod = new DescribedMethod("", null, ReturnType, true);
+
+			for (int i = 0; i < ArgumentTypes.Length; i++)
+			{
+				descMethod.AddParameter(
+					new DescribedParameter("param" + i, ArgumentTypes[i]));
+			}
+
+			return TypeNamer.Convert(MethodType.Create(descMethod));
+		}
+
+		private static MarkupNode CreateSignatureDiff(
+			TypeConverterBase<string> TypeNamer, IType[] ArgumentTypes, 
+			IMethod Target)
+		{
+			var methodDiffBuilder = new MethodDiffComparer(TypeNamer);
+			var argDiff = methodDiffBuilder.CompareArguments(ArgumentTypes, Target);
+
+			var nodes = new List<MarkupNode>();
+			if (Target.IsStatic)
+			{
+				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "static "));
+			}
+			if (Target.IsConstructor)
+			{
+				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "new " + TypeNamer.Convert(Target.DeclaringType)));
+			}
+			else
+			{
+				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, TypeNamer.Convert(Target.ReturnType) + " " + Target.FullName));
+			}
+
+			nodes.Add(argDiff);
+			return new MarkupNode("#group", nodes);
+		}
+
+		/// <summary>
+		/// Converts a call-expression.
+		/// </summary>
+		public static IExpression ConvertCall(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
+			var delegates = IntersectionExpression.GetIntersectedExpressions(target);
+			var args = Node.Args.Select(item => Converter.ConvertExpression(item, Scope)).ToArray();
+			var argTypes = args.GetTypes();
+
+			// TODO: implement and use C#-specific overload resolution
+			// here. (i.e. read and implement the language spec)
+			var bestDelegate = delegates.GetBestDelegate(argTypes);
+
+			if (bestDelegate == null)
+			{
+				var matches = target.GetMethodGroup();
+				var namer = Scope.Function.Global.TypeNamer;
+
+				var retType = matches.Any() ? matches.First().ReturnType : PrimitiveTypes.Void;
+				var expectedSig = CreateExpectedSignatureDescription(namer, retType, argTypes);
+
+				// Create an inner expression that consists of the invocation's target and arguments,
+				// whose values are calculated and then popped. Said expression will return an 
+				// unknown value of the return type.
+				var innerStmts = new List<IStatement>();
+				innerStmts.Add(new ExpressionStatement(target));
+				innerStmts.AddRange(args.Select(arg => new ExpressionStatement(arg)));
+				var innerExpr = new InitializedExpression(
+					new BlockStatement(innerStmts), new UnknownExpression(retType));
+
+				var log = Scope.Function.Global.Log;
+				if (matches.Any())
+				{
+					var failedMatchesList = matches.Select(
+						m => CreateSignatureDiff(namer, argTypes, m));
+
+					var explanationNodes = NodeHelpers.HighlightEven(
+                		"method call could not be resolved. " +
+						"Expected signature compatible with '", expectedSig,
+                		"'. Incompatible or ambiguous matches:");
+
+					var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
+					log.LogError(new LogEntry(
+						"method resolution error",
+						explanationNodes.Concat(new MarkupNode[] { failedMatchesNode }),
+						NodeHelpers.ToSourceLocation(Node.Range)));
+				}
+				else
+				{
+					log.LogError(new LogEntry(
+						"method resolution error",
+						NodeHelpers.HighlightEven(
+							"method call could not be resolved because the invocation's target was not recognized as a function. " +
+							"Expected signature compatible with '", expectedSig,
+							"', got an expression of type '", namer.Convert(target.Type), "'."),
+						NodeHelpers.ToSourceLocation(Node.Range)));
+				}
+				return innerExpr;
+			}
+			else
+			{
+				var delegateParams = bestDelegate.GetDelegateParameterTypes().ToArray();
+
+				var delegateArgs = new IExpression[args.Length];
+				for (int i = 0; i < delegateArgs.Length; i++)
+				{
+					delegateArgs[i] = Scope.Function.Global.ConvertImplicit(
+						args[i], delegateParams[i], NodeHelpers.ToSourceLocation(Node.Args[i].Range));
+				}
+
+				return bestDelegate.CreateDelegateInvocationExpression(delegateArgs);
 			}
 		}
 	}
