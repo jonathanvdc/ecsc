@@ -60,8 +60,9 @@ namespace Flame.Ecs
 					nestedTypes = new List<IType>();
 					typeParams = new List<IGenericParameter>();
 
-					analyzeBody(this);
+					var temp = analyzeBody;
 					analyzeBody = null;
+					temp(this);
 				}
 			}
 		}
