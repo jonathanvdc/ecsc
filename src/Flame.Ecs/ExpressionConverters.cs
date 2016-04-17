@@ -2,6 +2,8 @@
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
+using Loyc.Syntax;
+using System.Collections.Generic;
 
 namespace Flame.Ecs
 {
@@ -37,6 +39,54 @@ namespace Flame.Ecs
 				return new ReturnStatement(Scope.ConvertImplicit(Body, ReturnType, Location));
 			else
 				return ToStatement(Body);
+		}
+
+		/// <summary>
+		/// Converts a block-expression (type @`{}`).
+		/// </summary>
+		public static IExpression ConvertBlock(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			var innerScope = new LocalScope(Scope);
+
+			var preStmts = new List<IStatement>();
+			IExpression retExpr = null;
+			var postStmts = new List<IStatement>();
+			int i = 0;
+			while (i < Node.ArgCount)
+			{
+				var item = Node.Args[i];
+				i++;
+				if (item .Calls(CodeSymbols.Result))
+				{
+					NodeHelpers.CheckArity(item, 1, Scope.Function.Global.Log);
+
+					retExpr = Converter.ConvertExpression(item.Args[0], innerScope);
+					break;
+				}
+				else
+				{
+					preStmts.Add(ToStatement(Converter.ConvertExpression(item, innerScope)));
+				}
+			}
+			while (i < Node.ArgCount)
+			{
+				postStmts.Add(ToStatement(Converter.ConvertExpression(Node.Args[i], innerScope)));
+				i++;
+			}
+			postStmts.Add(innerScope.Release());
+			if (retExpr == null)
+			{
+				preStmts.AddRange(postStmts);
+				return new InitializedExpression(
+					new BlockStatement(preStmts).Simplify(), 
+					VoidExpression.Instance);
+			}
+			else
+			{
+				return new InitializedExpression(
+					new BlockStatement(preStmts).Simplify(), retExpr, 
+					new BlockStatement(postStmts).Simplify()).Simplify();
+			}
 		}
 	}
 }

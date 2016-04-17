@@ -28,20 +28,6 @@ namespace Flame.Ecs
 		/// Gets the variable with the given name.
 		/// </summary>
 		IVariable GetVariable(string Name);
-
-		/// <summary>
-		/// Declares a local variable with the given
-		/// name and signature. A new local scope is 
-		/// created to accomodate it, and that scope
-		/// is returned.
-		/// </summary>
-		ILocalScope DeclareLocal(string Name, IVariableMember Member);
-
-		/// <summary>
-		/// Creates a statement that releases 
-		/// resources consumed by this local scope.
-		/// </summary>
-		IStatement Release();
 	}
 
 	/// <summary>
@@ -93,16 +79,6 @@ namespace Flame.Ecs
 		public IEnumerable<string> VariableNames { get { return ParameterVariables.Keys; } }
 
 		/// <summary>
-		/// Creates a statement that releases 
-		/// resources consumed by this local scope.
-		/// </summary>
-		public IStatement Release()
-		{
-			// Nothing to release here.
-			return EmptyStatement.Instance;
-		}
-
-		/// <summary>
 		/// Gets the variable with the given name.
 		/// </summary>
 		public IVariable GetVariable(string Name)
@@ -112,17 +88,6 @@ namespace Flame.Ecs
 				return result;
 			else
 				return null;
-		}
-
-		/// <summary>
-		/// Declares a local variable with the given
-		/// name and signature. A new local scope is 
-		/// created to accomodate it, and that scope
-		/// is returned.
-		/// </summary>
-		public ILocalScope DeclareLocal(string Name, IVariableMember Member)
-		{
-			return new LocalScope(this).DeclareLocal(Name, Member);
 		}
 	}
 
@@ -177,11 +142,9 @@ namespace Flame.Ecs
 
 		/// <summary>
 		/// Declares a local variable with the given
-		/// name and signature. A new local scope is 
-		/// created to accomodate it, and that scope
-		/// is returned.
+		/// name and signature.
 		/// </summary>
-		public ILocalScope DeclareLocal(string Name, IVariableMember Member)
+		public IVariable DeclareLocal(string Name, IVariableMember Member)
 		{
 			if (locals.ContainsKey(Name))
 			{
@@ -212,11 +175,9 @@ namespace Flame.Ecs
 			}
 
 			var localVar = new LocalVariable(Member, new UniqueTag(Name));
-			var newOrdVars = new List<LocalVariable>(orderedVars);
-			newOrdVars.Add(localVar);
-			var newVarDict = new Dictionary<string, LocalVariable>(locals);
-			newVarDict[Name] = localVar;
-			return new LocalScope(Parent, newOrdVars, newVarDict);
+			orderedVars.Add(localVar);
+			locals[Name] = localVar;
+			return localVar;
 		}
 
 		/// <summary>

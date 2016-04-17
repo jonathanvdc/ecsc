@@ -120,9 +120,10 @@ namespace Flame.Ecs
 
 			// Analyze the function body.
 			var funScope = new FunctionScope(innerScope, thisTy, paramVarDict);
+			var localScope = new LocalScope(funScope);
 			methodDef.Body = ExpressionConverters.AutoReturn(
-				methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], funScope), 
-				NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);			
+					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
+					NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
 
 			// Finally, add the function to the declaring type.
 			DeclaringType.AddMethod(methodDef);

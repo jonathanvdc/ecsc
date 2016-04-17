@@ -14,7 +14,7 @@ namespace Flame.Ecs
 	using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
 	using TypeMemberConverter = Func<LNode, DescribedType, GlobalScope, NodeConverter, GlobalScope>;
 	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
-	using ExpressionConverter = Func<LNode, ILocalScope, NodeConverter, IExpression>;
+	using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
 
 	/// <summary>
 	/// Defines a type that semantically analyzes a syntax tree by
@@ -243,7 +243,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Converts the given expression node.
 		/// </summary>
-		public IExpression ConvertExpression(LNode Node, ILocalScope Scope)
+		public IExpression ConvertExpression(LNode Node, LocalScope Scope)
 		{
 			var conv = GetConverterOrDefault(exprConverters, Node);
 			if (conv == null)
@@ -361,6 +361,9 @@ namespace Flame.Ecs
 
 				// Type members
 				result.AddConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
+
+				// Expressions
+				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
 
 				// Primitive types
 				result.AliasType(CodeSymbols.Int8, PrimitiveTypes.Int8);
