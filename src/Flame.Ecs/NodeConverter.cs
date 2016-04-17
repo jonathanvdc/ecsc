@@ -316,9 +316,17 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Maps the given symbol to the given attribute.
 		/// </summary>
-		public void RegisterAttribute(Symbol Symbol, IAttribute Attribute)
+		public void AliasAttribute(Symbol Symbol, IAttribute Attribute)
 		{
 			AddConverter(Symbol, (node, scope, self) => Attribute);
+		}
+
+		/// <summary>
+		/// Maps the given symbol to the given type.
+		/// </summary>
+		public void AliasType(Symbol Symbol, IType Type)
+		{
+			AddConverter(Symbol, (node, scope, self) => Type);
 		}
 
 		/// <summary>
@@ -345,9 +353,31 @@ namespace Flame.Ecs
 			get
 			{
 				var result = new NodeConverter(ExpressionConverters.LookupUnqualifiedName);
+
+				// Global entities
 				result.AddConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
 				result.AddConverter(CodeSymbols.Class, GlobalConverters.ConvertClassDefinition);
 				result.AddConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
+
+				// Type members
+				result.AddConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
+
+				// Primitive types
+				result.AliasType(CodeSymbols.Int8, PrimitiveTypes.Int8);
+				result.AliasType(CodeSymbols.Int16, PrimitiveTypes.Int16);
+				result.AliasType(CodeSymbols.Int32, PrimitiveTypes.Int32);
+				result.AliasType(CodeSymbols.Int64, PrimitiveTypes.Int64);
+				result.AliasType(CodeSymbols.UInt8, PrimitiveTypes.UInt8);
+				result.AliasType(CodeSymbols.UInt16, PrimitiveTypes.UInt16);
+				result.AliasType(CodeSymbols.UInt32, PrimitiveTypes.UInt32);
+				result.AliasType(CodeSymbols.UInt64, PrimitiveTypes.UInt64);
+				result.AliasType(CodeSymbols.Single, PrimitiveTypes.Float32);
+				result.AliasType(CodeSymbols.Double, PrimitiveTypes.Float64);
+				result.AliasType(CodeSymbols.Char, PrimitiveTypes.Char);
+				result.AliasType(CodeSymbols.Bool, PrimitiveTypes.Boolean);
+				result.AliasType(CodeSymbols.String, PrimitiveTypes.String);
+				result.AliasType(CodeSymbols.Void, PrimitiveTypes.Void);
+
 				return result;
 			}
 		}
