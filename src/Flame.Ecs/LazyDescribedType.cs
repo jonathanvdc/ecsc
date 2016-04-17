@@ -52,7 +52,7 @@ namespace Flame.Ecs
 		{
 			lock (baseTypes)
 			{
-				if (methods == null)
+				if (analyzeBody != null)
 				{
 					methods = new List<IMethod>();
 					fields = new List<IField>();
@@ -61,6 +61,7 @@ namespace Flame.Ecs
 					typeParams = new List<IGenericParameter>();
 
 					analyzeBody(this);
+					analyzeBody = null;
 				}
 			}
 		}
