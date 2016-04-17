@@ -12,7 +12,7 @@ namespace Flame.Ecs
 {
 	using GlobalConverter = Func<LNode, IMutableNamespace, GlobalScope, NodeConverter, GlobalScope>;
 	using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
-	using TypeMemberConverter = Func<LNode, DescribedType, GlobalScope, NodeConverter, GlobalScope>;
+	using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
 	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
 	using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
 
@@ -94,7 +94,7 @@ namespace Flame.Ecs
 		/// that represents a potential
 		/// </summary>
 		public GlobalScope ConvertTypeMember(
-			LNode Node, DescribedType DeclaringType, GlobalScope Scope)
+			LNode Node, LazyDescribedType DeclaringType, GlobalScope Scope)
 		{
 			var conv = GetConverterOrDefault(typeMemberConverters, Node);
 			if (conv == null)

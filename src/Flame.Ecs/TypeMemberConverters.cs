@@ -49,7 +49,7 @@ namespace Flame.Ecs
 		/// Converts an '#fn' function declaration node.
 		/// </summary>
 		public static GlobalScope ConvertFunction(
-			LNode Node, DescribedType DeclaringType, 
+			LNode Node, LazyDescribedType DeclaringType, 
 			GlobalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))

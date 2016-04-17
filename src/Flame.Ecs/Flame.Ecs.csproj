@@ -78,6 +78,7 @@
     <Compile Include="EcsWarnings.cs" />
     <Compile Include="LocalScope.cs" />
     <Compile Include="ExpressionConverters.cs" />
+    <Compile Include="LazyDescribedType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

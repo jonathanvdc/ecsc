@@ -14,7 +14,8 @@ namespace Flame.Ecs
 	/// </summary>
 	public interface IMutableNamespace
 	{
-		DescribedType DefineType(string Name);
+		IType DefineType(
+			string Name, Action<LazyDescribedType> AnalyzeBody);
 		IMutableNamespace DefineNamespace(string Name);
 	}
 
@@ -50,9 +51,10 @@ namespace Flame.Ecs
 			nsBranches.Add(Namespace);
 		}
 
-		public DescribedType DefineType(string Name)
+		public IType DefineType(
+			string Name, Action<LazyDescribedType> AnalyzeBody)
 		{
-			var result = new DescribedType(Name, this);
+			var result = new LazyDescribedType(Name, this, AnalyzeBody);
 			AddType(result);
 			return result;
 		}
@@ -123,23 +125,26 @@ namespace Flame.Ecs
 
 	public sealed class TypeNamespace : IMutableNamespace
 	{
-		public TypeNamespace(DescribedType Type)
+		public TypeNamespace(LazyDescribedType Type)
 		{
 			this.Type = Type;
 		}
 
-		public DescribedType Type { get; private set; }
+		public LazyDescribedType Type { get; private set; }
 
-		public DescribedType DefineType(string Name)
+
+		public IType DefineType(
+			string Name, Action<LazyDescribedType> AnalyzeBody)
 		{
-			var result = new DescribedType(Name, Type);
+			var result = new LazyDescribedType(Name, Type, AnalyzeBody);
 			Type.AddNestedType(result);
 			return result;
 		}
 
 		public IMutableNamespace DefineNamespace(string Name)
 		{
-			return new TypeNamespace(DefineType(Name));
+			return new TypeNamespace((LazyDescribedType)DefineType(
+				Name, _ => { }));
 		}
 	}
 }

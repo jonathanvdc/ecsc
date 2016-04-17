@@ -33,57 +33,58 @@ namespace Flame.Ecs
 
 			// Convert the type's name.
 			var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
-			var descTy = Namespace.DefineType(name.Item1);
-
-			var innerScope = Scope;
-			foreach (var item in name.Item2(descTy))
+			Namespace.DefineType(name.Item1, descTy =>
 			{
-				// Create generic parameters.
-				descTy.AddGenericParameter(item);
-				innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-			}
-
-			// Analyze the attribute list.
-			var convAttrs = Converter.ConvertAttributeListWithAccess(
-				Node.Attrs, AccessModifier.Assembly, node =>
-			{
-				if (node.IsIdNamed(CodeSymbols.Static))
+				var innerScope = Scope;
+				foreach (var item in name.Item2(descTy))
 				{
-					descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
-					return true;
+					// Create generic parameters.
+					descTy.AddGenericParameter(item);
+					innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
 				}
-				else
-				{
-					return false;
-				}
-			}, Scope);
-			foreach (var item in convAttrs)
-			{
-				descTy.AddAttribute(item);
-			}
 
-			foreach (var item in Node.Args[1].Args)
-			{
-				// Convert the base types.
-				var innerTy = Converter.ConvertType(item, Scope);
-				if (innerTy == null)
+				// Analyze the attribute list.
+				var convAttrs = Converter.ConvertAttributeListWithAccess(
+					               Node.Attrs, AccessModifier.Assembly, node =>
 				{
-					Scope.Log.LogError(new LogEntry(
-						"unresolved base type",
-						NodeHelpers.HighlightEven("could not resolve base type '", item.ToString(), "' for '", name.Item1, "'."),
-						NodeHelpers.ToSourceLocation(item.Range)));
-				}
-				else
+					if (node.IsIdNamed(CodeSymbols.Static))
+					{
+						descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}, Scope);
+				foreach (var item in convAttrs)
 				{
-					descTy.AddBaseType(innerTy);
+					descTy.AddAttribute(item);
 				}
-			}
 
-			foreach (var item in Node.Args[2].Args)
-			{
-				// Convert the type definition's members.
-				innerScope = Converter.ConvertTypeMember(item, descTy, innerScope);
-			}
+				foreach (var item in Node.Args[1].Args)
+				{
+					// Convert the base types.
+					var innerTy = Converter.ConvertType(item, Scope);
+					if (innerTy == null)
+					{
+						Scope.Log.LogError(new LogEntry(
+							"unresolved base type",
+							NodeHelpers.HighlightEven("could not resolve base type '", item.ToString(), "' for '", name.Item1, "'."),
+							NodeHelpers.ToSourceLocation(item.Range)));
+					}
+					else
+					{
+						descTy.AddBaseType(innerTy);
+					}
+				}
+
+				foreach (var item in Node.Args[2].Args)
+				{
+					// Convert the type definition's members.
+					innerScope = Converter.ConvertTypeMember(item, descTy, innerScope);
+				}
+			});
 
 			return Scope;
 		}

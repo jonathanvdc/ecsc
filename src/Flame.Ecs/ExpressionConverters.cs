@@ -56,7 +56,7 @@ namespace Flame.Ecs
 			{
 				var item = Node.Args[i];
 				i++;
-				if (item .Calls(CodeSymbols.Result))
+				if (item.Calls(CodeSymbols.Result))
 				{
 					NodeHelpers.CheckArity(item, 1, Scope.Function.Global.Log);
 
