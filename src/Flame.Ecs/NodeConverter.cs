@@ -121,7 +121,8 @@ namespace Flame.Ecs
 			var localScope = new LocalScope(
 				new FunctionScope(Scope, null, null, new Dictionary<string, IVariable>()));
 
-			return ConvertTypeOrExpression(Node, localScope).Type;
+			return ConvertTypeOrExpression(Node, localScope).CollapseTypes(
+				NodeHelpers.ToSourceLocation(Node.Range), Scope);
 		}
 
 		/// <summary>
@@ -326,7 +327,11 @@ namespace Flame.Ecs
 		/// </summary>
 		public void AddConverter(Symbol Symbol, TypeConverter Converter)
 		{
-			AddConverter(Symbol, (node, scope, self) => new TypeOrExpression(Converter(node, scope.Function.Global, self)));
+			AddConverter(Symbol, (node, scope, self) => 
+				new TypeOrExpression(new IType[] 
+				{ 
+					Converter(node, scope.Function.Global, self)
+				}));
 		}
 
 		/// <summary>
@@ -423,6 +428,7 @@ namespace Flame.Ecs
 				// Expressions
 				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
 				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
+				result.AddConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
 
 				// Literals
 				result.AddConverter<sbyte>(val => new Int8Expression(val));

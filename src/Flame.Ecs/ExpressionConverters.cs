@@ -7,6 +7,7 @@ using Flame.Compiler.Statements;
 using Loyc.Syntax;
 using Pixie;
 using Flame.Build;
+using Flame.Compiler.Variables;
 
 namespace Flame.Ecs
 {
@@ -34,6 +35,45 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Returns the variable whose address is loaded by the
+		/// given expression, if the expression is a get-variable
+		/// expression. Otherwise, null.
+		/// </summary>
+		public static IVariable AsVariable(IExpression Expression)
+		{
+			var innerExpr = Expression.GetEssentialExpression();
+			if (innerExpr is IVariableNode)
+			{
+				var varNode = (IVariableNode)innerExpr;
+				if (varNode.Action == VariableNodeAction.Get)
+				{
+					return varNode.GetVariable();
+				}
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Creates an expression that represents an address to 
+		/// a storage location that contains the given expression.
+		/// If this expression is a variable, then an address to said
+		/// variable is returned. Otherwise, a temporary is created,
+		/// and said temporary's address is returned.
+		/// </summary>
+		public static IExpression ToValueAddress(IExpression Expression)
+		{
+			var variable = AsVariable(Expression);
+			if (variable is IUnmanagedVariable)
+			{
+				return ((IUnmanagedVariable)variable).CreateAddressOfExpression();
+			}
+			var temp = new LocalVariable("tmp", Expression.Type);
+			return new InitializedExpression(
+				temp.CreateSetStatement(Expression), 
+				temp.CreateAddressOfExpression());
+		}
+
+		/// <summary>
 		/// Appends a `return(void);` statement to the given function 
 		/// body expression, provided the return type is either `null` 
 		/// or `void`. Otherwise, the body expression's value is returned,
@@ -47,6 +87,60 @@ namespace Flame.Ecs
 				return new ReturnStatement(Scope.ConvertImplicit(Body, ReturnType, Location));
 			else
 				return ToStatement(Body);
+		}
+
+		/// <summary>
+		/// Creates an expression that can be used
+		/// as target object for a member-access expression.
+		/// </summary>
+		private static IExpression AsTargetObject(IExpression Expr)
+		{
+			if (Expr == null)
+				return null;
+			else if (Expr.Type.GetIsReferenceType())
+				return Expr;
+			else
+				return ToValueAddress(Expr);
+		}
+
+		/// <summary>
+		/// Accesses the given type member on the given target
+		/// expression.
+		/// </summary>
+		private static IExpression AccessMember(
+			IExpression Target, ITypeMember Member, GlobalScope Scope)
+		{
+			if (Member is IField)
+			{
+				return new FieldVariable(
+					(IField)Member, AsTargetObject(Target)).CreateGetExpression();
+			}
+			else if (Member is IProperty)
+			{
+				return new PropertyVariable(
+					(IProperty)Member, AsTargetObject(Target)).CreateGetExpression();
+			}
+			else if (Member is IMethod)
+			{
+				var method = (IMethod)Member;
+				if (Member.GetIsExtension() && Target != null)
+				{
+					return new GetExtensionMethodExpression(
+						method, AsTargetObject(Target));
+				}
+				else
+				{
+					return new GetMethodExpression(
+						method, AsTargetObject(Target));
+				}
+			}
+			else
+			{
+				// We have no idea what to do with this.
+				// Maybe pretending it doesn't exist
+				// is an acceptable solution here.
+				return null;
+			}
 		}
 
 		/// <summary>
@@ -120,9 +214,102 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Converts the given member access node (type @.).
 		/// </summary>
-		public static IExpression ConvertMemberAccess(LNode Node, LocalScope Scope, NodeConverter Converter)
+		public static TypeOrExpression ConvertMemberAccess(
+							LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			throw new NotImplementedException();
+			if (!NodeHelpers.CheckArity(Node, 2, Scope.Function.Global.Log))
+				return TypeOrExpression.Empty;
+
+			var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
+
+			if (!Node.Args[1].IsId)
+			{
+				Scope.Function.Global.Log.LogError(new LogEntry(
+					"syntax error",
+					"expected an identifier on the right-hand side of a member access expression.",
+					NodeHelpers.ToSourceLocation(Node.Range)));
+				return TypeOrExpression.Empty;
+			}
+
+			var ident = Node.Args[1].Name.Name;
+
+
+			// First, try to resolve member-access expressions, which
+			// look like this (instance member access):
+			//
+			//     <expr>.<identifier>
+			// 
+			// or like this (static member access):
+			//
+			//     <type>.<identifier>
+			//
+			var exprSet = new List<IExpression>();
+			if (target.IsExpression)
+			{
+				var targetTy = target.Expression.Type;
+				var members = Scope.Function.GetInstanceMembers(targetTy, ident);
+
+				foreach (var item in members)
+				{
+					var acc = AccessMember(target.Expression, item, Scope.Function.Global);
+					if (acc != null)
+						exprSet.Add(acc);
+				}
+			}
+
+			if (target.IsType)
+			{
+				foreach (var ty in target.Types)
+				{
+					var members = Scope.Function.GetStaticMembers(ty, ident);
+
+					foreach (var item in members)
+					{
+						var acc = AccessMember(null, item, Scope.Function.Global);
+						if (acc != null)
+							exprSet.Add(acc);
+					}
+				}
+			}
+
+			IExpression expr = exprSet.Count > 0 
+				? IntersectionExpression.Create(exprSet)
+				: null;
+
+			// Next, we'll handle namespaces, which are 
+			// really just qualified names.
+			var nsName = target.IsNamespace 
+				? new QualifiedName(ident).Qualify(target.Namespace)
+				: null;
+
+			// Finally, let's do types.
+			// Qualified type names can look like:
+			//
+			//     <type>.<nested-type>
+			//
+			// or, more commonly:
+			//
+			//     <namespace>.<type>
+			//
+			// We're not assuming that type names 
+			// and namespace names don't overlap 
+			// here.
+			var typeSet = new HashSet<IType>();
+			foreach (var ty in target.Types)
+			{
+				if (ty is INamespace)
+				{
+					typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == ident));
+				}
+			}
+			if (target.IsNamespace)
+			{
+				var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
+				if (topLevelTy != null)
+					typeSet.Add(topLevelTy);
+			}
+
+			return new TypeOrExpression(expr, typeSet, nsName);
 		}
 
 		private static string CreateExpectedSignatureDescription(

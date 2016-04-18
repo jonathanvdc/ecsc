@@ -102,6 +102,26 @@ namespace Flame.Ecs
 			else
 				return null;
 		}
+
+		/// <summary>
+		/// Gets all members with the given name that can be accessed
+		/// on an instance of the given type. 
+		/// </summary>
+		public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
+		{
+			// TODO: actually implement name lookup algorithm
+			return Type.GetAllMembers(Name).Where(item => !item.IsStatic && CurrentType.CanAccess(item));
+		}
+
+		/// <summary>
+		/// Gets all members with the given name that can be accessed
+		/// on the given type's name.
+		/// </summary>
+		public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
+		{
+			// TODO: actually implement name lookup algorithm
+			return Type.GetAllMembers(Name).Where(item => item.IsStatic && CurrentType.CanAccess(item));
+		}
 	}
 
 	/// <summary>

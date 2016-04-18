@@ -1,6 +1,8 @@
 ﻿using System;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Flame.Ecs
 {
@@ -12,33 +14,35 @@ namespace Flame.Ecs
 	public sealed class TypeOrExpression
 	{
 		public TypeOrExpression(IExpression Expression)
-			: this(Expression, null, null)
+			: this(Expression, Enumerable.Empty<IType>(), null)
 		{ }
-		public TypeOrExpression(IExpression Expression, IType Type)
-			: this(Expression, Type, null)
+		public TypeOrExpression(IExpression Expression, IEnumerable<IType> Types)
+			: this(Expression, Types, null)
 		{ }
-		public TypeOrExpression(IType Type)
-			: this(null, Type, null)
+		public TypeOrExpression(IEnumerable<IType> Types)
+			: this(null, Types, null)
 		{ }
 		public TypeOrExpression(IExpression Expression, QualifiedName Namespace)
-			: this(Expression, null, Namespace)
+			: this(Expression, Enumerable.Empty<IType>(), Namespace)
 		{ }
 		public TypeOrExpression(QualifiedName Namespace)
-			: this(null, null, Namespace)
+			: this(null, Enumerable.Empty<IType>(), Namespace)
 		{ }
-		public TypeOrExpression(IExpression Expression, IType Type, QualifiedName Namespace)
+		public TypeOrExpression(IExpression Expression, IEnumerable<IType> Types, QualifiedName Namespace)
 		{
 			this.Expression = Expression;
-			this.Type = Type;
+			this.typeSet = new HashSet<IType>(Types);
 			this.Namespace = Namespace;
 		}
 
+		private HashSet<IType> typeSet;
+
 		public IExpression Expression { get; private set; }
-		public IType Type { get; private set; }
+		public IEnumerable<IType> Types { get { return typeSet; } }
 		public QualifiedName Namespace { get; private set; }
 
 		public bool IsExpression { get { return Expression != null; } }
-		public bool IsType { get { return Type != null; } }
+		public bool IsType { get { return typeSet.Count > 0; } }
 		public bool IsNamespace { get { return Namespace != null; } }
 
 		/// <summary>
@@ -51,14 +55,46 @@ namespace Flame.Ecs
 				return this;
 			else
 				return new TypeOrExpression(
-					SourceExpression.Create(Expression, Location), Type, Namespace);
+					SourceExpression.Create(Expression, Location), Types, Namespace);
+		}
+
+		/// <summary>
+		/// Tries to collapse this type-or-expression data structure's
+		/// types into a single type. If this instance does not
+		/// represent any type, then null is returned. 
+		/// If this instance represents a single type, then that
+		/// type is returned. 
+		/// Otherwise, an error is logged, and one of the 
+		/// possible types is returned.
+		/// </summary>
+		public IType CollapseTypes(SourceLocation Location, GlobalScope Scope)
+		{
+			if (typeSet.Count == 0)
+			{
+				return null;
+			}
+			else if (typeSet.Count == 1)
+			{
+				return typeSet.First();
+			}
+			else
+			{
+				var result = typeSet.First();
+
+				Scope.Log.LogError(new LogEntry(
+					"ambiguous type",
+					NodeHelpers.HighlightEven("there are ", typeSet.Count.ToString(), " types named '", result.FullName, "'."),
+					Location));
+
+				return result;
+			}
 		}
 
 		/// <summary>
 		/// Gets the empty type-or-expression: an entity that is neither
 		/// an expression, nor a type, nor a namespace.
 		/// </summary>
-		public static readonly TypeOrExpression Empty = new TypeOrExpression(null, null, null);
+		public static readonly TypeOrExpression Empty = new TypeOrExpression(null, Enumerable.Empty<IType>(), null);
 	}
 }
 
