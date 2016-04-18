@@ -80,6 +80,7 @@
     <Compile Include="ExpressionConverters.cs" />
     <Compile Include="LazyDescribedType.cs" />
     <Compile Include="LazyDescribedMethod.cs" />
+    <Compile Include="TypeOrExpression.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

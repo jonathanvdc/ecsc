@@ -12,15 +12,15 @@ namespace Flame.Ecs
 {
 	public static class ExpressionConverters
 	{
-		public static IExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+		public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
 		{
 			var local = Scope.GetVariable(Name);
 			if (local != null)
 			{
-				return local.CreateGetExpression();
+				return new TypeOrExpression(local.CreateGetExpression());
 			}
 
-			return null;
+			return TypeOrExpression.Empty;
 		}
 
 		public static IStatement ToStatement(IExpression Expression)
@@ -115,6 +115,14 @@ namespace Flame.Ecs
 						Converter.ConvertExpression(Node.Args[0], Scope), 
 						Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
 			}
+		}
+
+		/// <summary>
+		/// Converts the given member access node (type @.).
+		/// </summary>
+		public static IExpression ConvertMemberAccess(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			throw new NotImplementedException();
 		}
 
 		private static string CreateExpectedSignatureDescription(

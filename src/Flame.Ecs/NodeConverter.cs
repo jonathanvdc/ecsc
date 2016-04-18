@@ -15,6 +15,7 @@ namespace Flame.Ecs
 	using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
 	using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
 	using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
+	using TypeOrExpressionConverter = Func<LNode, LocalScope, NodeConverter, TypeOrExpression>;
 	using LiteralConverter = Func<object, IExpression>;
 
 	/// <summary>
@@ -24,27 +25,25 @@ namespace Flame.Ecs
 	public sealed class NodeConverter
 	{
 		public NodeConverter(
-			Func<string, ILocalScope, IExpression> LookupUnqualifiedName,
+			Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
 			ExpressionConverter CallConverter)
 		{
 			this.LookupUnqualifiedName = LookupUnqualifiedName;
 			this.CallConverter = CallConverter;
 			this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
-			this.typeConverters = new Dictionary<Symbol, TypeConverter>();
 			this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
 			this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
-			this.exprConverters = new Dictionary<Symbol, ExpressionConverter>();
+			this.exprConverters = new Dictionary<Symbol, TypeOrExpressionConverter>();
 			this.literalConverters = new Dictionary<Type, LiteralConverter>();
 		}
 
 		private Dictionary<Symbol, GlobalConverter> globalConverters;
-		private Dictionary<Symbol, TypeConverter> typeConverters;
 		private Dictionary<Symbol, TypeMemberConverter> typeMemberConverters;
 		private Dictionary<Symbol, AttributeConverter> attrConverters;
-		private Dictionary<Symbol, ExpressionConverter> exprConverters;
+		private Dictionary<Symbol, TypeOrExpressionConverter> exprConverters;
 		private Dictionary<Type, LiteralConverter> literalConverters;
 
-		public Func<string, ILocalScope, IExpression> LookupUnqualifiedName { get; private set; }
+		public Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
 		public ExpressionConverter CallConverter { get; private set; }
 
 		/// <summary>
@@ -119,24 +118,10 @@ namespace Flame.Ecs
 		public IType ConvertType(
 			LNode Node, GlobalScope Scope)
 		{
-			var conv = GetConverterOrDefault(typeConverters, Node);
-			if (conv == null)
-			{
-				var qualName = NodeHelpers.ToQualifiedName(Node);
-				if (qualName == null)
-				{
-					LogCannotConvert(Node, Scope.Log);
-					return null;
-				}
-				else
-				{
-					return Scope.Binder.BindType(qualName);
-				}
-			}
-			else
-			{
-				return conv(Node, Scope, this);
-			}
+			var localScope = new LocalScope(
+				new FunctionScope(Scope, null, null, new Dictionary<string, IVariable>()));
+
+			return ConvertTypeOrExpression(Node, localScope).Type;
 		}
 
 		/// <summary>
@@ -247,9 +232,9 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
-		/// Converts the given expression node.
+		/// Converts the given type-or-expression node.
 		/// </summary>
-		public IExpression ConvertExpression(LNode Node, LocalScope Scope)
+		public TypeOrExpression ConvertTypeOrExpression(LNode Node, LocalScope Scope)
 		{
 			var conv = GetConverterOrDefault(exprConverters, Node);
 			if (conv == null)
@@ -265,13 +250,13 @@ namespace Flame.Ecs
 								"undefined identifier",
 								NodeHelpers.HighlightEven("identifier '", Node.Name.Name, "' was not defined in this scope."),
 								NodeHelpers.ToSourceLocation(Node.Range)));
-							return VoidExpression.Instance;
+							return TypeOrExpression.Empty;
 						}
-						return SourceExpression.Create(result, NodeHelpers.ToSourceLocation(Node.Range));
+						return result.WithSourceLocation(NodeHelpers.ToSourceLocation(Node.Range));
 					}
 					else if (Node.IsCall)
 					{
-						return SourceExpression.Create(CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range));
+						return new TypeOrExpression(SourceExpression.Create(CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
 					}
 					else if (Node.IsLiteral)
 					{
@@ -279,7 +264,7 @@ namespace Flame.Ecs
 						LiteralConverter litConv;
 						if (literalConverters.TryGetValue(val.GetType(), out litConv))
 						{
-							return SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range));
+							return new TypeOrExpression(SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range)));
 						}
 						else
 						{
@@ -287,16 +272,36 @@ namespace Flame.Ecs
 								"unsupported literal type",
 								NodeHelpers.HighlightEven("literals of type '", val.GetType().FullName, "' are not supported."),
 								NodeHelpers.ToSourceLocation(Node.Range)));
-							return VoidExpression.Instance;
+							return TypeOrExpression.Empty;
 						}
 					}
 				}
 				LogCannotConvert(Node, Scope.Function.Global.Log);
-				return VoidExpression.Instance;
+				return TypeOrExpression.Empty;
 			}
 			else
 			{
-				return SourceExpression.Create(conv(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range));
+				return conv(Node, Scope, this).WithSourceLocation(NodeHelpers.ToSourceLocation(Node.Range));
+			}
+		}
+
+		/// <summary>
+		/// Converts the given expression node.
+		/// </summary>
+		public IExpression ConvertExpression(LNode Node, LocalScope Scope)
+		{
+			var result = ConvertTypeOrExpression(Node, Scope);
+			if (result.IsExpression)
+			{
+				return result.Expression;
+			}
+			else
+			{
+				Scope.Function.Global.Log.LogError(new LogEntry(
+					"expression resolution failure",
+					NodeHelpers.HighlightEven("expression could not be resolved."),
+					NodeHelpers.ToSourceLocation(Node.Range)));
+				return VoidExpression.Instance;
 			}
 		}
 
@@ -321,7 +326,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public void AddConverter(Symbol Symbol, TypeConverter Converter)
 		{
-			typeConverters[Symbol] = Converter;
+			AddConverter(Symbol, (node, scope, self) => new TypeOrExpression(Converter(node, scope.Function.Global, self)));
 		}
 
 		/// <summary>
@@ -333,11 +338,19 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Registers a type-or-expression converter.
+		/// </summary>
+		public void AddConverter(Symbol Symbol, TypeOrExpressionConverter Converter)
+		{
+			exprConverters[Symbol] = Converter;
+		}
+
+		/// <summary>
 		/// Registers an expression converter.
 		/// </summary>
 		public void AddConverter(Symbol Symbol, ExpressionConverter Converter)
 		{
-			exprConverters[Symbol] = Converter;
+			exprConverters[Symbol] = (node, scope, self) => new TypeOrExpression(Converter(node, scope, self));
 		}
 
 		/// <summary>
