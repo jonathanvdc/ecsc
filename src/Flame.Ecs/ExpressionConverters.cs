@@ -418,16 +418,16 @@ namespace Flame.Ecs
 
 					var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
 					log.LogError(new LogEntry(
-						"method resolution error",
+						"method resolution",
 						explanationNodes.Concat(new MarkupNode[] { failedMatchesNode }),
 						NodeHelpers.ToSourceLocation(Node.Range)));
 				}
 				else
 				{
 					log.LogError(new LogEntry(
-						"method resolution error",
+						"method resolution",
 						NodeHelpers.HighlightEven(
-							"method call could not be resolved because the invocation's target was not recognized as a function. " +
+							"method call could not be resolved because the call's target was not invocable. " +
 							"Expected signature compatible with '", expectedSig,
 							"', got an expression of type '", namer.Convert(target.Type), "'."),
 						NodeHelpers.ToSourceLocation(Node.Range)));

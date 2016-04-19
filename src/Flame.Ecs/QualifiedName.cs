@@ -79,9 +79,9 @@ namespace Flame.Ecs
 
 		public bool Equals(QualifiedName Other)
 		{
-			return Qualifier == Other.Qualifier && Name == null 
+			return Qualifier == Other.Qualifier && (Name == null 
 				? Other.Name == null 
-				: (Other.Name != null && Name.Equals(Other.Name));
+				: Other.Name != null && Name.Equals(Other.Name));
 		}
 
 		public override bool Equals(object Other)

@@ -245,19 +245,12 @@ namespace Flame.Ecs
 					if (Node.IsId)
 					{
 						var result = LookupUnqualifiedName(Node.Name.Name, Scope);
-						if (result == null)
-						{
-							Scope.Function.Global.Log.LogError(new LogEntry(
-								"undefined identifier",
-								NodeHelpers.HighlightEven("identifier '", Node.Name.Name, "' was not defined in this scope."),
-								NodeHelpers.ToSourceLocation(Node.Range)));
-							return TypeOrExpression.Empty;
-						}
 						return result.WithSourceLocation(NodeHelpers.ToSourceLocation(Node.Range));
 					}
 					else if (Node.IsCall)
 					{
-						return new TypeOrExpression(SourceExpression.Create(CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
+						return new TypeOrExpression(SourceExpression.Create(
+								CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
 					}
 					else if (Node.IsLiteral)
 					{
@@ -265,15 +258,17 @@ namespace Flame.Ecs
 						LiteralConverter litConv;
 						if (literalConverters.TryGetValue(val.GetType(), out litConv))
 						{
-							return new TypeOrExpression(SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range)));
+							return new TypeOrExpression(
+								SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range)));
 						}
 						else
 						{
 							Scope.Function.Global.Log.LogError(new LogEntry(
 								"unsupported literal type",
-								NodeHelpers.HighlightEven("literals of type '", val.GetType().FullName, "' are not supported."),
+								NodeHelpers.HighlightEven(
+									"literals of type '", val.GetType().FullName, "' are not supported."),
 								NodeHelpers.ToSourceLocation(Node.Range)));
-							return TypeOrExpression.Empty;
+							return new TypeOrExpression(VoidExpression.Instance);
 						}
 					}
 				}
@@ -299,7 +294,7 @@ namespace Flame.Ecs
 			else
 			{
 				Scope.Function.Global.Log.LogError(new LogEntry(
-					"expression resolution failure",
+					"expression resolution",
 					NodeHelpers.HighlightEven("expression could not be resolved."),
 					NodeHelpers.ToSourceLocation(Node.Range)));
 				return VoidExpression.Instance;
