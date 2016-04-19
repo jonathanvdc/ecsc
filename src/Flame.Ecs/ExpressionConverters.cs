@@ -448,6 +448,30 @@ namespace Flame.Ecs
 				return bestDelegate.CreateDelegateInvocationExpression(delegateArgs);
 			}
 		}
+
+		/// <summary>
+		/// Creates a converter that analyzes binary operator nodes.
+		/// </summary>
+		public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateBinaryOpConverter(Operator Op)
+		{
+			return (node, scope, conv) =>
+			{
+				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
+					return VoidExpression.Instance;
+					
+				// var lhs = conv.ConvertExpression(node.Args[0], scope);
+				// var rhs = conv.ConvertExpression(node.Args[1], scope);
+
+				// TODO: actually implement this
+
+				scope.Function.Global.Log.LogError(new LogEntry(
+					"operators not yet implemented",
+					"binary operator resolution has not been implemented yet. Sorry. :/",
+					NodeHelpers.ToSourceLocation(node.Range)));
+
+				return VoidExpression.Instance;
+			};
+		}
 	}
 }
 

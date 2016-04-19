@@ -15,4 +15,11 @@ public static class ReturnTest
     {
         return Value;
     }
+
+    public static void Main()
+    {
+        ReturnTest.ReturnVoid();
+        System.Console.WriteLine(ReturnTest.ReturnValue(4));
+        System.Console.WriteLine(ReturnTest.ReturnGeneric<int>(2));
+    }
 }
