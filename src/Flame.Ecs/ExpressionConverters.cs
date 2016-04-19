@@ -13,15 +13,33 @@ namespace Flame.Ecs
 {
 	public static class ExpressionConverters
 	{
-		public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+		private static IExpression LookupUnqualifiedNameExpression(string Name, ILocalScope Scope)
 		{
 			var local = Scope.GetVariable(Name);
 			if (local != null)
 			{
-				return new TypeOrExpression(local.CreateGetExpression());
+				return local.CreateGetExpression();
 			}
 
-			return TypeOrExpression.Empty;
+			return null;
+		}
+
+		private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
+		{
+			var ty = Scope.Function.Global.Binder.BindType(Name);
+			if (ty == null)
+				return Enumerable.Empty<IType>();
+			else
+				return new IType[] { ty };
+		}
+
+		public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+		{
+			var qualName = new QualifiedName(Name);
+			return new TypeOrExpression(
+				LookupUnqualifiedNameExpression(Name, Scope),
+				LookupUnqualifiedNameTypes(qualName, Scope),
+				qualName);
 		}
 
 		public static IStatement ToStatement(IExpression Expression)
