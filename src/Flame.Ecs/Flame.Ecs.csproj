@@ -81,6 +81,7 @@
     <Compile Include="LazyDescribedType.cs" />
     <Compile Include="LazyDescribedMethod.cs" />
     <Compile Include="TypeOrExpression.cs" />
+    <Compile Include="BinaryOperatorResolution.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -459,14 +459,28 @@ namespace Flame.Ecs
 				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
 					return VoidExpression.Instance;
 					
-				// var lhs = conv.ConvertExpression(node.Args[0], scope);
-				// var rhs = conv.ConvertExpression(node.Args[1], scope);
+				var lhs = conv.ConvertExpression(node.Args[0], scope);
+				var rhs = conv.ConvertExpression(node.Args[1], scope);
+
+				var lTy = lhs.Type;
+				var rTy = rhs.Type;
+
+				IType opTy;
+				if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
+				{
+					return DirectBinaryExpression.Instance.Create(
+						scope.Function.Global.ConvertImplicit(
+							lhs, opTy, NodeHelpers.ToSourceLocation(node.Args[0].Range)), 
+						Op, 
+						scope.Function.Global.ConvertImplicit(
+							rhs, opTy, NodeHelpers.ToSourceLocation(node.Args[1].Range)));
+				}
 
 				// TODO: actually implement this
 
 				scope.Function.Global.Log.LogError(new LogEntry(
 					"operators not yet implemented",
-					"binary operator resolution has not been implemented yet. Sorry. :/",
+					"custom binary operator resolution has not been implemented yet. Sorry. :/",
 					NodeHelpers.ToSourceLocation(node.Range)));
 
 				return VoidExpression.Instance;
