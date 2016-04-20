@@ -20,7 +20,7 @@ namespace Flame.Ecs
 			if (paramTy == null)
 			{
 				Scope.Log.LogError(new LogEntry(
-					"unresolved parameter type",
+					"type resolution",
 					NodeHelpers.HighlightEven("could not resolve parameter type '", Node.Args[0].ToString(), "' for parameter '", name.Item1, "'."),
 					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 				paramTy = PrimitiveTypes.Void;
@@ -93,7 +93,7 @@ namespace Flame.Ecs
 				if (retType == null)
 				{
 					Scope.Log.LogError(new LogEntry(
-						"unresolved return type",
+						"type resolution",
 						NodeHelpers.HighlightEven("could not resolve return type '", Node.Args[0].ToString(), "' for method '", name.Item1, "'."),
 						NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 					retType = PrimitiveTypes.Void;

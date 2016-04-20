@@ -76,6 +76,27 @@ namespace Flame.Ecs
 			}
 		}
 
+		/// <summary>
+		/// Checks the given node's minimal arity.
+		/// </summary>
+		public static bool CheckMinArity(LNode Node, int MinArity, ICompilerLog Log)
+		{
+			if (Node.ArgCount < MinArity)
+			{
+				Log.LogError(new LogEntry(
+					"unexpected node arity", 
+					HighlightEven(
+						"syntax node '", Node.Name.Name, "' had an argument count of '", 
+						Node.ArgCount.ToString(), "'. Expected: at least '", MinArity.ToString(), "'."),
+					ToSourceLocation(Node.Range)));
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
 		public static IGenericParameter ToGenericParameter(
 			LNode Node, IGenericMember Parent, GlobalScope Scope)
 		{

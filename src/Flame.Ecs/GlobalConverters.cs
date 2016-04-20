@@ -82,7 +82,7 @@ namespace Flame.Ecs
 					if (innerTy == null)
 					{
 						Scope.Log.LogError(new LogEntry(
-							"unresolved base type",
+							"type resolution",
 							NodeHelpers.HighlightEven("could not resolve base type '", item.ToString(), "' for '", name.Item1, "'."),
 							NodeHelpers.ToSourceLocation(item.Range)));
 					}

@@ -425,6 +425,9 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
 				result.AddConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
 
+				// Variable declaration
+				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
+
 				// Operators
 				// - Binary operators
 				result.AddConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
