@@ -468,6 +468,17 @@ namespace Flame.Ecs
 				IType opTy;
 				if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
 				{
+					if (opTy == null)
+					{
+						scope.Function.Global.Log.LogError(new LogEntry(
+							"operator application",
+							NodeHelpers.HighlightEven(
+								"operator '", node.Name.Name, "' cannot be applied to operands of type '", 
+								scope.Function.Global.TypeNamer.Convert(lTy), "' and '",
+								scope.Function.Global.TypeNamer.Convert(rTy), "'."),
+							NodeHelpers.ToSourceLocation(node.Range)));
+					}
+
 					return DirectBinaryExpression.Instance.Create(
 						scope.Function.Global.ConvertImplicit(
 							lhs, opTy, NodeHelpers.ToSourceLocation(node.Args[0].Range)), 
