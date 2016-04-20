@@ -437,6 +437,8 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.LE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckLessThanOrEqual));
 				result.AddConverter(CodeSymbols.GT, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThan));
 				result.AddConverter(CodeSymbols.GE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThanOrEqual));
+				result.AddConverter(CodeSymbols.Shl, ExpressionConverters.CreateBinaryOpConverter(Operator.LeftShift));
+				result.AddConverter(CodeSymbols.Shr, ExpressionConverters.CreateBinaryOpConverter(Operator.RightShift));
 				result.AddConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
 				result.AddConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
 				result.AddConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
