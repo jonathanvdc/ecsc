@@ -514,6 +514,31 @@ namespace Flame.Ecs
 					NodeHelpers.ToSourceLocation(node.Args[1].Range));
 			};
 		}
+
+		public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 2, Scope.Function.Global.Log))
+				return VoidExpression.Instance;
+
+			var lhs = Converter.ConvertExpression(Node.Args[0], Scope);
+			var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
+
+			var lhsVar = AsVariable(lhs);
+
+			if (lhsVar == null)
+			{
+				Scope.Function.Global.Log.LogError(new LogEntry(
+					"malformed assignment",
+					"the left-hand side of an assignment must be a variable, a property or an indexer.",
+					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+				return rhs;
+			}
+
+			return ToExpression(lhsVar.CreateSetStatement(
+				Scope.Function.Global.ConvertImplicit(
+					rhs, lhsVar.Type, 
+					NodeHelpers.ToSourceLocation(Node.Args[1].Range))));
+		}
 	}
 }
 

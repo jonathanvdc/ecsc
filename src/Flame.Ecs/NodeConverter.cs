@@ -426,6 +426,7 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
 
 				// Operators
+				// - Binary operators
 				result.AddConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
 				result.AddConverter(CodeSymbols.Sub, ExpressionConverters.CreateBinaryOpConverter(Operator.Subtract));
 				result.AddConverter(CodeSymbols.Mul, ExpressionConverters.CreateBinaryOpConverter(Operator.Multiply));
@@ -442,6 +443,9 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
 				result.AddConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
 				result.AddConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
+
+				// - Assignment operator
+				result.AddConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
 
 				// Literals
 				result.AddConverter<sbyte>(val => new Int8Expression(val));
