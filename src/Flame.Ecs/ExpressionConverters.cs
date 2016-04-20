@@ -450,6 +450,52 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Creates a binary operator application expression
+		/// for the given operator and operands. A scope is
+		/// used to perform conversions and log error messages,
+		/// and two source locations are used to highlight potential
+		/// issues.
+		/// </summary>
+		public static IExpression CreateBinary(
+			Operator Op, IExpression Left, IExpression Right, 
+			GlobalScope Scope,
+			SourceLocation LeftLocation, SourceLocation RightLocation)
+		{
+			var lTy = Left.Type;
+			var rTy = Right.Type;
+
+			IType opTy;
+			if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
+			{
+				if (opTy == null)
+				{
+					Scope.Log.LogError(new LogEntry(
+						"operator application",
+						NodeHelpers.HighlightEven(
+							"operator '", Op.Name, "' cannot be applied to operands of type '", 
+							Scope.TypeNamer.Convert(lTy), "' and '",
+							Scope.TypeNamer.Convert(rTy), "'."),
+						LeftLocation.Concat(RightLocation)));
+					return new UnknownExpression(lTy);
+				}
+
+				return DirectBinaryExpression.Instance.Create(
+					Scope.ConvertImplicit(Left, opTy, LeftLocation), 
+					Op, 
+					Scope.ConvertImplicit(Right, opTy, RightLocation));
+			}
+
+			// TODO: actually implement this
+
+			Scope.Log.LogError(new LogEntry(
+				"operators not yet implemented",
+				"custom binary operator resolution has not been implemented yet. Sorry. :/",
+				LeftLocation.Concat(RightLocation)));
+
+			return VoidExpression.Instance;
+		}
+
+		/// <summary>
 		/// Creates a converter that analyzes binary operator nodes.
 		/// </summary>
 		public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateBinaryOpConverter(Operator Op)
@@ -458,43 +504,14 @@ namespace Flame.Ecs
 			{
 				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
 					return VoidExpression.Instance;
-					
-				var lhs = conv.ConvertExpression(node.Args[0], scope);
-				var rhs = conv.ConvertExpression(node.Args[1], scope);
 
-				var lTy = lhs.Type;
-				var rTy = rhs.Type;
-
-				IType opTy;
-				if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
-				{
-					if (opTy == null)
-					{
-						scope.Function.Global.Log.LogError(new LogEntry(
-							"operator application",
-							NodeHelpers.HighlightEven(
-								"operator '", node.Name.Name, "' cannot be applied to operands of type '", 
-								scope.Function.Global.TypeNamer.Convert(lTy), "' and '",
-								scope.Function.Global.TypeNamer.Convert(rTy), "'."),
-							NodeHelpers.ToSourceLocation(node.Range)));
-					}
-
-					return DirectBinaryExpression.Instance.Create(
-						scope.Function.Global.ConvertImplicit(
-							lhs, opTy, NodeHelpers.ToSourceLocation(node.Args[0].Range)), 
-						Op, 
-						scope.Function.Global.ConvertImplicit(
-							rhs, opTy, NodeHelpers.ToSourceLocation(node.Args[1].Range)));
-				}
-
-				// TODO: actually implement this
-
-				scope.Function.Global.Log.LogError(new LogEntry(
-					"operators not yet implemented",
-					"custom binary operator resolution has not been implemented yet. Sorry. :/",
-					NodeHelpers.ToSourceLocation(node.Range)));
-
-				return VoidExpression.Instance;
+				return CreateBinary(
+					Op, 
+					conv.ConvertExpression(node.Args[0], scope), 
+					conv.ConvertExpression(node.Args[1], scope), 
+					scope.Function.Global,
+					NodeHelpers.ToSourceLocation(node.Args[0].Range),
+					NodeHelpers.ToSourceLocation(node.Args[1].Range));
 			};
 		}
 	}
