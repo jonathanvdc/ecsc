@@ -382,7 +382,31 @@ namespace Flame.Ecs
 		{
 			var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
 			var delegates = IntersectionExpression.GetIntersectedExpressions(target);
-			var args = Node.Args.Select(item => Converter.ConvertExpression(item, Scope)).ToArray();
+			var args = Node.Args.Select(item => 
+			{
+				var argExpr = Converter.ConvertExpression(item, Scope);
+				foreach (var attr in item.Attrs)
+				{
+					if (attr.IsIdNamed(CodeSymbols.Ref) || attr.IsIdNamed(CodeSymbols.Out))
+					{
+						var argVar = AsVariable(argExpr) as IUnmanagedVariable;
+						if (argVar != null)
+						{
+							argExpr = argVar.CreateAddressOfExpression();
+						}
+						else
+						{
+							Scope.Function.Global.Log.LogError(new LogEntry(
+								"invalid syntax", 
+								NodeHelpers.HighlightEven(
+									"a ", "ref", " or ", "out", 
+									" argument must be an assignable variable."),
+								NodeHelpers.ToSourceLocation(attr.Range)));
+						}
+					}
+				}
+				return argExpr;
+			}).ToArray();
 			var argTypes = args.GetTypes();
 
 			// TODO: implement and use C#-specific overload resolution

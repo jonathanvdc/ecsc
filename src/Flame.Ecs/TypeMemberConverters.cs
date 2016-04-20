@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Loyc.Syntax;
 using Flame.Build;
 using Flame.Compiler;
@@ -25,22 +26,33 @@ namespace Flame.Ecs
 					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 				paramTy = PrimitiveTypes.Void;
 			}
+			bool isOut = false;
 			var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
 			{
-				if (node.IsIdNamed(CodeSymbols.Ref) || node.IsIdNamed(CodeSymbols.Out))
+				if (node.IsIdNamed(CodeSymbols.Ref))
 				{
 					paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
+					return true;
+				}
+				else if (node.IsIdNamed(CodeSymbols.Out))
+				{
+					paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
+					isOut = true;
 					return true;
 				}
 				else
 				{
 					return false;
 				}
-			}, Scope);
+			}, Scope).ToArray();
 			var descParam = new DescribedParameter(name.Item1, paramTy);
 			foreach (var item in attrs)
 			{
 				descParam.AddAttribute(item);
+			}
+			if (isOut)
+			{
+				descParam.AddAttribute(PrimitiveAttributes.Instance.OutAttribute);
 			}
 			return descParam;
 		}
@@ -94,7 +106,9 @@ namespace Flame.Ecs
 				{
 					Scope.Log.LogError(new LogEntry(
 						"type resolution",
-						NodeHelpers.HighlightEven("could not resolve return type '", Node.Args[0].ToString(), "' for method '", name.Item1, "'."),
+						NodeHelpers.HighlightEven(
+							"could not resolve return type '", 
+							Node.Args[0].ToString(), "' for method '", name.Item1, "'."),
 						NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 					retType = PrimitiveTypes.Void;
 				}
@@ -112,7 +126,17 @@ namespace Flame.Ecs
 				{
 					var parameter = ConvertParameter(item, innerScope, Converter);
 					methodDef.AddParameter(parameter);
-					paramVarDict[parameter.Name] = new ArgumentVariable(parameter, paramIndex);
+					var argVar = new ArgumentVariable(parameter, paramIndex);
+					var ptrVarType = parameter.ParameterType.AsPointerType();
+					if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
+					{
+						paramVarDict[parameter.Name] = new AtAddressVariable(
+							argVar.CreateGetExpression());
+					}
+					else
+					{
+						paramVarDict[parameter.Name] = argVar;
+					}
 					paramIndex++;
 				}
 
