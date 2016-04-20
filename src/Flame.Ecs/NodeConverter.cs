@@ -447,6 +447,18 @@ namespace Flame.Ecs
 				// - Assignment operator
 				result.AddConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
 
+				// - Compound assignment operators
+				result.AddConverter(CodeSymbols.AddSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Add));
+				result.AddConverter(CodeSymbols.SubSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Subtract));
+				result.AddConverter(CodeSymbols.MulSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Multiply));
+				result.AddConverter(CodeSymbols.DivSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Divide));
+				result.AddConverter(CodeSymbols.ModSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Remainder));
+				result.AddConverter(CodeSymbols.ShlSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.LeftShift));
+				result.AddConverter(CodeSymbols.ShrSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.RightShift));
+				result.AddConverter(CodeSymbols.AndBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.And));
+				result.AddConverter(CodeSymbols.OrBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Or));
+				result.AddConverter(CodeSymbols.XorBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
+
 				// Literals
 				result.AddConverter<sbyte>(val => new Int8Expression(val));
 				result.AddConverter<short>(val => new Int16Expression(val));

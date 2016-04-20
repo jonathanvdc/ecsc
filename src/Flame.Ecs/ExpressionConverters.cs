@@ -515,6 +515,33 @@ namespace Flame.Ecs
 			};
 		}
 
+		public static IExpression CreateUncheckedAssignment(
+			IVariable Variable, IExpression Value)
+		{
+			if (Variable is LocalVariableBase 
+				|| Variable is ArgumentVariable 
+				|| Variable is ThisVariable)
+			{
+				return new InitializedExpression(
+					Variable.CreateSetStatement(Value),
+					Variable.CreateGetExpression());
+			}
+			else
+			{
+				var tmp = new RegisterVariable("tmp", Variable.Type);
+				return new InitializedExpression(
+					new BlockStatement(new IStatement[] 
+					{
+						tmp.CreateSetStatement(Value),
+						Variable.CreateSetStatement(tmp.CreateGetExpression())
+					}),
+					tmp.CreateGetExpression());
+			}
+		}
+
+		/// <summary>
+		/// Converts an given assignment node (type @=).
+		/// </summary>
 		public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Function.Global.Log))
@@ -534,10 +561,46 @@ namespace Flame.Ecs
 				return rhs;
 			}
 
-			return ToExpression(lhsVar.CreateSetStatement(
-				Scope.Function.Global.ConvertImplicit(
+			return CreateUncheckedAssignment(
+				lhsVar, Scope.Function.Global.ConvertImplicit(
 					rhs, lhsVar.Type, 
-					NodeHelpers.ToSourceLocation(Node.Args[1].Range))));
+					NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+		}
+
+		/// <summary>
+		/// Creates a converter that analyzes compound assignment nodes.
+		/// </summary>
+		public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateCompoundAssignmentConverter(Operator Op)
+		{
+			return (node, scope, conv) =>
+			{
+				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
+					return VoidExpression.Instance;
+
+				var lhs = conv.ConvertExpression(node.Args[0], scope);
+				var rhs = conv.ConvertExpression(node.Args[1], scope);
+
+				var lhsVar = AsVariable(lhs);
+
+				var leftLoc = NodeHelpers.ToSourceLocation(node.Args[0].Range);
+				var rightLoc = NodeHelpers.ToSourceLocation(node.Args[1].Range);
+
+				if (lhsVar == null)
+				{
+					scope.Function.Global.Log.LogError(new LogEntry(
+						"malformed assignment",
+						"the left-hand side of an assignment must be a variable, a property or an indexer.",
+						leftLoc));
+					return rhs;
+				}
+
+				var result = CreateBinary(
+					Op, lhs, rhs, scope.Function.Global, leftLoc, rightLoc);
+
+				return CreateUncheckedAssignment(
+					lhsVar, scope.Function.Global.ConvertImplicit(
+						result, lhsVar.Type, rightLoc));
+			};
 		}
 	}
 }

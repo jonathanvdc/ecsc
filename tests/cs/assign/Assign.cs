@@ -5,6 +5,7 @@ public static class Program
     public static int f(int x, int y)
     {
         x = y;
+        x += y;
         return x;
     }
 
