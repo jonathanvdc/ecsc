@@ -119,7 +119,7 @@ namespace Flame.Ecs
 				var paramVarDict = new Dictionary<string, IVariable>();
 				if (!methodDef.IsStatic)
 				{
-					paramVarDict[CodeSymbols.This.Name] = new ThisVariable(thisTy);
+					paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
 				}
 				int paramIndex = 0;
 				foreach (var item in Node.Args[2].Args)

@@ -425,6 +425,9 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
 				result.AddConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
 
+				// Keyword expressions
+				result.AddConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
+
 				// Variable declaration
 				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
 

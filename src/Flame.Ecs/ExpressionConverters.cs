@@ -719,6 +719,38 @@ namespace Flame.Ecs
 			return new InitializedExpression(
 				new BlockStatement(stmts), expr);
 		}
+
+		/// <summary>
+		/// Retrieves the 'this' variable from the given 
+		/// local scope. 
+		/// </summary>
+		public static IVariable GetThisVariable(LocalScope Scope)
+		{
+			return Scope.GetVariable(CodeSymbols.This.Name);
+		}
+
+		/// <summary>
+		/// Converts 'this'-expression node (type #this).
+		/// </summary>
+		public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 0, Scope.Function.Global.Log))
+				return VoidExpression.Instance;
+
+			var thisVar = GetThisVariable(Scope);
+			if (thisVar == null)
+			{
+				Scope.Function.Global.Log.LogError(new LogEntry(
+					"invalid syntax", 
+					NodeHelpers.HighlightEven(
+						"keyword '", "this", 
+						"' is not valid in a static property, static method, or static field initializer."),
+					NodeHelpers.ToSourceLocation(Node.Range)));
+				return VoidExpression.Instance;
+			}
+
+			return thisVar.CreateGetExpression();
+		}
 	}
 }
 
