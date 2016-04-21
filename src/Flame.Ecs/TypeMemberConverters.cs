@@ -175,6 +175,52 @@ namespace Flame.Ecs
 
 			return Scope;
 		}
+
+		/// <summary>
+		/// Converts a '#cons' constructor declaration node.
+		/// </summary>
+		public static GlobalScope ConvertConstructor(
+			LNode Node, LazyDescribedType DeclaringType, 
+			GlobalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+				return Scope;
+
+			// Handle the constructor's name first.
+			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+			var def = new LazyDescribedMethod(name.Item1, DeclaringType, methodDef =>
+			{
+				methodDef.IsConstructor = true;
+				methodDef.ReturnType = PrimitiveTypes.Void;
+
+				// Take care of the generic parameters next.
+				var innerScope = Scope;
+				foreach (var item in name.Item2(methodDef))
+				{
+					// Create generic parameters.
+					methodDef.AddGenericParameter(item);
+					innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+				}
+
+				// Attributes next.
+				AnalyzeTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+
+				// Resolve the parameters
+				var funScope = AnalyzeParameters(
+					Node.Args[2].Args, methodDef, innerScope, Converter);
+
+				// Analyze the function body.
+				var localScope = new LocalScope(funScope);
+				methodDef.Body = ExpressionConverters.AutoReturn(
+					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
+					NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
+			});
+
+			// Finally, add the function to the declaring type.
+			DeclaringType.AddMethod(def);
+
+			return Scope;
+		}
 	}
 }
 
