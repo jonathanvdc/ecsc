@@ -58,6 +58,68 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
+		/// Analyzes the given type member's attribute list.
+		/// </summary>
+		private static void AnalyzeTypeMemberAttributes(
+			IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
+			GlobalScope Scope, NodeConverter Converter)
+		{
+			var attrs = Converter.ConvertAttributeListWithAccess(
+				Attributes, Target.DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
+				node =>
+			{
+				if (node.IsIdNamed(CodeSymbols.Static))
+				{
+					Target.IsStatic = true;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}, Scope);
+			foreach (var item in attrs)
+			{
+				Target.AddAttribute(item);
+			}
+		}
+
+		/// <summary>
+		/// Analyzes the given parameter list for the
+		/// given described method.
+		/// </summary>
+		private static FunctionScope AnalyzeParameters(
+			IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
+			GlobalScope Scope, NodeConverter Converter)
+		{
+			var thisTy = ThisVariable.GetThisType(Target.DeclaringType);
+			var paramVarDict = new Dictionary<string, IVariable>();
+			if (!Target.IsStatic)
+			{
+				paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
+			}
+			int paramIndex = 0;
+			foreach (var item in Parameters)
+			{
+				var parameter = ConvertParameter(item, Scope, Converter);
+				Target.AddParameter(parameter);
+				var argVar = new ArgumentVariable(parameter, paramIndex);
+				var ptrVarType = parameter.ParameterType.AsPointerType();
+				if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
+				{
+					paramVarDict[parameter.Name] = new AtAddressVariable(
+						argVar.CreateGetExpression());
+				}
+				else
+				{
+					paramVarDict[parameter.Name] = argVar;
+				}
+				paramIndex++;
+			}
+			return new FunctionScope(Scope, thisTy, Target.ReturnType, paramVarDict);
+		}
+
+		/// <summary>
 		/// Converts an '#fn' function declaration node.
 		/// </summary>
 		public static GlobalScope ConvertFunction(
@@ -81,24 +143,7 @@ namespace Flame.Ecs
 				}
 
 				// Attributes next.
-				var attrs = Converter.ConvertAttributeListWithAccess(
-	                Node.Attrs, DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
-	                node =>
-				{
-					if (node.IsIdNamed(CodeSymbols.Static))
-					{
-						methodDef.IsStatic = true;
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-				}, innerScope);
-				foreach (var item in attrs)
-				{
-					methodDef.AddAttribute(item);
-				}
+				AnalyzeTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
 
 				// Resolve the return type.
 				var retType = Converter.ConvertType(Node.Args[0], innerScope);
@@ -115,33 +160,10 @@ namespace Flame.Ecs
 				methodDef.ReturnType = retType;
 
 				// Resolve the parameters
-				var thisTy = ThisVariable.GetThisType(DeclaringType);
-				var paramVarDict = new Dictionary<string, IVariable>();
-				if (!methodDef.IsStatic)
-				{
-					paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
-				}
-				int paramIndex = 0;
-				foreach (var item in Node.Args[2].Args)
-				{
-					var parameter = ConvertParameter(item, innerScope, Converter);
-					methodDef.AddParameter(parameter);
-					var argVar = new ArgumentVariable(parameter, paramIndex);
-					var ptrVarType = parameter.ParameterType.AsPointerType();
-					if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
-					{
-						paramVarDict[parameter.Name] = new AtAddressVariable(
-							argVar.CreateGetExpression());
-					}
-					else
-					{
-						paramVarDict[parameter.Name] = argVar;
-					}
-					paramIndex++;
-				}
+				var funScope = AnalyzeParameters(
+					Node.Args[2].Args, methodDef, innerScope, Converter);
 
 				// Analyze the function body.
-				var funScope = new FunctionScope(innerScope, thisTy, retType, paramVarDict);
 				var localScope = new LocalScope(funScope);
 				methodDef.Body = ExpressionConverters.AutoReturn(
 					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 

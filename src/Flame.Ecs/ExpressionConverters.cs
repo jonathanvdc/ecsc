@@ -730,7 +730,7 @@ namespace Flame.Ecs
 		}
 
 		/// <summary>
-		/// Converts 'this'-expression node (type #this).
+		/// Converts a 'this'-expression node (type #this).
 		/// </summary>
 		public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
