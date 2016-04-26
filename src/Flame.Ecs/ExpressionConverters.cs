@@ -65,6 +65,13 @@ namespace Flame.Ecs
 			return new BlockStatement(new IStatement[] { stmt, childScope.Release() });
 		}
 
+		public static IExpression ConvertScopedExpression(this NodeConverter Converter, LNode Node, LocalScope Scope)
+		{
+			var childScope = new LocalScope(Scope);
+			var expr = Converter.ConvertExpression(Node, Scope);
+			return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
+		}
+
 		/// <summary>
 		/// Returns the variable whose address is loaded by the
 		/// given expression, if the expression is a get-variable
@@ -792,6 +799,22 @@ namespace Flame.Ecs
 			var elseExpr = Converter.ConvertScopedStatement(Node.Args[2], Scope);
 
 			return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
+		}
+
+		/// <summary>
+		/// Converts a selection-expression. (a ternary
+		/// conditional operator application)
+		/// </summary>
+		public static IExpression ConvertSelectExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+				return VoidExpression.Instance;
+
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
+			var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
+
+			return new SelectExpression(cond, ifExpr, elseExpr);
 		}
 
 		/// <summary>

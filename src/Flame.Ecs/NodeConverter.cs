@@ -437,6 +437,9 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
 
 				// Operators
+                // - Ternary operators
+                result.AddConverter(CodeSymbols.QuestionMark,  ExpressionConverters.ConvertSelectExpression);
+
 				// - Binary operators
 				result.AddConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
 				result.AddConverter(CodeSymbols.Sub, ExpressionConverters.CreateBinaryOpConverter(Operator.Subtract));
