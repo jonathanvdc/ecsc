@@ -191,7 +191,7 @@ namespace Flame.Ecs
 				i++;
 				if (item.Calls(CodeSymbols.Result))
 				{
-					NodeHelpers.CheckArity(item, 1, Scope.Function.Global.Log);
+					NodeHelpers.CheckArity(item, 1, Scope.Log);
 
 					retExpr = Converter.ConvertExpression(item.Args[0], innerScope);
 					break;
@@ -229,11 +229,25 @@ namespace Flame.Ecs
 		{
 			if (Node.ArgCount == 0)
 			{
-				return ToExpression(new ReturnStatement());
+				if (Scope.ReturnType.IsEquivalent(PrimitiveTypes.Void)) 
+				{
+					return ToExpression(new ReturnStatement());
+				} 
+				else 
+				{
+					Scope.Log.LogError(new LogEntry(
+						"return statement",
+						NodeHelpers.HighlightEven(
+							"an object of a type convertible to '",
+							Scope.Function.Global.TypeNamer.Convert(Scope.ReturnType),
+							"' is required for the return statement."),
+						NodeHelpers.ToSourceLocation(Node.Range)));
+					return ToExpression(new ReturnStatement(new UnknownExpression(Scope.ReturnType)));
+				}
 			}
 			else
 			{
-				NodeHelpers.CheckArity(Node, 1, Scope.Function.Global.Log);
+				NodeHelpers.CheckArity(Node, 1, Scope.Log);
 
 				return ToExpression(new ReturnStatement(
 					Scope.Function.Global.ConvertImplicit(
@@ -248,14 +262,14 @@ namespace Flame.Ecs
 		public static TypeOrExpression ConvertMemberAccess(
 							LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 2, Scope.Function.Global.Log))
+			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return TypeOrExpression.Empty;
 
 			var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
 
 			if (!Node.Args[1].IsId)
 			{
-				Scope.Function.Global.Log.LogError(new LogEntry(
+				Scope.Log.LogError(new LogEntry(
 					"syntax error",
 					"expected an identifier on the right-hand side of a member access expression.",
 					NodeHelpers.ToSourceLocation(Node.Range)));
@@ -408,7 +422,7 @@ namespace Flame.Ecs
 						}
 						else
 						{
-							Scope.Function.Global.Log.LogError(new LogEntry(
+							Scope.Log.LogError(new LogEntry(
 								"invalid syntax", 
 								NodeHelpers.HighlightEven(
 									"a ", "ref", " or ", "out", 
@@ -442,7 +456,7 @@ namespace Flame.Ecs
 				var innerExpr = new InitializedExpression(
 					new BlockStatement(innerStmts), new UnknownExpression(retType));
 
-				var log = Scope.Function.Global.Log;
+				var log = Scope.Log;
 				if (matches.Any())
 				{
 					var failedMatchesList = matches.Select(
@@ -539,7 +553,7 @@ namespace Flame.Ecs
 		{
 			return (node, scope, conv) =>
 			{
-				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
+				if (!NodeHelpers.CheckArity(node, 2, scope.Log))
 					return VoidExpression.Instance;
 
 				return CreateBinary(
@@ -581,7 +595,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 2, Scope.Function.Global.Log))
+			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
 
 			var lhs = Converter.ConvertExpression(Node.Args[0], Scope);
@@ -591,7 +605,7 @@ namespace Flame.Ecs
 
 			if (lhsVar == null)
 			{
-				Scope.Function.Global.Log.LogError(new LogEntry(
+				Scope.Log.LogError(new LogEntry(
 					"malformed assignment",
 					"the left-hand side of an assignment must be a variable, a property or an indexer.",
 					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
@@ -611,7 +625,7 @@ namespace Flame.Ecs
 		{
 			return (node, scope, conv) =>
 			{
-				if (!NodeHelpers.CheckArity(node, 2, scope.Function.Global.Log))
+				if (!NodeHelpers.CheckArity(node, 2, scope.Log))
 					return VoidExpression.Instance;
 
 				var lhs = conv.ConvertExpression(node.Args[0], scope);
@@ -624,7 +638,7 @@ namespace Flame.Ecs
 
 				if (lhsVar == null)
 				{
-					scope.Function.Global.Log.LogError(new LogEntry(
+					scope.Log.LogError(new LogEntry(
 						"malformed assignment",
 						"the left-hand side of an assignment must be a variable, a property or an indexer.",
 						leftLoc));
@@ -645,7 +659,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertVariableDeclaration(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Function.Global.Log))
+			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
 
 			var varTyNode = Node.Args[0];
@@ -657,7 +671,7 @@ namespace Flame.Ecs
 				varTy = Converter.ConvertType(varTyNode, Scope.Function.Global);
 				if (varTy == null)
 				{
-					Scope.Function.Global.Log.LogError(
+					Scope.Log.LogError(
 						new LogEntry(
 							"type resolution",
 							NodeHelpers.HighlightEven("could not resolve variable type '", Node.ToString(), "'."),
@@ -675,7 +689,7 @@ namespace Flame.Ecs
 				SourceLocation valLoc;
 				if (item.Calls(CodeSymbols.Assign))
 				{
-					if (!NodeHelpers.CheckArity(item, 2, Scope.Function.Global.Log))
+					if (!NodeHelpers.CheckArity(item, 2, Scope.Log))
 						continue;
 
 					nameNode = item.Args[0];
@@ -693,7 +707,7 @@ namespace Flame.Ecs
 
 				if (!nameNode.IsId || nameNode.HasSpecialName)
 				{
-					Scope.Function.Global.Log.LogError(
+					Scope.Log.LogError(
 						new LogEntry(
 							"invalid syntax",
 							"a variable declarator must either consist of " +
@@ -706,7 +720,7 @@ namespace Flame.Ecs
 
 				if (isVar && val == null)
 				{
-					Scope.Function.Global.Log.LogError(
+					Scope.Log.LogError(
 						new LogEntry(
 							"invalid syntax",
 							"an implicitly typed local variable declarator " +
@@ -746,13 +760,13 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 0, Scope.Function.Global.Log))
+			if (!NodeHelpers.CheckArity(Node, 0, Scope.Log))
 				return VoidExpression.Instance;
 
 			var thisVar = GetThisVariable(Scope);
 			if (thisVar == null)
 			{
-				Scope.Function.Global.Log.LogError(new LogEntry(
+				Scope.Log.LogError(new LogEntry(
 					"invalid syntax", 
 					NodeHelpers.HighlightEven(
 						"keyword '", "this", 
@@ -770,7 +784,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 3, Scope.Function.Global.Log))
+			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
 				return VoidExpression.Instance;
 
 			var cond = Converter.ConvertExpression(Node.Args[0], Scope);

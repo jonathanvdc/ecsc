@@ -155,6 +155,11 @@ namespace Flame.Ecs
 		/// </summary>
 		public FunctionScope Function { get { return Parent.Function; } }
 
+        /// <summary>
+        /// Gets the log object for this scope.
+        /// </summary>
+        public ICompilerLog Log { get { return Function.Global.Log; } }
+
 		/// <summary>
 		/// Gets this local scope's return type.
 		/// </summary>
