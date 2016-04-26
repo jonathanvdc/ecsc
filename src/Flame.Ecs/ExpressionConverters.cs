@@ -72,6 +72,15 @@ namespace Flame.Ecs
 			return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
 		}
 
+		public static IExpression ConvertExpression(
+			this NodeConverter Converter, LNode Node, LocalScope Scope,
+			IType Type)
+		{
+			return Scope.Function.Global.ConvertImplicit(
+				Converter.ConvertExpression(Node, Scope), 
+				Type, NodeHelpers.ToSourceLocation(Node.Range));
+		}
+
 		/// <summary>
 		/// Returns the variable whose address is loaded by the
 		/// given expression, if the expression is a get-variable
@@ -794,7 +803,7 @@ namespace Flame.Ecs
 			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
 				return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
 			var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
 			var elseExpr = Converter.ConvertScopedStatement(Node.Args[2], Scope);
 
@@ -810,7 +819,7 @@ namespace Flame.Ecs
 			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
 				return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
 			var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
 			var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
 
@@ -826,7 +835,7 @@ namespace Flame.Ecs
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
 			var body = Converter.ConvertScopedStatement(Node.Args[1], Scope);
 
 			return ToExpression(new WhileStatement(cond, body));
