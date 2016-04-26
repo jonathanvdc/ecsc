@@ -421,6 +421,9 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
 				result.AddConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
 
+				// Statements
+				result.AddConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
+
 				// Expressions
 				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
 				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);

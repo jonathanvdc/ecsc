@@ -53,6 +53,18 @@ namespace Flame.Ecs
 			return new InitializedExpression(Statement, VoidExpression.Instance);
 		}
 
+		public static IStatement ConvertStatement(this NodeConverter Converter, LNode Node, LocalScope Scope)
+		{
+			return ToStatement(Converter.ConvertExpression(Node, Scope));
+		}
+
+		public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, LocalScope Scope)
+		{
+			var childScope = new LocalScope(Scope);
+			var stmt = Converter.ConvertStatement(Node, Scope);
+			return new BlockStatement(new IStatement[] { stmt, childScope.Release() });
+		}
+
 		/// <summary>
 		/// Returns the variable whose address is loaded by the
 		/// given expression, if the expression is a get-variable
@@ -750,6 +762,22 @@ namespace Flame.Ecs
 			}
 
 			return thisVar.CreateGetExpression();
+		}
+
+		/// <summary>
+		/// Converts an if-statement node (type #if),
+		/// and wraps it in a void expression.
+		/// </summary>
+		public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 3, Scope.Function.Global.Log))
+				return VoidExpression.Instance;
+
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
+			var elseExpr = Converter.ConvertScopedStatement(Node.Args[2], Scope);
+
+			return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
 		}
 	}
 }
