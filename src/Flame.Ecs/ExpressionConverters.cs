@@ -793,6 +793,21 @@ namespace Flame.Ecs
 
 			return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
 		}
+
+		/// <summary>
+		/// Converts a while-statement node (type #while),
+		/// and wraps it in a void expression.
+		/// </summary>
+		public static IExpression ConvertWhileExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+		{
+			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+				return VoidExpression.Instance;
+
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope);
+			var body = Converter.ConvertScopedStatement(Node.Args[1], Scope);
+
+			return ToExpression(new WhileStatement(cond, body));
+		}
 	}
 }
 
