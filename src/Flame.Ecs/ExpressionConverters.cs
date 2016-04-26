@@ -823,6 +823,22 @@ namespace Flame.Ecs
 			var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
 			var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
 
+			var globalScope = Scope.Function.Global;
+
+			var ifType = ifExpr.Type;
+			var elseType = elseExpr.Type;
+
+			if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
+			{
+				ifExpr = globalScope.ConvertImplicit(
+					ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+			}
+			else
+			{
+				elseExpr = globalScope.ConvertImplicit(
+					elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
+			}
+
 			return new SelectExpression(cond, ifExpr, elseExpr);
 		}
 
