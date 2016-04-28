@@ -253,16 +253,62 @@ namespace Flame.Ecs
 			return Scope;
 		}
 
+        /// <summary>
+        /// Converts a '#var' field declaration node.
+        /// </summary>
 		public static GlobalScope ConvertField(
 			LNode Node, LazyDescribedType DeclaringType,
 			GlobalScope Scope, NodeConverter Converter)
 		{
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
+                return Scope;
+
+            var attrNodes = Node.Attrs;
+            var typeNode = Node.Args[0];
+
             // Analyze attributes lazily, but only analyze them _once_.
             // A shared lazy object does just that.
             var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() => 
-                AnalyzeTypeMemberAttributes(Node.Attrs, DeclaringType, Scope, Converter));
+                AnalyzeTypeMemberAttributes(attrNodes, DeclaringType, Scope, Converter));
 
-            throw new NotImplementedException();
+            // Analyze the field type lazily, as well.
+            var lazyFieldType = new Lazy<IType>(() => 
+                Converter.ConvertType(typeNode, Scope));
+
+            // Iterate over each field definition, analyze them 
+            // individually.
+            foreach (var item in Node.Args.Slice(1))
+            {
+                var decomp = NodeHelpers.DecomposeAssignOrId(item, Scope.Log);
+                if (decomp == null)
+                    continue;
+
+                var valNode = decomp.Item2;
+                var field = new LazyDescribedField(
+                    decomp.Item1.Name.Name, DeclaringType, 
+                    fieldDef =>
+                    {
+                        // Set the field's type.
+                        fieldDef.FieldType = lazyFieldType.Value;
+
+                        // Update the attribute list.
+                        UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
+
+                        if (decomp.Item2 != null)
+                        {
+                            fieldDef.Value = Converter.ConvertExpression(
+                                valNode, new LocalScope(new FunctionScope(
+                                    Scope, DeclaringType, fieldDef.FieldType, 
+                                    new Dictionary<string, IVariable>())), 
+                                fieldDef.FieldType);
+                        }
+                    });
+
+                // Add the field to the declaring type.
+                DeclaringType.AddField(field);
+            }
+
+            return Scope;
 		}
 	}
 }

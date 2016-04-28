@@ -700,39 +700,16 @@ namespace Flame.Ecs
 			IExpression expr = null;
 			foreach (var item in Node.Args.Slice(1))
 			{
-				LNode nameNode;
-				IExpression val;
-				SourceLocation valLoc;
-				if (item.Calls(CodeSymbols.Assign))
-				{
-					if (!NodeHelpers.CheckArity(item, 2, Scope.Log))
-						continue;
+                var decompNodes = NodeHelpers.DecomposeAssignOrId(item, Scope.Log);
+                if (decompNodes == null)
+                    continue;
 
-					nameNode = item.Args[0];
-					val = Converter.ConvertExpression(item.Args[1], Scope);
-					valLoc = NodeHelpers.ToSourceLocation(item.Args[1].Range);
-				}
-				else
-				{
-					nameNode = item;
-					val = null;
-					valLoc = null;
-				}
+				var nameNode = decompNodes.Item1;
+                var val = decompNodes.Item2 == null 
+                    ? null 
+                    : Converter.ConvertExpression(decompNodes.Item2, Scope);
 
 				var srcLoc = NodeHelpers.ToSourceLocation(nameNode.Range);
-
-				if (!nameNode.IsId || nameNode.HasSpecialName)
-				{
-					Scope.Log.LogError(
-						new LogEntry(
-							"invalid syntax",
-							"a variable declarator must either consist of " +
-							"an identifier, or an assignment to an identifier.",
-							srcLoc));
-					if (val != null)
-						expr = val;
-					continue;
-				}
 
 				if (isVar && val == null)
 				{
@@ -754,7 +731,8 @@ namespace Flame.Ecs
 				{
 					stmts.Add(local.CreateSetStatement(
 						Scope.Function.Global.ConvertImplicit(
-							val, varMember.VariableType, valLoc)));
+                            val, varMember.VariableType, 
+                            NodeHelpers.ToSourceLocation(decompNodes.Item2.Range))));
 				}
 				expr = local.CreateGetExpression();
 			}

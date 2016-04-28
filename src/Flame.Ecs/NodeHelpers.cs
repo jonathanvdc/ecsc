@@ -141,6 +141,68 @@ namespace Flame.Ecs
 			}
 		}
 
+        /// <summary>
+        /// Checks that the given node is a valid
+        /// identifier node, i.e. it describes a valid
+        /// name.
+        /// </summary>
+        public static bool CheckValidIdentifier(LNode IdNode, ICompilerLog Log)
+        {
+            if (!IdNode.IsId)
+            {
+                Log.LogError(new LogEntry(
+                    "invalid syntax",
+                    NodeHelpers.HighlightEven("expected an identifier."),
+                    NodeHelpers.ToSourceLocation(IdNode.Range)));
+                return false;
+            }
+            else if (IdNode.HasSpecialName)
+            {
+                Log.LogError(new LogEntry(
+                    "invalid syntax",
+                    NodeHelpers.HighlightEven("'", IdNode.Name.Name, "' is not an acceptable identifier."),
+                    NodeHelpers.ToSourceLocation(IdNode.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// If the given node is a valid identifier, then an (identifier, null)
+        /// tuple is returned. If it is an assignment to an identifier, then
+        /// that assignment will be decomposed, and an (identifier, value)
+        /// tuple is returned.
+        /// </summary>
+        public static Tuple<LNode, LNode> DecomposeAssignOrId(LNode AssignOrId, ICompilerLog Log)
+        {
+            if (AssignOrId.Calls(CodeSymbols.Assign))
+            {
+                if (!NodeHelpers.CheckArity(AssignOrId, 2, Log) 
+                    || !CheckValidIdentifier(AssignOrId.Args[0], Log))
+                    return null;
+                else
+                    return Tuple.Create(AssignOrId.Args[0], AssignOrId.Args[1]);
+            }
+            else if (AssignOrId.IsId)
+            {
+                if (!CheckValidIdentifier(AssignOrId, Log))
+                    return null;
+                else
+                    return Tuple.Create<LNode, LNode>(AssignOrId, null);
+            }
+            else
+            {
+                Log.LogError(new LogEntry(
+                    "invalid syntax",
+                    "expected an identifier or an assignment to an identifier.",
+                    NodeHelpers.ToSourceLocation(AssignOrId.Range)));
+                return null;
+            }
+        }
+
 		/// <summary>
 		/// Partition the specified sequence based on 
 		/// the given predicate.
