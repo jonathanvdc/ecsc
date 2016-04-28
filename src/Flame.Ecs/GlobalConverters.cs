@@ -66,7 +66,8 @@ namespace Flame.Ecs
 						return false;
 					}
 				}, Scope);
-				foreach (var item in convAttrs)
+                descTy.AddAttribute(TypeKind);
+                foreach (var item in convAttrs)
 				{
 					descTy.AddAttribute(item);
 				}
