@@ -456,6 +456,10 @@ namespace Flame.Ecs
 				result.AddConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
 				result.AddConverter(CodeSymbols.Var, TypeMemberConverters.ConvertField);
 
+                // Attributes
+                result.AliasAttribute(CodeSymbols.Const, PrimitiveAttributes.Instance.ConstantAttribute);
+                result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
+
 				// Statements
 				result.AddConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
                 result.AddConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
