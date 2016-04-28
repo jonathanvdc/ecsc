@@ -2,10 +2,42 @@
 using Flame.Build;
 using System.Collections.Generic;
 using Flame.Compiler;
+using System.Threading;
 
 namespace Flame.Ecs
 {
-	public abstract class LazyDescribedTypeMember : DescribedMember, ITypeMember
+    public abstract class LazyDescribedMember : IMember
+    {
+        public LazyDescribedMember(string Name)
+        {
+            this.Name = Name;
+            this.attributeList = new List<IAttribute>();
+        }
+
+        public string Name { get; private set; }
+        public abstract string FullName { get; }
+
+        protected abstract void CreateBody();
+
+        private List<IAttribute> attributeList;
+
+        public void AddAttribute(IAttribute Attribute)
+        {
+            CreateBody();
+            attributeList.Add(Attribute);
+        }
+
+        public IEnumerable<IAttribute> Attributes
+        {
+            get 
+            { 
+                CreateBody();
+                return attributeList; 
+            }
+        }
+    }
+
+    public abstract class LazyDescribedTypeMember : LazyDescribedMember, ITypeMember
 	{
 		public LazyDescribedTypeMember(string Name, IType DeclaringType)
 			: base(Name)
@@ -124,20 +156,17 @@ namespace Flame.Ecs
 			return Body;
 		}
 
-		protected void CreateBody()
+		protected override void CreateBody()
 		{
-			lock (baseMethods)
-			{
-				if (analyzeBody != null)
-				{
-					this.parameters = new List<IParameter>();
-					this.baseMethods = new List<IMethod>();
-					this.genericParams = new List<IGenericParameter>();
+            var f = Interlocked.CompareExchange(
+                ref analyzeBody, null, analyzeBody);
+            if (f != null)
+            {
+				this.parameters = new List<IParameter>();
+				this.baseMethods = new List<IMethod>();
+				this.genericParams = new List<IGenericParameter>();
 
-					var temp = analyzeBody;
-					analyzeBody = null;
-					temp(this);
-				}
+				f(this);
 			}
 		}
 

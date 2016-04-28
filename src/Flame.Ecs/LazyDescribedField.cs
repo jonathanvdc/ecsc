@@ -66,7 +66,7 @@ namespace Flame.Ecs
             return Value;
         }
 
-        protected void CreateBody()
+        protected override void CreateBody()
         {
             var f = Interlocked.CompareExchange(
                 ref analyzeBody, null, analyzeBody);

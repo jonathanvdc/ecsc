@@ -1,10 +1,11 @@
 ﻿using System;
 using Flame.Build;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Flame.Ecs
 {
-	public class LazyDescribedType : DescribedMember, IType, INamespace
+    public class LazyDescribedType : LazyDescribedMember, IType, INamespace
 	{
 		public LazyDescribedType(
 			string Name, INamespace Namespace,
@@ -48,22 +49,19 @@ namespace Flame.Ecs
 			return null;
 		}
 
-		protected void CreateBody()
+		protected override void CreateBody()
 		{
-			lock (baseTypes)
-			{
-				if (analyzeBody != null)
-				{
-					methods = new List<IMethod>();
-					fields = new List<IField>();
-					properties = new List<IProperty>();
-					nestedTypes = new List<IType>();
-					typeParams = new List<IGenericParameter>();
+            var f = Interlocked.CompareExchange(
+                ref analyzeBody, null, analyzeBody);
+            if (f != null)
+            {
+				methods = new List<IMethod>();
+				fields = new List<IField>();
+				properties = new List<IProperty>();
+				nestedTypes = new List<IType>();
+				typeParams = new List<IGenericParameter>();
 
-					var temp = analyzeBody;
-					analyzeBody = null;
-					temp(this);
-				}
+				f(this);
 			}
 		}
 
