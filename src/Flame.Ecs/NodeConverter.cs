@@ -125,6 +125,39 @@ namespace Flame.Ecs
 				NodeHelpers.ToSourceLocation(Node.Range), Scope);
 		}
 
+        /// <summary>
+        /// Converts the given type reference node.
+        /// If the type it describes cannot be resolved 
+        /// unambiguously, then the error is reported,
+        /// and null is returned.
+        /// </summary>
+        public IType ConvertCheckedType(
+            LNode Node, GlobalScope Scope)
+        {
+            var retType = ConvertType(Node, Scope);
+            if (retType == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "type resolution",
+                    NodeHelpers.HighlightEven(
+                        "could not resolve type '", Node.ToString(), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+            }
+            return retType;
+        }
+
+        /// <summary>
+        /// Converts the given type reference node.
+        /// If the type it describes cannot be resolved 
+        /// unambiguously, then the error is reported,
+        /// and the void type is returned.
+        /// </summary>
+        public IType ConvertCheckedTypeOrError(
+            LNode Node, GlobalScope Scope)
+        {
+            return ConvertCheckedType(Node, Scope) ?? PrimitiveTypes.Void;
+        }
+
 		/// <summary>
 		/// Converts an attribute node. Null is returned if that fails.
 		/// </summary>
@@ -433,6 +466,7 @@ namespace Flame.Ecs
 
 				// Keyword expressions
 				result.AddConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
+                result.AddConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
 
 				// Variable declaration
 				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);

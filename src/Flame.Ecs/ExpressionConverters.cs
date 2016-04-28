@@ -834,6 +834,34 @@ namespace Flame.Ecs
 
 			return ToExpression(new WhileStatement(cond, body));
 		}
+
+        /// <summary>
+        /// Converts a default-value node (type #default).
+        /// </summary>
+        public static IExpression ConvertDefaultExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                return VoidExpression.Instance;
+
+            var ty = Converter.ConvertCheckedType(Node.Args[0], Scope.Function.Global);
+
+            if (ty == null)
+            {
+                return VoidExpression.Instance;
+            }
+            else if (ty.Equals(PrimitiveTypes.Void))
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid syntax",
+                    NodeHelpers.HighlightEven("type '", "void", "' cannot be used in this context."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                return VoidExpression.Instance;
+            }
+            else
+            {
+                return new DefaultValueExpression(ty);
+            }
+        }
 	}
 }
 
