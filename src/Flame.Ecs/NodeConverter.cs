@@ -420,6 +420,7 @@ namespace Flame.Ecs
 				// Type members
 				result.AddConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
 				result.AddConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
+				result.AddConverter(CodeSymbols.Var, TypeMemberConverters.ConvertField);
 
 				// Statements
 				result.AddConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);

@@ -57,31 +57,62 @@ namespace Flame.Ecs
 			return descParam;
 		}
 
+        /// <summary>
+        /// Analyzes an attribute list that belongs to a type 
+        /// member. A sequence of arguments and a boolean that
+        /// specifies static-ness are returned.
+        /// </summary>
+        private static Tuple<IEnumerable<IAttribute>, bool> AnalyzeTypeMemberAttributes(
+            IEnumerable<LNode> Attributes, IType DeclaringType,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            bool isStatic = false;
+            var attrs = Converter.ConvertAttributeListWithAccess(
+                Attributes, DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
+                node =>
+                {
+                    if (node.IsIdNamed(CodeSymbols.Static))
+                    {
+                        isStatic = true;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }, Scope);
+            return Tuple.Create<IEnumerable<IAttribute>, bool>(
+                attrs.ToArray(), isStatic);
+        }
+
+        /// <summary>
+        /// Updates the given type member's attribute list
+        /// with the attributes defined by the given 
+        /// type member attribute tuple.
+        /// </summary>
+        private static void UpdateTypeMemberAttributes(
+            Tuple<IEnumerable<IAttribute>, bool> Attributes, 
+            LazyDescribedTypeMember Target)
+        {
+            Target.IsStatic = Attributes.Item2;
+            foreach (var item in Attributes.Item1)
+            {
+                Target.AddAttribute(item);
+            }
+        }
+
 		/// <summary>
-		/// Analyzes the given type member's attribute list.
+		/// Analyzes the given type member's attribute list,
+        /// and updates said list right away.
 		/// </summary>
-		private static void AnalyzeTypeMemberAttributes(
+		private static void UpdateTypeMemberAttributes(
 			IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
 			GlobalScope Scope, NodeConverter Converter)
 		{
-			var attrs = Converter.ConvertAttributeListWithAccess(
-				Attributes, Target.DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
-				node =>
-			{
-				if (node.IsIdNamed(CodeSymbols.Static))
-				{
-					Target.IsStatic = true;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}, Scope);
-			foreach (var item in attrs)
-			{
-				Target.AddAttribute(item);
-			}
+            UpdateTypeMemberAttributes(
+                AnalyzeTypeMemberAttributes(
+                    Attributes, Target.DeclaringType, Scope, Converter),
+                Target);
 		}
 
 		/// <summary>
@@ -143,7 +174,7 @@ namespace Flame.Ecs
 				}
 
 				// Attributes next.
-				AnalyzeTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
 
 				// Resolve the return type.
 				var retType = Converter.ConvertType(Node.Args[0], innerScope);
@@ -203,7 +234,7 @@ namespace Flame.Ecs
 				}
 
 				// Attributes next.
-				AnalyzeTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
 
 				// Resolve the parameters
 				var funScope = AnalyzeParameters(
@@ -220,6 +251,18 @@ namespace Flame.Ecs
 			DeclaringType.AddMethod(def);
 
 			return Scope;
+		}
+
+		public static GlobalScope ConvertField(
+			LNode Node, LazyDescribedType DeclaringType,
+			GlobalScope Scope, NodeConverter Converter)
+		{
+            // Analyze attributes lazily, but only analyze them _once_.
+            // A shared lazy object does just that.
+            var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() => 
+                AnalyzeTypeMemberAttributes(Node.Attrs, DeclaringType, Scope, Converter));
+
+            throw new NotImplementedException();
 		}
 	}
 }
