@@ -113,6 +113,16 @@ namespace Flame.Ecs
 			return ConvertTypeDefinition(PrimitiveAttributes.Instance.ReferenceTypeAttribute, Node, Namespace, Scope, Converter);
 		}
 
+        /// <summary>
+        /// Converts an '#interface' node.
+        /// </summary>
+        public static GlobalScope ConvertInterfaceDefinition(
+            LNode Node, IMutableNamespace Namespace, GlobalScope Scope,
+            NodeConverter Converter)
+        {
+            return ConvertTypeDefinition(PrimitiveAttributes.Instance.InterfaceAttribute, Node, Namespace, Scope, Converter);
+        }
+
 		/// <summary>
 		/// Converts a '#struct' node.
 		/// </summary>
