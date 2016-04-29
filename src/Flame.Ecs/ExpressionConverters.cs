@@ -887,7 +887,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "the '", "as", "' operator cannot be applied to an operand of pointer type '", 
                         Scope.Function.Global.TypeNamer.Convert(ty), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
             else if (ty.GetIsStaticType())
@@ -900,7 +900,7 @@ namespace Flame.Ecs
                         "the second operand of an '", "as", 
                         "' operator cannot be '", "static", "' type '",
                         Scope.Function.Global.TypeNamer.Convert(ty), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
             else if (!ty.GetIsReferenceType())
@@ -915,7 +915,7 @@ namespace Flame.Ecs
                             "the '", "as", "' operator cannot be used with non-reference type parameter '", 
                             Scope.Function.Global.TypeNamer.Convert(ty), "'. Consider adding '", 
                             "class", "' or a reference type constraint."),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 }
                 else
                 {
@@ -924,7 +924,7 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "the '", "as", "' operator cannot be used with non-nullable value type '", 
                             Scope.Function.Global.TypeNamer.Convert(ty), "'."),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 }
                 return new AsInstanceExpression(op, ty);
             }
@@ -950,7 +950,7 @@ namespace Flame.Ecs
                         "there is no legal conversion from type '", 
                         Scope.Function.Global.TypeNamer.Convert(op.Type), "' to type '", 
                         Scope.Function.Global.TypeNamer.Convert(ty), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
 
@@ -973,7 +973,7 @@ namespace Flame.Ecs
                                     NodeHelpers.HighlightEven(
                                         "'", "as", "' operator always evaluates to '", 
                                         "null", "' here. "))),
-                            NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                            NodeHelpers.ToSourceLocation(Node.Range)));
                     }
                 }
                 else if (EcsWarnings.RedundantAsWarning.UseWarning(Scope.Log.Options))
@@ -984,7 +984,7 @@ namespace Flame.Ecs
                             NodeHelpers.HighlightEven(
                                 "this '", "as", "' is redundant, " +
                                 "and can be replaced by a cast. "))),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
 
@@ -1012,7 +1012,7 @@ namespace Flame.Ecs
                         "the second operand of an '", "is", 
                         "' operator cannot be '", "static", "' type '",
                         Scope.Function.Global.TypeNamer.Convert(ty), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
                 return result;
             }
             var opType = op.Type;
@@ -1024,7 +1024,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "the '", "is", "' operator cannot be applied to an operand of pointer type '", 
                         (Scope.Function.Global.TypeNamer.Convert(opType.GetIsPointer() ? opType : ty)), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
                 return result;
             }
 
@@ -1045,7 +1045,7 @@ namespace Flame.Ecs
                                 NodeHelpers.HighlightEven(
                                     "'", "is", "' operator always evaluates to '", 
                                     lit, "' here. "))),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
             else if (opType.Is(ty))
@@ -1059,7 +1059,7 @@ namespace Flame.Ecs
                             NodeHelpers.HighlightEven(
                                 "the '", "is", "' operator is equivalent to a null check here. " +
                                 "Replacing '", "is", "' by an explicit null check may be clearer. "))),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
 
