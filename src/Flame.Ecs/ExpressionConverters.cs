@@ -965,15 +965,18 @@ namespace Flame.Ecs
                 // at compile-time. That's a warning no matter what.
                 if (evalResult.Type.Equals(PrimitiveTypes.Null))
                 {
-                    Scope.Log.LogWarning(new LogEntry(
-                        "always null",
-                        EcsWarnings.AlwaysNullWarning.CreateMessage(new MarkupNode("#group", 
-                            NodeHelpers.HighlightEven(
-                                "'", "as", "' operator always evaluates to '", 
-                                "null", "' here."))),
-                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    if (EcsWarnings.AlwaysNullWarning.UseWarning(Scope.Log.Options))
+                    {
+                        Scope.Log.LogWarning(new LogEntry(
+                            "always null",
+                            EcsWarnings.AlwaysNullWarning.CreateMessage(new MarkupNode("#group", 
+                                    NodeHelpers.HighlightEven(
+                                        "'", "as", "' operator always evaluates to '", 
+                                        "null", "' here."))),
+                            NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                    }
                 }
-                else
+                else if (EcsWarnings.RedundantAsWarning.UseWarning(Scope.Log.Options))
                 {
                     Scope.Log.LogWarning(new LogEntry(
                         "redundant 'as' operator",
@@ -988,10 +991,65 @@ namespace Flame.Ecs
             return result;
         }
 
+        /// <summary>
+        /// Converts an is-instance expression node (type #is).
+        /// </summary>
         public static IExpression ConvertIsInstanceExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            throw new NotImplementedException();
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var op = Converter.ConvertExpression(Node.Args[0], Scope);
+            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+            var result = new IsExpression(op, ty);
+
+            if (ty.GetIsStaticType())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid expression",
+                    NodeHelpers.HighlightEven(
+                        "the second operand of an '", "is", 
+                        "' operator cannot be '", "static", "' type '",
+                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                return result;
+            }
+            var opType = op.Type;
+            if (opType.GetIsPointer() || ty.GetIsPointer())
+            {
+                // We don't do pointer types.
+                Scope.Log.LogError(new LogEntry(
+                    "invalid expression",
+                    NodeHelpers.HighlightEven(
+                        "the '", "is", "' operator cannot be applied to an operand of pointer type '", 
+                        (Scope.Function.Global.TypeNamer.Convert(opType.GetIsPointer() ? opType : ty)), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                return result;
+            }
+
+            // Check that the is-instance expression doesn't
+            // evaluate to some constant. If it does, then we
+            // should log a warning for sure.
+            var evalResult = result.Evaluate();
+            if (evalResult != null)
+            {
+                bool resultVal = evalResult.GetPrimitiveValue<bool>();
+                string lit = resultVal ? "true" : "false";
+                var warn = resultVal ? EcsWarnings.AlwaysTrueWarning : EcsWarnings.AlwaysFalseWarning;
+                if (warn.UseWarning(Scope.Log.Options))
+                {
+                    Scope.Log.LogWarning(new LogEntry(
+                        "always " + lit,
+                        warn.CreateMessage(new MarkupNode("#group", 
+                                NodeHelpers.HighlightEven(
+                                    "'", "is", "' operator always evaluates to '", 
+                                    lit, "' here."))),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+            }
+
+            return result;
         }
 	}
 }
