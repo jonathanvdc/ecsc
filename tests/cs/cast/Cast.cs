@@ -21,5 +21,7 @@ public static class Program
         Console.WriteLine(x is B);
         Console.WriteLine(x as A);
         Console.WriteLine(x as B);
+        Console.WriteLine((A)x);
+        Console.WriteLine((B)x);
     }
 }
