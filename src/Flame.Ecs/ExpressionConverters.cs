@@ -972,7 +972,7 @@ namespace Flame.Ecs
                             EcsWarnings.AlwaysNullWarning.CreateMessage(new MarkupNode("#group", 
                                     NodeHelpers.HighlightEven(
                                         "'", "as", "' operator always evaluates to '", 
-                                        "null", "' here."))),
+                                        "null", "' here. "))),
                             NodeHelpers.ToSourceLocation(Node.Target.Range)));
                     }
                 }
@@ -983,7 +983,7 @@ namespace Flame.Ecs
                         EcsWarnings.RedundantAsWarning.CreateMessage(new MarkupNode("#group", 
                             NodeHelpers.HighlightEven(
                                 "this '", "as", "' is redundant, " +
-                                "and can be replaced by a cast."))),
+                                "and can be replaced by a cast. "))),
                         NodeHelpers.ToSourceLocation(Node.Target.Range)));
                 }
             }
@@ -1044,7 +1044,21 @@ namespace Flame.Ecs
                         warn.CreateMessage(new MarkupNode("#group", 
                                 NodeHelpers.HighlightEven(
                                     "'", "is", "' operator always evaluates to '", 
-                                    lit, "' here."))),
+                                    lit, "' here. "))),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+            }
+            else if (opType.Is(ty))
+            {
+                var warn = Warnings.Instance.HiddenNullCheck;
+                if (warn.UseWarning(Scope.Log.Options))
+                {
+                    Scope.Log.LogWarning(new LogEntry(
+                        "hidden null check",
+                        warn.CreateMessage(new MarkupNode("#group", 
+                            NodeHelpers.HighlightEven(
+                                "the '", "is", "' operator is equivalent to a null check here. " +
+                                "Replacing '", "is", "' by an explicit null check may be clearer. "))),
                         NodeHelpers.ToSourceLocation(Node.Target.Range)));
                 }
             }
