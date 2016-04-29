@@ -824,7 +824,8 @@ namespace Flame.Ecs
 		/// Converts a while-statement node (type #while),
 		/// and wraps it in a void expression.
 		/// </summary>
-		public static IExpression ConvertWhileExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+		public static IExpression ConvertWhileExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
@@ -838,7 +839,8 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts a default-value node (type #default).
         /// </summary>
-        public static IExpression ConvertDefaultExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        public static IExpression ConvertDefaultExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
                 return VoidExpression.Instance;
@@ -861,6 +863,135 @@ namespace Flame.Ecs
             {
                 return new DefaultValueExpression(ty);
             }
+        }
+
+        /// <summary>
+        /// Converts an as-instance expression node (type #as).
+        /// </summary>
+        public static IExpression ConvertAsInstanceExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var op = Converter.ConvertExpression(Node.Args[0], Scope);
+            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+
+            // In an operation of the form E as T, E must be an expression and T must be a
+            // reference type, a type parameter known to be a reference type, or a nullable type.
+            if (ty.GetIsPointer())
+            {
+                // Spec doesn't cover pointers.
+                Scope.Log.LogError(new LogEntry(
+                    "invalid expression",
+                    NodeHelpers.HighlightEven(
+                        "the '", "as", "' operator cannot be applied to an operand of pointer type '", 
+                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                return new AsInstanceExpression(op, ty);
+            }
+            else if (ty.GetIsStaticType())
+            {
+                // Make sure that we're not testing
+                // against a static type.
+                Scope.Log.LogError(new LogEntry(
+                    "invalid expression",
+                    NodeHelpers.HighlightEven(
+                        "the second operand of an '", "as", 
+                        "' operator cannot be '", "static", "' type '",
+                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                return new AsInstanceExpression(op, ty);
+            }
+            else if (!ty.GetIsReferenceType())
+            {
+                // Oops. Try to figure out what kind of type
+                // `ty` is, then.
+                if (ty.GetIsGenericParameter())
+                {                    
+                    Scope.Log.LogError(new LogEntry(
+                        "invalid expression",
+                        NodeHelpers.HighlightEven(
+                            "the '", "as", "' operator cannot be used with non-reference type parameter '", 
+                            Scope.Function.Global.TypeNamer.Convert(ty), "'. Consider adding '", 
+                            "class", "' or a reference type constraint."),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+                else
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "invalid expression",
+                        NodeHelpers.HighlightEven(
+                            "the '", "as", "' operator cannot be used with non-nullable value type '", 
+                            Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+                return new AsInstanceExpression(op, ty);
+            }
+            else if (op.Type.Equals(PrimitiveTypes.Null))
+            {
+                // Early-out here, because we don't want to emit warnings
+                // for things like 'null as T', because the programmer is
+                // probably just trying to use that to pick a specific 
+                // overload.
+                // We can also use a reinterpret_cast here, because
+                // we know that 'null' is convertible to the target 
+                // type.
+                return new ReinterpretCastExpression(op, ty);
+            }
+
+            var conv = Scope.Function.Global.ConversionRules.TryConvertExplicit(op, ty);
+
+            if (conv == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid expression",
+                    NodeHelpers.HighlightEven(
+                        "there is no legal conversion from type '", 
+                        Scope.Function.Global.TypeNamer.Convert(op.Type), "' to type '", 
+                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                return new AsInstanceExpression(op, ty);
+            }
+
+            // Success! Now that we know that the expression is well-formed,
+            // we also want to make sure that it's sane.
+            var result = new AsInstanceExpression(op, ty);
+            var evalResult = result.Evaluate();
+
+            if (evalResult != null)
+            {
+                // We actually managed to evaluate this thing 
+                // at compile-time. That's a warning no matter what.
+                if (evalResult.Type.Equals(PrimitiveTypes.Null))
+                {
+                    Scope.Log.LogWarning(new LogEntry(
+                        "always null",
+                        EcsWarnings.AlwaysNullWarning.CreateMessage(new MarkupNode("#group", 
+                            NodeHelpers.HighlightEven(
+                                "'", "as", "' operator always evaluates to '", 
+                                "null", "' here."))),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+                else
+                {
+                    Scope.Log.LogWarning(new LogEntry(
+                        "redundant 'as' operator",
+                        EcsWarnings.RedundantAsWarning.CreateMessage(new MarkupNode("#group", 
+                            NodeHelpers.HighlightEven(
+                                "this '", "as", "' is redundant, " +
+                                "and can be replaced by a cast."))),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+                }
+            }
+
+            return result;
+        }
+
+        public static IExpression ConvertIsInstanceExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            throw new NotImplementedException();
         }
 	}
 }
