@@ -474,6 +474,8 @@ namespace Flame.Ecs
                 result.AddConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
                 result.AddConverter(CodeSymbols.As, ExpressionConverters.ConvertAsInstanceExpression);
                 result.AddConverter(CodeSymbols.Is, ExpressionConverters.ConvertIsInstanceExpression);
+                result.AddConverter(CodeSymbols.Cast, ExpressionConverters.ConvertCastExpression);
+                result.AddConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
 
 				// Variable declaration
 				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);

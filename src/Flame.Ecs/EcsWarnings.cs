@@ -63,6 +63,24 @@ namespace Flame.Ecs
         /// </remarks>
         public static readonly WarningDescription RedundantAsWarning = 
             new WarningDescription("redundant-as", Warnings.Instance.All);
+
+        /// <summary>
+        /// The -Wecs warning group.
+        /// </summary>
+        /// <remarks>
+        /// This is a -pedantic warning group.
+        /// </remarks>
+        public static readonly WarningDescription EcsExtensionWarningGroup = 
+            new WarningDescription("ecs", Warnings.Instance.Pedantic);
+
+        /// <summary>
+        /// The -Wecs-using-cast warning.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wecs warning.
+        /// </remarks>
+        public static readonly WarningDescription EcsExtensionUsingCastWarning = 
+            new WarningDescription("ecs-using-cast", EcsExtensionWarningGroup);
 	}
 }
 

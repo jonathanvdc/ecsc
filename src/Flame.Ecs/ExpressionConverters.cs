@@ -1042,9 +1042,9 @@ namespace Flame.Ecs
                     Scope.Log.LogWarning(new LogEntry(
                         "always " + lit,
                         warn.CreateMessage(new MarkupNode("#group", 
-                                NodeHelpers.HighlightEven(
-                                    "'", "is", "' operator always evaluates to '", 
-                                    lit, "' here. "))),
+                            NodeHelpers.HighlightEven(
+                                "'", "is", "' operator always evaluates to '", 
+                                lit, "' here. "))),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
@@ -1064,6 +1064,76 @@ namespace Flame.Ecs
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Converts a cast expression node (type #cast).
+        /// </summary>
+        public static IExpression ConvertCastExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var op = Converter.ConvertExpression(Node.Args[0], Scope);
+            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+
+            return Scope.Function.Global.ConvertExplicit(
+                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
+        }
+
+        /// <summary>
+        /// Converts a using-cast expression node (type #usingCast).
+        /// </summary>
+        public static IExpression ConvertUsingCastExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            // A using-cast is like a regular cast, except that
+            // 
+            //      x using T
+            //
+            // will only compile if it is guaranteed to succeed.
+
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
+            if (usingCastWarn.UseWarning(Scope.Log.Options))
+            {
+                Scope.Log.LogWarning(new LogEntry(
+                    "EC# extension",
+                    usingCastWarn.CreateMessage(
+                        new MarkupNode("#group", NodeHelpers.HighlightEven(
+                            "the '", "using", "' cast operator is an EC# extension. "))),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+
+            var op = Converter.ConvertExpression(Node.Args[0], Scope);
+            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+
+            // Try an implicit conversion.
+            var implicitConv = 
+                Scope.Function.Global.ConversionRules.TryConvertImplicit(op, ty);
+
+            if (implicitConv != null)
+                // Looks like it worked. Return the
+                // conversion-expression.
+                return implicitConv;
+
+            // TODO: maybe try primitive and user-defined
+            // conversions here, too?
+
+            // We're not sure that this will work at run-time.
+            // Let's log an error, return an unknown-expression,
+            // and call it a day.
+            Scope.Log.LogError(new LogEntry(
+                "invalid cast",
+                NodeHelpers.HighlightEven(
+                    "the '", "using", "' cast operator requires that the operand be " +
+                    "convertible to the target type."),
+                NodeHelpers.ToSourceLocation(Node.Range)));
+
+            return new UnknownExpression(ty);
         }
 	}
 }
