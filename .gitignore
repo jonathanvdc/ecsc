@@ -17,3 +17,6 @@ bin/
 
 # Log files
 *.log
+
+# 'packages' folder
+packages/

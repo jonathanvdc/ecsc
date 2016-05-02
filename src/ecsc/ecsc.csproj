@@ -31,69 +31,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="Flame.Analysis">
-      <HintPath>..\..\libs\Flame.Analysis.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Cecil">
-      <HintPath>..\..\libs\Flame.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.CodeDescription">
-      <HintPath>..\..\libs\Flame.CodeDescription.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Compiler">
-      <HintPath>..\..\libs\Flame.Compiler.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Cpp">
-      <HintPath>..\..\libs\Flame.Cpp.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame">
-      <HintPath>..\..\libs\Flame.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.DSProject">
-      <HintPath>..\..\libs\Flame.DSProject.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Front.Common">
-      <HintPath>..\..\libs\Flame.Front.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Front">
-      <HintPath>..\..\libs\Flame.Front.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Intermediate">
-      <HintPath>..\..\libs\Flame.Intermediate.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Markdown">
-      <HintPath>..\..\libs\Flame.Markdown.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.MIPS">
-      <HintPath>..\..\libs\Flame.MIPS.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Optimization">
-      <HintPath>..\..\libs\Flame.Optimization.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Python">
-      <HintPath>..\..\libs\Flame.Python.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Recompilation">
-      <HintPath>..\..\libs\Flame.Recompilation.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.RT">
-      <HintPath>..\..\libs\Flame.RT.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Syntax">
-      <HintPath>..\..\libs\Flame.Syntax.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.TextContract">
-      <HintPath>..\..\libs\Flame.TextContract.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Verification">
-      <HintPath>..\..\libs\Flame.Verification.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.Wasm">
-      <HintPath>..\..\libs\Flame.Wasm.dll</HintPath>
-    </Reference>
-    <Reference Include="Flame.XmlDocs">
-      <HintPath>..\..\libs\Flame.XmlDocs.dll</HintPath>
-    </Reference>
     <Reference Include="ICSharpCode.TextEditor">
       <HintPath>..\..\libs\ICSharpCode.TextEditor.dll</HintPath>
     </Reference>
@@ -106,23 +43,8 @@
     <Reference Include="LLLPG">
       <HintPath>..\..\libs\LLLPG.exe</HintPath>
     </Reference>
-    <Reference Include="vshost">
-      <HintPath>..\..\libs\LLLPG.vshost.exe</HintPath>
-    </Reference>
-    <Reference Include="Loyc.Binary">
-      <HintPath>..\..\libs\Loyc.Binary.dll</HintPath>
-    </Reference>
-    <Reference Include="Loyc.Collections">
-      <HintPath>..\..\libs\Loyc.Collections.dll</HintPath>
-    </Reference>
     <Reference Include="Loyc.Ecs">
       <HintPath>..\..\libs\Loyc.Ecs.dll</HintPath>
-    </Reference>
-    <Reference Include="Loyc.Essentials">
-      <HintPath>..\..\libs\Loyc.Essentials.dll</HintPath>
-    </Reference>
-    <Reference Include="Loyc.Syntax">
-      <HintPath>..\..\libs\Loyc.Syntax.dll</HintPath>
     </Reference>
     <Reference Include="Loyc.Utilities">
       <HintPath>..\..\libs\Loyc.Utilities.dll</HintPath>
@@ -130,28 +52,103 @@
     <Reference Include="LoycCore.Tests">
       <HintPath>..\..\libs\LoycCore.Tests.exe</HintPath>
     </Reference>
+    <Reference Include="System.Xml" />
     <Reference Include="Mono.Cecil">
-      <HintPath>..\..\libs\Mono.Cecil.dll</HintPath>
+      <HintPath>..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Mdb">
-      <HintPath>..\..\libs\Mono.Cecil.Mdb.dll</HintPath>
+      <HintPath>..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Mdb.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Pdb">
-      <HintPath>..\..\libs\Mono.Cecil.Pdb.dll</HintPath>
+      <HintPath>..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Pdb.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>..\..\libs\Mono.Cecil.Rocks.dll</HintPath>
+      <HintPath>..\packages\Mono.Cecil.0.9.5.4\lib\net40\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\libs\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Analysis">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Analysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cecil">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.CodeDescription">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.CodeDescription.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Compiler">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Cpp">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Cpp.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front.Common">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Front.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Front">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Front.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Intermediate">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Intermediate.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Markdown">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Markdown.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.MIPS">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.MIPS.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Optimization">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Optimization.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Python">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Python.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Recompilation">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Recompilation.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.RT">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.RT.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Syntax">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Syntax.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.TextContract">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.TextContract.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Verification">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Verification.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.Wasm">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.Wasm.dll</HintPath>
+    </Reference>
+    <Reference Include="Flame.XmlDocs">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.XmlDocs.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Binary">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Loyc.Binary.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Collections">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Loyc.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Essentials">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Loyc.Essentials.dll</HintPath>
+    </Reference>
+    <Reference Include="Loyc.Syntax">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Loyc.Syntax.dll</HintPath>
     </Reference>
     <Reference Include="Pixie">
-      <HintPath>..\..\libs\Pixie.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Pixie.dll</HintPath>
     </Reference>
     <Reference Include="Pixie.Xml">
-      <HintPath>..\..\libs\Pixie.Xml.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Pixie.Xml.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xml" />
+    <Reference Include="Flame.DSProject">
+      <HintPath>..\packages\Flame.Front.0.7.0-ci151\lib\net45\Flame.DSProject.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -165,5 +162,8 @@
       <Project>{DB650664-CFE1-42BC-969B-FEB22B028378}</Project>
       <Name>Flame.Ecs</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
