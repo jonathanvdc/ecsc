@@ -1,0 +1,21 @@
+install:
+  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.0/compare-test.zip > compare-test.zip
+  - 7z x compare-test.zip -obin/compare-test
+  - nuget restore src\ecsc.sln
+build_script:
+  - msbuild /p:Configuration=Release src\ecsc.sln
+
+after_build:
+  # Zip the compiled ecsc binaries, and upload them.
+  - mkdir ecsc-build
+  - xcopy src\ecsc\bin\Release\*.dll ecsc-build
+  - xcopy src\ecsc\bin\Release\*.exe ecsc-build
+  - 7z a ecsc.zip %APPVEYOR_BUILD_FOLDER%\ecsc-build\*
+
+artifacts:
+  - path: ecsc.zip
+    name: ecsc
+
+test_script:
+  # Run the tests
+  - bin\compare-test\compare-test.exe all-tests-windows.test
