@@ -337,7 +337,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a global converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, GlobalConverter Converter)
+		public void AddGlobalConverter(Symbol Symbol, GlobalConverter Converter)
 		{
 			globalConverters[Symbol] = Converter;
 		}
@@ -345,7 +345,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a type member converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, TypeMemberConverter Converter)
+		public void AddMemberConverter(Symbol Symbol, TypeMemberConverter Converter)
 		{
 			typeMemberConverters[Symbol] = Converter;
 		}
@@ -353,9 +353,9 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a type converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, TypeConverter Converter)
+		public void AddTypeConverter(Symbol Symbol, TypeConverter Converter)
 		{
-			AddConverter(Symbol, (node, scope, self) => 
+            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
 				new TypeOrExpression(new IType[] 
 				{ 
 					Converter(node, scope.Function.Global, self)
@@ -365,7 +365,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers an attribute converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, AttributeConverter Converter)
+		public void AddAttributeConverter(Symbol Symbol, AttributeConverter Converter)
 		{
 			attrConverters[Symbol] = Converter;
 		}
@@ -373,7 +373,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a type-or-expression converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, TypeOrExpressionConverter Converter)
+		public void AddTypeOrExprConverter(Symbol Symbol, TypeOrExpressionConverter Converter)
 		{
 			exprConverters[Symbol] = Converter;
 		}
@@ -381,7 +381,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers an expression converter.
 		/// </summary>
-		public void AddConverter(Symbol Symbol, ExpressionConverter Converter)
+		public void AddExprConverter(Symbol Symbol, ExpressionConverter Converter)
 		{
 			exprConverters[Symbol] = (node, scope, self) => new TypeOrExpression(Converter(node, scope, self));
 		}
@@ -389,7 +389,7 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a literal converter.
 		/// </summary>
-		public void AddConverter(Type LiteralType, LiteralConverter Converter)
+		public void AddLiteralConverter(Type LiteralType, LiteralConverter Converter)
 		{
 			literalConverters[LiteralType] = Converter;
 		}
@@ -397,9 +397,9 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Registers a literal converter.
 		/// </summary>
-		public void AddConverter<T>(Func<T, IExpression> Converter)
+        public void AddLiteralConverter<T>(Func<T, IExpression> Converter)
 		{
-			AddConverter(typeof(T), val => Converter((T)val));
+            AddLiteralConverter(typeof(T), val => Converter((T)val));
 		}
 
 		/// <summary>
@@ -407,7 +407,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public void AliasAttribute(Symbol Symbol, IAttribute Attribute)
 		{
-			AddConverter(Symbol, (node, scope, self) => Attribute);
+            AddAttributeConverter(Symbol, (node, scope, self) => Attribute);
 		}
 
 		/// <summary>
@@ -415,7 +415,7 @@ namespace Flame.Ecs
 		/// </summary>
 		public void AliasType(Symbol Symbol, IType Type)
 		{
-			AddConverter(Symbol, (node, scope, self) => Type);
+			AddTypeConverter(Symbol, (node, scope, self) => Type);
 		}
 
 		/// <summary>
@@ -446,93 +446,93 @@ namespace Flame.Ecs
 					ExpressionConverters.ConvertCall);
 
 				// Global entities
-				result.AddConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
-				result.AddConverter(CodeSymbols.Class, GlobalConverters.ConvertClassDefinition);
-				result.AddConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
-                result.AddConverter(CodeSymbols.Interface, GlobalConverters.ConvertInterfaceDefinition);
+				result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
+                result.AddGlobalConverter(CodeSymbols.Class, GlobalConverters.ConvertClassDefinition);
+                result.AddGlobalConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
+                result.AddGlobalConverter(CodeSymbols.Interface, GlobalConverters.ConvertInterfaceDefinition);
 
 				// Type members
-				result.AddConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
-				result.AddConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
-				result.AddConverter(CodeSymbols.Var, TypeMemberConverters.ConvertField);
+				result.AddMemberConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
+                result.AddMemberConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
+                result.AddMemberConverter(CodeSymbols.Var, TypeMemberConverters.ConvertField);
 
                 // Attributes
                 result.AliasAttribute(CodeSymbols.Const, PrimitiveAttributes.Instance.ConstantAttribute);
                 result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
 
 				// Statements
-				result.AddConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
-                result.AddConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
+				result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
+                result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
 
 				// Expressions
-				result.AddConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
-				result.AddConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
-				result.AddConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
+                result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
+                result.AddExprConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
+                result.AddTypeOrExprConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
 
 				// Keyword expressions
-				result.AddConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
-                result.AddConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
+                result.AddExprConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
+                result.AddExprConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
 
                 // Cast expressions
-                result.AddConverter(CodeSymbols.As, ExpressionConverters.ConvertAsInstanceExpression);
-                result.AddConverter(CodeSymbols.Is, ExpressionConverters.ConvertIsInstanceExpression);
-                result.AddConverter(CodeSymbols.Cast, ExpressionConverters.ConvertCastExpression);
-                result.AddConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
+                result.AddExprConverter(CodeSymbols.As, ExpressionConverters.ConvertAsInstanceExpression);
+                result.AddExprConverter(CodeSymbols.Is, ExpressionConverters.ConvertIsInstanceExpression);
+                result.AddExprConverter(CodeSymbols.Cast, ExpressionConverters.ConvertCastExpression);
+                result.AddExprConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
 
 				// Variable declaration
-				result.AddConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
+                result.AddExprConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
 
 				// Operators
                 // - Ternary operators
-                result.AddConverter(CodeSymbols.QuestionMark,  ExpressionConverters.ConvertSelectExpression);
+                result.AddExprConverter(CodeSymbols.QuestionMark,  ExpressionConverters.ConvertSelectExpression);
 
 				// - Binary operators
-				result.AddConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
-				result.AddConverter(CodeSymbols.Sub, ExpressionConverters.CreateBinaryOpConverter(Operator.Subtract));
-				result.AddConverter(CodeSymbols.Mul, ExpressionConverters.CreateBinaryOpConverter(Operator.Multiply));
-				result.AddConverter(CodeSymbols.Div, ExpressionConverters.CreateBinaryOpConverter(Operator.Divide));
-				result.AddConverter(CodeSymbols.Mod, ExpressionConverters.CreateBinaryOpConverter(Operator.Remainder));
-				result.AddConverter(CodeSymbols.Eq, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckEquality));
-				result.AddConverter(CodeSymbols.Neq, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckInequality));
-				result.AddConverter(CodeSymbols.LT, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckLessThan));
-				result.AddConverter(CodeSymbols.LE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckLessThanOrEqual));
-				result.AddConverter(CodeSymbols.GT, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThan));
-				result.AddConverter(CodeSymbols.GE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThanOrEqual));
-				result.AddConverter(CodeSymbols.Shl, ExpressionConverters.CreateBinaryOpConverter(Operator.LeftShift));
-				result.AddConverter(CodeSymbols.Shr, ExpressionConverters.CreateBinaryOpConverter(Operator.RightShift));
-				result.AddConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
-				result.AddConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
-				result.AddConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
+                result.AddExprConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
+                result.AddExprConverter(CodeSymbols.Sub, ExpressionConverters.CreateBinaryOpConverter(Operator.Subtract));
+                result.AddExprConverter(CodeSymbols.Mul, ExpressionConverters.CreateBinaryOpConverter(Operator.Multiply));
+                result.AddExprConverter(CodeSymbols.Div, ExpressionConverters.CreateBinaryOpConverter(Operator.Divide));
+                result.AddExprConverter(CodeSymbols.Mod, ExpressionConverters.CreateBinaryOpConverter(Operator.Remainder));
+                result.AddExprConverter(CodeSymbols.Eq, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckEquality));
+                result.AddExprConverter(CodeSymbols.Neq, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckInequality));
+                result.AddExprConverter(CodeSymbols.LT, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckLessThan));
+                result.AddExprConverter(CodeSymbols.LE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckLessThanOrEqual));
+                result.AddExprConverter(CodeSymbols.GT, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThan));
+                result.AddExprConverter(CodeSymbols.GE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThanOrEqual));
+                result.AddExprConverter(CodeSymbols.Shl, ExpressionConverters.CreateBinaryOpConverter(Operator.LeftShift));
+                result.AddExprConverter(CodeSymbols.Shr, ExpressionConverters.CreateBinaryOpConverter(Operator.RightShift));
+                result.AddExprConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
+                result.AddExprConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
+                result.AddExprConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
 
 				// - Assignment operator
-				result.AddConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
+                result.AddExprConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
 
 				// - Compound assignment operators
-				result.AddConverter(CodeSymbols.AddSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Add));
-				result.AddConverter(CodeSymbols.SubSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Subtract));
-				result.AddConverter(CodeSymbols.MulSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Multiply));
-				result.AddConverter(CodeSymbols.DivSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Divide));
-				result.AddConverter(CodeSymbols.ModSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Remainder));
-				result.AddConverter(CodeSymbols.ShlSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.LeftShift));
-				result.AddConverter(CodeSymbols.ShrSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.RightShift));
-				result.AddConverter(CodeSymbols.AndBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.And));
-				result.AddConverter(CodeSymbols.OrBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Or));
-				result.AddConverter(CodeSymbols.XorBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
+                result.AddExprConverter(CodeSymbols.AddSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Add));
+                result.AddExprConverter(CodeSymbols.SubSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Subtract));
+                result.AddExprConverter(CodeSymbols.MulSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Multiply));
+                result.AddExprConverter(CodeSymbols.DivSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Divide));
+                result.AddExprConverter(CodeSymbols.ModSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Remainder));
+                result.AddExprConverter(CodeSymbols.ShlSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.LeftShift));
+                result.AddExprConverter(CodeSymbols.ShrSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.RightShift));
+                result.AddExprConverter(CodeSymbols.AndBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.And));
+                result.AddExprConverter(CodeSymbols.OrBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Or));
+                result.AddExprConverter(CodeSymbols.XorBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
 
 				// Literals
-				result.AddConverter<sbyte>(val => new Int8Expression(val));
-				result.AddConverter<short>(val => new Int16Expression(val));
-				result.AddConverter<int>(val => new Int32Expression(val));
-				result.AddConverter<long>(val => new Int64Expression(val));
-				result.AddConverter<byte>(val => new UInt8Expression(val));
-				result.AddConverter<ushort>(val => new UInt16Expression(val));
-				result.AddConverter<uint>(val => new UInt32Expression(val));
-				result.AddConverter<ulong>(val => new UInt64Expression(val));
-				result.AddConverter<float>(val => new Float32Expression(val));
-				result.AddConverter<double>(val => new Float64Expression(val));
-				result.AddConverter<bool>(val => new BooleanExpression(val));
-				result.AddConverter<char>(val => new CharExpression(val));
-				result.AddConverter<string>(val => new StringExpression(val));
+				result.AddLiteralConverter<sbyte>(val => new Int8Expression(val));
+                result.AddLiteralConverter<short>(val => new Int16Expression(val));
+                result.AddLiteralConverter<int>(val => new Int32Expression(val));
+                result.AddLiteralConverter<long>(val => new Int64Expression(val));
+                result.AddLiteralConverter<byte>(val => new UInt8Expression(val));
+                result.AddLiteralConverter<ushort>(val => new UInt16Expression(val));
+                result.AddLiteralConverter<uint>(val => new UInt32Expression(val));
+                result.AddLiteralConverter<ulong>(val => new UInt64Expression(val));
+                result.AddLiteralConverter<float>(val => new Float32Expression(val));
+                result.AddLiteralConverter<double>(val => new Float64Expression(val));
+                result.AddLiteralConverter<bool>(val => new BooleanExpression(val));
+                result.AddLiteralConverter<char>(val => new CharExpression(val));
+                result.AddLiteralConverter<string>(val => new StringExpression(val));
 
 				// Primitive types
 				result.AliasType(CodeSymbols.Int8, PrimitiveTypes.Int8);
