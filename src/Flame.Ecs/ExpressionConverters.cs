@@ -14,15 +14,52 @@ namespace Flame.Ecs
 {
 	public static class ExpressionConverters
 	{
+        /// <summary>
+        /// Retrieves the 'this' variable from the given 
+        /// local scope. 
+        /// </summary>
+        public static IVariable GetThisVariable(ILocalScope Scope)
+        {
+            return Scope.GetVariable(CodeSymbols.This.Name);
+        }
+
 		private static IExpression LookupUnqualifiedNameExpression(string Name, ILocalScope Scope)
 		{
+            // Early-out for local variables.
 			var local = Scope.GetVariable(Name);
 			if (local != null)
 			{
 				return local.CreateGetExpression();
 			}
 
-			return null;
+            var declType = Scope.Function.CurrentType;
+
+            if (declType == null)
+                return null;
+
+            // Create a set of potential results.
+            var exprSet = new HashSet<IExpression>();
+            foreach (var item in Scope.Function.GetStaticMembers(declType, Name))
+            {
+                var acc = AccessMember(null, item, Scope.Function.Global);
+                if (acc != null)
+                    exprSet.Add(acc);
+            }
+
+            var thisVar = GetThisVariable(Scope);
+            if (GetThisVariable(Scope) != null)
+            {
+                foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                {
+                    var acc = AccessMember(thisVar.CreateGetExpression(), item, Scope.Function.Global);
+                    if (acc != null)
+                        exprSet.Add(acc);
+                }
+            }
+
+            return exprSet.Count > 0 
+                ? IntersectionExpression.Create(exprSet)
+                : null;
 		}
 
 		private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
@@ -738,15 +775,6 @@ namespace Flame.Ecs
 			}
 			return new InitializedExpression(
 				new BlockStatement(stmts), expr);
-		}
-
-		/// <summary>
-		/// Retrieves the 'this' variable from the given 
-		/// local scope. 
-		/// </summary>
-		public static IVariable GetThisVariable(LocalScope Scope)
-		{
-			return Scope.GetVariable(CodeSymbols.This.Name);
 		}
 
 		/// <summary>

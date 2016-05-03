@@ -12,7 +12,7 @@ public static class Program
     public static void Main()
     {
         int x = 2, y = 3;
-        Console.WriteLine(Program.f(ref x, out y));
+        Console.WriteLine(f(ref x, out y));
         Console.WriteLine(x);
         Console.WriteLine(y);
     }
