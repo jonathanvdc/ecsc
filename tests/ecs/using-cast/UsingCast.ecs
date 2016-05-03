@@ -1,0 +1,25 @@
+using System;
+
+public class A
+{
+    public A()
+    { }
+}
+
+public class B : A
+{
+    public B()
+    { }
+}
+
+public static class Program
+{
+    public static void Main()
+    {
+        B x = default(B);
+        Console.WriteLine(x using A);
+        Console.WriteLine(x using B);
+        Console.WriteLine(2.5 using int);
+        Console.WriteLine(2 using double);
+    }
+}

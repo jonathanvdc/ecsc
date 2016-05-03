@@ -1,5 +1,5 @@
 
 tests
 {
-    // No tests yet
+    using-cast/UsingCast.test;
 }
