@@ -1,0 +1,18 @@
+// Run these tests with compare-tests (https://github.com/jonathanvdc/compare-test)
+// After building compare-test, just type:
+//
+//     compare-test all-tests-windows.test
+//
+// and hit enter. Successful tests will be marked as green, unsuccessful
+// tests will show up as red.
+
+tests
+{
+    tests/all.test;
+}
+
+init
+{
+    ecsc = $(net-runtime) $(working-directory)/src/ecsc/bin/Release/ecsc.exe;
+    // csc = $csc;
+}

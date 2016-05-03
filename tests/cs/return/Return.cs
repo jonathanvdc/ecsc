@@ -19,7 +19,7 @@ public static class ReturnTest
     public static void Main()
     {
         ReturnTest.ReturnVoid();
-        System.Console.WriteLine(ReturnTest.ReturnValue(4));
-        System.Console.WriteLine(ReturnTest.ReturnGeneric<int>(2));
+        System.Console.WriteLine(ReturnValue(4));
+        // System.Console.WriteLine(ReturnTest.ReturnGeneric<int>(2));
     }
 }

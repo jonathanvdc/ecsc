@@ -1,0 +1,15 @@
+
+tests
+{
+    arithmetic/Arithmetic.test;
+    assign/Assign.test;
+    cast/Cast.test;
+    constructor/Constructor.test;
+    field/Field.test;
+    hello-world/HelloWorld.test;
+    local-decl/LocalDecl.test;
+    ref-out/RefOut.test;
+    return/Return.test;
+    sealed/Sealed.test;
+    this-keyword/ThisKeyword.test;
+}
