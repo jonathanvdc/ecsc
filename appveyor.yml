@@ -1,6 +1,7 @@
 install:
   - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.0/compare-test.zip > compare-test.zip
-  - 7z x compare-test.zip -obin/compare-test
+  - mkdir bin
+  - 7z x compare-test.zip -obin\compare-test
   - nuget restore src\ecsc.sln
 build_script:
   - msbuild /p:Configuration=Release src\ecsc.sln
