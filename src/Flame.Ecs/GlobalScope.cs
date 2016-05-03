@@ -59,7 +59,8 @@ namespace Flame.Ecs
 				Log.LogError(new LogEntry(
 					"no implicit conversion", 
 					NodeHelpers.HighlightEven(
-						"cannot implicitly convert type '", TypeNamer.Convert(From.Type), "' to '", TypeNamer.Convert(To), "'." + 
+						"cannot implicitly convert type '", TypeNamer.Convert(From.Type), 
+                        "' to '", TypeNamer.Convert(To), "'." + 
 						(result != null ? " An explicit conversion exists. (are you missing a cast?)" : "")),
 					Location));
 				
@@ -69,6 +70,37 @@ namespace Flame.Ecs
 					return result;
 			}
 		}
+
+        /// <summary>
+        /// Statically converts the given expression to the given type.
+        /// A diagnostic is issued if this is not a legal operation,
+        /// but the resulting expression is always of the given target type,
+        /// and is never null.
+        /// </summary>
+        public IExpression ConvertStatic(IExpression From, IType To, SourceLocation Location)
+        {
+            var result = ConversionRules.TryConvertStatic(From, To);
+            if (result != null)
+            {
+                return result;
+            }
+            else
+            {
+                result = ConversionRules.TryConvertExplicit(From, To);
+                Log.LogError(new LogEntry(
+                    "no static conversion", 
+                    NodeHelpers.HighlightEven(
+                        "cannot guarantee at compile-time that type '", TypeNamer.Convert(From.Type), 
+                        "' can safely be converted to '", TypeNamer.Convert(To), "'." + 
+                        (result != null ? " An explicit conversion exists." : "")),
+                    Location));
+
+                if (result == null)
+                    return new UnknownExpression(To);
+                else
+                    return result;
+            }
+        }
 
 		/// <summary>
 		/// Explicitly converts the given expression to the given type.
@@ -87,7 +119,9 @@ namespace Flame.Ecs
 			{
 				Log.LogError(new LogEntry(
 					"no conversion", 
-					NodeHelpers.HighlightEven("cannot convert type '", TypeNamer.Convert(From.Type), "' to '", TypeNamer.Convert(To), "'."),
+					NodeHelpers.HighlightEven(
+                        "cannot convert type '", TypeNamer.Convert(From.Type), 
+                        "' to '", TypeNamer.Convert(To), "'."),
 					Location));
 				
 				return new UnknownExpression(To);

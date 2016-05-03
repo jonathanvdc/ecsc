@@ -22,6 +22,14 @@ namespace Flame.Ecs
 		/// </summary>
 		IExpression TryConvertImplicit(IExpression From, IType To);
 
+        /// <summary>
+        /// Explicitly the given expression to the given type, but only
+        /// if this conversion is guaranteed to succeed.
+        /// Null is returned if the given conversion is not possible
+        /// under the aforementioned constraints.
+        /// </summary>
+        IExpression TryConvertStatic(IExpression From, IType To);
+
 		/// <summary>
 		/// Explicitly converts the given expression to the given type.
 		/// Null is returned if this is not legal.
@@ -59,6 +67,25 @@ namespace Flame.Ecs
 
 			return ConversionExpression.Instance.Create(From, To);
 		}
+
+        /// <summary>
+        /// Explicitly the given expression to the given type, but only
+        /// if this conversion is guaranteed to succeed.
+        /// Null is returned if the given conversion is not possible
+        /// under the aforementioned constraints.
+        /// </summary>
+        public IExpression TryConvertStatic(IExpression From, IType To)
+        {
+            var result = ConversionExpression.Instance.Create(From, To);
+
+            // HACK: just let ConversionExpression handle this,
+            // and check for dynamic casts.
+            // TODO: implement this properly.
+            if (result is DynamicCastExpression)
+                return null;
+            else
+                return result;
+        }
 
 		/// <summary>
 		/// Explicitly converts the given expression to the given type.

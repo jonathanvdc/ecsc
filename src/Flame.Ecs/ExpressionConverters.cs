@@ -1111,29 +1111,8 @@ namespace Flame.Ecs
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
 
-            // Try an implicit conversion.
-            var implicitConv = 
-                Scope.Function.Global.ConversionRules.TryConvertImplicit(op, ty);
-
-            if (implicitConv != null)
-                // Looks like it worked. Return the
-                // conversion-expression.
-                return implicitConv;
-
-            // TODO: maybe try primitive and user-defined
-            // conversions here, too?
-
-            // We're not sure that this will work at run-time.
-            // Let's log an error, return an unknown-expression,
-            // and call it a day.
-            Scope.Log.LogError(new LogEntry(
-                "invalid cast",
-                NodeHelpers.HighlightEven(
-                    "the '", "using", "' cast operator requires that the operand be " +
-                    "convertible to the target type."),
-                NodeHelpers.ToSourceLocation(Node.Range)));
-
-            return new UnknownExpression(ty);
+            return Scope.Function.Global.ConvertStatic(
+                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
         }
 	}
 }
