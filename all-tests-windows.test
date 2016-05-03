@@ -14,5 +14,5 @@ tests
 init
 {
     ecsc = $(net-runtime) $(working-directory)/src/ecsc/bin/Release/ecsc.exe;
-    // csc = $csc;
+    csc = $csc /nologo;
 }
