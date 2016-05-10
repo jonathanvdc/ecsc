@@ -309,105 +309,221 @@ namespace Flame.Ecs
 			}
 		}
 
+        private static void LogGenericArityMismatch(
+            IGenericMember Declaration, int ArgumentCount,
+            GlobalScope Scope, SourceLocation Location)
+        {
+            // Invalid number of type arguments.
+            Scope.Log.LogError(new LogEntry(
+                "generic arity mismatch",
+                NodeHelpers.HighlightEven(
+                    "'", Declaration.Name, "' takes '", Declaration.GenericParameters.Count().ToString(), 
+                    "' type parameters, but was given '", ArgumentCount.ToString(), "'."),
+                Location));
+        }
+
+        private static void LogCannotInstantiate(
+            string MemberName, GlobalScope Scope,
+            SourceLocation Location)
+        {
+            Scope.Log.LogError(new LogEntry(
+                "syntax error",
+                NodeHelpers.HighlightEven(
+                    "'", MemberName, "' is not generic, and cannot be instantiated."),
+                Location));
+        }
+
+        /// <summary>
+        /// Checks if the given generic member can be instantiated by the given
+        /// list of type arguments. A boolean that tells whether the number
+        /// of generic arguments was correct, is returned. If the number of
+        /// generic arguments is correct, but some constraints are not satisfied,
+        /// then one or more errors are logged.
+        /// </summary>
+        private static bool CheckGenericConstraints(
+            IGenericMember Declaration, IReadOnlyList<IType> TypeArguments,
+            GlobalScope Scope, SourceLocation Location)
+        {
+            var genericParamArr = Declaration.GenericParameters.ToArray();
+
+            if (genericParamArr.Length != TypeArguments.Count)
+            {
+                LogGenericArityMismatch(Declaration, TypeArguments.Count, Scope, Location);
+                return false;
+            }
+
+            for (int i = 0; i < genericParamArr.Length; i++)
+            {
+                var tParam = genericParamArr[i];
+                var tArg = TypeArguments[i];
+                if (!tParam.Constraint.Satisfies(tArg))
+                {
+                    // Check that this type argument is okay for 
+                    // the parameter's constraints.
+                    Scope.Log.LogError(new LogEntry(
+                        "generic constraint",
+                        NodeHelpers.HighlightEven(
+                            "type '", Scope.TypeNamer.Convert(tArg), 
+                            "' does not satisfy the generic constraints on type parameter '",
+                            Scope.TypeNamer.Convert(tParam), "'."),
+                        Location));
+                }
+            }
+
+            return true;
+        }
+
+        private static TypeOrExpression ConvertMemberAccess(
+            TypeOrExpression Target, string MemberName,
+            IReadOnlyList<IType> TypeArguments, LocalScope Scope,
+            SourceLocation Location)
+        {
+            bool isGeneric = TypeArguments.Count > 0;
+
+            // First, try to resolve member-access expressions, which
+            // look like this (instance member access):
+            //
+            //     <expr>.<identifier>
+            // 
+            // or like this (static member access):
+            //
+            //     <type>.<identifier>
+            //
+            var exprSet = new List<IExpression>();
+            IMethod method = null;
+            if (Target.IsExpression)
+            {
+                var targetTy = Target.Expression.Type;
+                var members = Scope.Function.GetInstanceMembers(targetTy, MemberName);
+
+                foreach (var item in members)
+                {
+                    var member = item;
+                    method = member as IMethod;
+                    if (method != null)
+                    {
+                        if (!CheckGenericConstraints(method, TypeArguments, Scope.Function.Global, Location))
+                            // Just ignore this method for now.
+                            continue;
+
+                        member = method.MakeGenericMethod(TypeArguments);
+                    }
+                    else if (isGeneric)
+                    {
+                        LogCannotInstantiate(MemberName, Scope.Function.Global, Location);
+                        continue;
+                    }
+
+                    var acc = AccessMember(Target.Expression, member, Scope.Function.Global);
+
+                    if (acc != null)
+                        exprSet.Add(acc);
+                }
+            }
+
+            if (Target.IsType)
+            {
+                foreach (var ty in Target.Types)
+                {
+                    var members = Scope.Function.GetStaticMembers(ty, MemberName);
+
+                    foreach (var item in members)
+                    {
+                        var member = item;
+                        method = member as IMethod;
+                        if (method != null)
+                        {
+                            if (!CheckGenericConstraints(method, TypeArguments, Scope.Function.Global, Location))
+                                // Just ignore this method for now.
+                                continue;
+
+                            member = method.MakeGenericMethod(TypeArguments);
+                        }
+                        else if (isGeneric)
+                        {
+                            LogCannotInstantiate(MemberName, Scope.Function.Global, Location);
+                            continue;
+                        }
+
+                        var acc = AccessMember(null, member, Scope.Function.Global);
+                        if (acc != null)
+                            exprSet.Add(acc);
+                    }
+                }
+            }
+
+            if (exprSet.Count == 0 && method != null)
+            {
+                // We want to provide a diagnostic here if we
+                // encountered a method, but it was not given
+                // the right amount of type arguments.
+                LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
+            }
+
+            IExpression expr = exprSet.Count > 0 
+                ? IntersectionExpression.Create(exprSet)
+                : null;
+
+            // Next, we'll handle namespaces, which are 
+            // really just qualified names.
+            var nsName = Target.IsNamespace 
+                ? new QualifiedName(MemberName).Qualify(Target.Namespace)
+                : null;
+
+            // Finally, let's do types.
+            // Qualified type names can look like:
+            //
+            //     <type>.<nested-type>
+            //
+            // or, more commonly:
+            //
+            //     <namespace>.<type>
+            //
+            // We're not assuming that type names 
+            // and namespace names don't overlap 
+            // here.
+            var typeSet = new HashSet<IType>();
+            foreach (var ty in Target.Types)
+            {
+                if (ty is INamespace)
+                {
+                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == MemberName));
+                }
+            }
+            if (Target.IsNamespace)
+            {
+                var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
+                if (topLevelTy != null)
+                    typeSet.Add(topLevelTy);
+            }
+
+            return new TypeOrExpression(expr, typeSet, nsName);
+        }
+
 		/// <summary>
 		/// Converts the given member access node (type @.).
 		/// </summary>
 		public static TypeOrExpression ConvertMemberAccess(
-							LNode Node, LocalScope Scope, NodeConverter Converter)
+		    LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return TypeOrExpression.Empty;
 
 			var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
+            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
 
 			if (!Node.Args[1].IsId)
 			{
 				Scope.Log.LogError(new LogEntry(
 					"syntax error",
 					"expected an identifier on the right-hand side of a member access expression.",
-					NodeHelpers.ToSourceLocation(Node.Range)));
+                    srcLoc));
 				return TypeOrExpression.Empty;
 			}
 
 			var ident = Node.Args[1].Name.Name;
 
-
-			// First, try to resolve member-access expressions, which
-			// look like this (instance member access):
-			//
-			//     <expr>.<identifier>
-			// 
-			// or like this (static member access):
-			//
-			//     <type>.<identifier>
-			//
-			var exprSet = new List<IExpression>();
-			if (target.IsExpression)
-			{
-				var targetTy = target.Expression.Type;
-				var members = Scope.Function.GetInstanceMembers(targetTy, ident);
-
-				foreach (var item in members)
-				{
-					var acc = AccessMember(target.Expression, item, Scope.Function.Global);
-					if (acc != null)
-						exprSet.Add(acc);
-				}
-			}
-
-			if (target.IsType)
-			{
-				foreach (var ty in target.Types)
-				{
-					var members = Scope.Function.GetStaticMembers(ty, ident);
-
-					foreach (var item in members)
-					{
-						var acc = AccessMember(null, item, Scope.Function.Global);
-						if (acc != null)
-							exprSet.Add(acc);
-					}
-				}
-			}
-
-			IExpression expr = exprSet.Count > 0 
-				? IntersectionExpression.Create(exprSet)
-				: null;
-
-			// Next, we'll handle namespaces, which are 
-			// really just qualified names.
-			var nsName = target.IsNamespace 
-				? new QualifiedName(ident).Qualify(target.Namespace)
-				: null;
-
-			// Finally, let's do types.
-			// Qualified type names can look like:
-			//
-			//     <type>.<nested-type>
-			//
-			// or, more commonly:
-			//
-			//     <namespace>.<type>
-			//
-			// We're not assuming that type names 
-			// and namespace names don't overlap 
-			// here.
-			var typeSet = new HashSet<IType>();
-			foreach (var ty in target.Types)
-			{
-				if (ty is INamespace)
-				{
-					typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == ident));
-				}
-			}
-			if (target.IsNamespace)
-			{
-				var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
-				if (topLevelTy != null)
-					typeSet.Add(topLevelTy);
-			}
-
-			return new TypeOrExpression(expr, typeSet, nsName);
+            return ConvertMemberAccess(target, ident, new IType[] { }, Scope, srcLoc);
 		}
 
         public static TypeOrExpression ConvertInstantiation(
@@ -419,6 +535,7 @@ namespace Flame.Ecs
             var target = Node.Args[0];
             var args = Node.Args.Slice(1);
 
+            // Perhaps we have encountered an array?
             int arrayDims = CodeSymbols.CountArrayDimensions(target.Name);
             if (arrayDims > 0)
             {
@@ -428,9 +545,37 @@ namespace Flame.Ecs
                 return new TypeOrExpression(new IType[] { elemTy.MakeArrayType(arrayDims) });
             }
 
-            Scope.Log.LogError(new LogEntry(
-                "not implemented", "generic instantiation has not been implemented yet."));
-            throw new NotImplementedException();
+            // Perhaps not. How about a pointer?
+            if (target.IsIdNamed(CodeSymbols._Pointer))
+            {
+                NodeHelpers.CheckArity(Node, 2, Scope.Log);
+
+                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope.Function.Global);
+                return new TypeOrExpression(new IType[] { elemTy.MakePointerType(PointerKind.TransientPointer) });
+            }
+
+            // Why, it must be a generic instance, then.
+            if (!NodeHelpers.CheckArity(target, 2, Scope.Log))
+                return TypeOrExpression.Empty;
+
+            var targetTyOrExpr = Converter.ConvertTypeOrExpression(target.Args[0], Scope);
+            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
+
+            if (!target.Args[1].IsId)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "expected an identifier on the right-hand side of a member access expression.",
+                    srcLoc));
+                return TypeOrExpression.Empty;
+            }
+
+            var ident = target.Args[1].Name.Name;
+
+            var tArgs = args.Select(item => 
+                Converter.ConvertCheckedTypeOrError(item, Scope.Function.Global)).ToArray();
+
+            return ConvertMemberAccess(targetTyOrExpr, ident, tArgs, Scope, srcLoc);
         }
 
 		private static string CreateExpectedSignatureDescription(
