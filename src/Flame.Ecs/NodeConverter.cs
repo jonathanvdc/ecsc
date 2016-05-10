@@ -468,6 +468,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
                 result.AddExprConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
                 result.AddTypeOrExprConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
+                result.AddTypeOrExprConverter(CodeSymbols.Of, ExpressionConverters.ConvertInstantiation);
 
 				// Keyword expressions
                 result.AddExprConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);

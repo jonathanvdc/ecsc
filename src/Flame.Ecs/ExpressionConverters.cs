@@ -410,6 +410,29 @@ namespace Flame.Ecs
 			return new TypeOrExpression(expr, typeSet, nsName);
 		}
 
+        public static TypeOrExpression ConvertInstantiation(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
+                return TypeOrExpression.Empty;
+
+            var target = Node.Args[0];
+            var args = Node.Args.Slice(1);
+
+            int arrayDims = CodeSymbols.CountArrayDimensions(target.Name);
+            if (arrayDims > 0)
+            {
+                NodeHelpers.CheckArity(Node, 2, Scope.Log);
+
+                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope.Function.Global);
+                return new TypeOrExpression(new IType[] { elemTy.MakeArrayType(arrayDims) });
+            }
+
+            Scope.Log.LogError(new LogEntry(
+                "not implemented", "generic instantiation has not been implemented yet."));
+            throw new NotImplementedException();
+        }
+
 		private static string CreateExpectedSignatureDescription(
 			TypeConverterBase<string> TypeNamer, IType ReturnType, 
 			IType[] ArgumentTypes)
