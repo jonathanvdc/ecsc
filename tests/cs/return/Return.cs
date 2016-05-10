@@ -20,6 +20,6 @@ public static class ReturnTest
     {
         ReturnTest.ReturnVoid();
         System.Console.WriteLine(ReturnValue(4));
-        // System.Console.WriteLine(ReturnTest.ReturnGeneric<int>(2));
+        System.Console.WriteLine(ReturnTest.ReturnGeneric<int>(2));
     }
 }
