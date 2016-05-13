@@ -6,6 +6,7 @@ tests
     cast/Cast.test;
     constructor/Constructor.test;
     field/Field.test;
+    generics/Generics.test;
     hello-world/HelloWorld.test;
     local-decl/LocalDecl.test;
     ref-out/RefOut.test;
