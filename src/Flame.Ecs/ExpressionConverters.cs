@@ -23,7 +23,8 @@ namespace Flame.Ecs
             return Scope.GetVariable(CodeSymbols.This.Name);
         }
 
-		private static IExpression LookupUnqualifiedNameExpression(string Name, ILocalScope Scope)
+		private static IExpression LookupUnqualifiedNameExpression(
+            string Name, ILocalScope Scope)
 		{
             // Early-out for local variables.
 			var local = Scope.GetVariable(Name);
@@ -62,6 +63,76 @@ namespace Flame.Ecs
                 : null;
 		}
 
+        /// <summary>
+        /// Creates a member-access expression for the given
+        /// accessed member, list of type arguments, target
+        /// expression, scope and location. If this member is 
+        /// a method, then it is written to the MethodResult
+        /// variable. If this operation succeeds, then the
+        /// result is added to the given set.
+        /// </summary>
+        private static void CreateMemberAccess(
+            ITypeMember Member, IReadOnlyList<IType> TypeArguments, 
+            IExpression TargetExpression, HashSet<IExpression> Results,
+            GlobalScope Scope, SourceLocation Location, ref IMethod MethodResult)
+        {
+            var member = Member;
+            MethodResult = member as IMethod;
+            if (MethodResult != null)
+            {
+                if (!CheckGenericConstraints(MethodResult, TypeArguments, Scope, Location))
+                    // Just ignore this method for now.
+                    return;
+
+                member = MethodResult.MakeGenericMethod(TypeArguments);
+            }
+            else if (TypeArguments.Count > 0)
+            {
+                LogCannotInstantiate(Member.Name, Scope, Location);
+                return;
+            }
+
+            var acc = AccessMember(TargetExpression, member, Scope);
+            if (acc != null)
+                Results.Add(acc);
+        }
+
+        private static IExpression LookupUnqualifiedNameExpressionInstance(
+            string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
+            SourceLocation Location)
+        {
+            var declType = Scope.Function.CurrentType;
+
+            if (declType == null)
+                return null;
+
+            IMethod method = null;
+
+            // Create a set of potential results.
+            var exprSet = new HashSet<IExpression>();
+            foreach (var item in Scope.Function.GetStaticMembers(declType, Name))
+            {
+                CreateMemberAccess(
+                    item, TypeArguments, null, exprSet, 
+                    Scope.Function.Global, Location, ref method);
+            }
+
+            var thisVar = GetThisVariable(Scope);
+            if (GetThisVariable(Scope) != null)
+            {
+                foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                {
+                    CreateMemberAccess(
+                        item, TypeArguments, thisVar.CreateGetExpression(), exprSet, 
+                        Scope.Function.Global, Location, ref method);
+                }
+            }
+
+            return exprSet.Count > 0 
+                ? IntersectionExpression.Create(exprSet)
+                : null;
+        }
+
 		private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
 		{
 			var ty = Scope.Function.Global.Binder.BindType(Name);
@@ -71,6 +142,21 @@ namespace Flame.Ecs
 				return new IType[] { ty };
 		}
 
+        private static IEnumerable<IType> LookupUnqualifiedNameTypeInstances(
+            string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
+            SourceLocation Location)
+        {
+            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(Name));
+            if (ty == null)
+            {
+                string genericName = GenericNameExtensions.ChangeTypeArguments(Name, Enumerable.Repeat("", TypeArguments.Count));
+                ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
+                if (ty == null)
+                    return Enumerable.Empty<IType>();
+            }
+            return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
+        }
+
 		public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
 		{
 			var qualName = new QualifiedName(Name);
@@ -79,6 +165,16 @@ namespace Flame.Ecs
 				LookupUnqualifiedNameTypes(qualName, Scope),
 				qualName);
 		}
+
+        public static TypeOrExpression LookupUnqualifiedNameInstance(
+            string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
+            SourceLocation Location)
+        {
+            return new TypeOrExpression(
+                LookupUnqualifiedNameExpressionInstance(Name, TypeArguments, Scope, Location),
+                LookupUnqualifiedNameTypeInstances(Name, TypeArguments, Scope, Location),
+                null);
+        }
 
 		public static IStatement ToStatement(IExpression Expression)
 		{
@@ -373,6 +469,24 @@ namespace Flame.Ecs
             return true;
         }
 
+        private static IEnumerable<IType> InstantiateTypes(
+            IEnumerable<IType> Types, IReadOnlyList<IType> TypeArguments,
+            GlobalScope Scope, SourceLocation Location)
+        {
+            return Types.Select(item => 
+            {
+                if (CheckGenericConstraints(item, TypeArguments, Scope, Location))
+                {
+                    return item.MakeGenericType(TypeArguments);
+                }
+                else
+                {
+                    LogGenericArityMismatch(item, TypeArguments.Count, Scope, Location);
+                    return item.MakeGenericType(item.GenericParameters);
+                }
+            });
+        }
+
         private static TypeOrExpression ConvertMemberAccess(
             TypeOrExpression Target, string MemberName,
             IReadOnlyList<IType> TypeArguments, LocalScope Scope,
@@ -483,21 +597,37 @@ namespace Flame.Ecs
             // and namespace names don't overlap 
             // here.
             var typeSet = new HashSet<IType>();
+            string genericName = isGeneric 
+                ? GenericNameExtensions.ChangeTypeArguments(MemberName, Enumerable.Repeat("", TypeArguments.Count)) 
+                : null;
             foreach (var ty in Target.Types)
             {
                 if (ty is INamespace)
                 {
-                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == MemberName));
+                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == MemberName || item.Name == genericName));
                 }
             }
             if (Target.IsNamespace)
             {
                 var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
                 if (topLevelTy != null)
+                {
                     typeSet.Add(topLevelTy);
+                }
+                else if (isGeneric)
+                {
+                    topLevelTy = Scope.Function.Global.Binder.BindType(
+                        new QualifiedName(genericName).Qualify(Target.Namespace));
+                    if (topLevelTy != null)
+                        typeSet.Add(topLevelTy);
+                }
             }
 
-            return new TypeOrExpression(expr, typeSet, nsName);
+            return new TypeOrExpression(
+                expr, 
+                InstantiateTypes(
+                    typeSet, TypeArguments, Scope.Function.Global, Location), 
+                nsName);
         }
 
 		/// <summary>
@@ -555,27 +685,49 @@ namespace Flame.Ecs
             }
 
             // Why, it must be a generic instance, then.
-            if (!NodeHelpers.CheckArity(target, 2, Scope.Log))
-                return TypeOrExpression.Empty;
-
-            var targetTyOrExpr = Converter.ConvertTypeOrExpression(target.Args[0], Scope);
-            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
-
-            if (!target.Args[1].IsId)
-            {
-                Scope.Log.LogError(new LogEntry(
-                    "syntax error",
-                    "expected an identifier on the right-hand side of a member access expression.",
-                    srcLoc));
-                return TypeOrExpression.Empty;
-            }
-
-            var ident = target.Args[1].Name.Name;
 
             var tArgs = args.Select(item => 
                 Converter.ConvertCheckedTypeOrError(item, Scope.Function.Global)).ToArray();
 
-            return ConvertMemberAccess(targetTyOrExpr, ident, tArgs, Scope, srcLoc);
+            // The target of a generic instance is either
+            // an unqualified expression (i.e. an Id node), 
+            // or some member-access expression. (type @.)
+
+            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
+            if (target.IsId)
+            {
+                return LookupUnqualifiedNameInstance(
+                    target.Name.Name, tArgs, Scope, srcLoc);
+            }
+            else if (target.Calls(CodeSymbols.Dot))
+            {
+                if (!NodeHelpers.CheckArity(target, 2, Scope.Log))
+                    return TypeOrExpression.Empty;
+
+                var targetTyOrExpr = Converter.ConvertTypeOrExpression(target.Args[0], Scope);
+
+                if (!target.Args[1].IsId)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        "expected an identifier on the right-hand side of a member access expression.",
+                        srcLoc));
+                    return TypeOrExpression.Empty;
+                }
+
+                var ident = target.Args[1].Name.Name;
+
+                return ConvertMemberAccess(targetTyOrExpr, ident, tArgs, Scope, srcLoc);
+            }
+            else
+            {
+                Scope.Function.Global.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "generic instantiation is only applicable to unqualified names, " +
+                    "qualified names, and member-access expressions.",
+                    srcLoc));
+                return TypeOrExpression.Empty;
+            }
         }
 
 		private static string CreateExpectedSignatureDescription(
