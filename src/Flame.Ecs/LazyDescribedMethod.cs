@@ -8,18 +8,18 @@ namespace Flame.Ecs
 {
     public abstract class LazyDescribedMember : IMember
     {
-        public LazyDescribedMember(string Name)
+        public LazyDescribedMember(UnqualifiedName Name)
         {
             this.Name = Name;
-            this.attributeList = new List<IAttribute>();
+            this.attributeList = new AttributeMapBuilder();
         }
 
-        public string Name { get; private set; }
-        public abstract string FullName { get; }
+        public UnqualifiedName Name { get; private set; }
+        public abstract QualifiedName FullName { get; }
 
         protected abstract void CreateBody();
 
-        private List<IAttribute> attributeList;
+        private AttributeMapBuilder attributeList;
 
         public void AddAttribute(IAttribute Attribute)
         {
@@ -27,19 +27,19 @@ namespace Flame.Ecs
             attributeList.Add(Attribute);
         }
 
-        public IEnumerable<IAttribute> Attributes
+        public AttributeMap Attributes
         {
             get 
             { 
                 CreateBody();
-                return attributeList; 
+                return new AttributeMap(attributeList);
             }
         }
     }
 
     public abstract class LazyDescribedTypeMember : LazyDescribedMember, ITypeMember
 	{
-		public LazyDescribedTypeMember(string Name, IType DeclaringType)
+		public LazyDescribedTypeMember(UnqualifiedName Name, IType DeclaringType)
 			: base(Name)
 		{
 			this.DeclaringType = DeclaringType;
@@ -51,15 +51,14 @@ namespace Flame.Ecs
 		/// <value>The type of the declaring.</value>
 		public IType DeclaringType { get; private set; }
 
-		public sealed override string FullName
+		public sealed override QualifiedName FullName
 		{
 			get
 			{
-				if (this.DeclaringType == null)
-				{
-					return base.Name;
-				}
-				return MemberExtensions.CombineNames(this.DeclaringType.FullName, base.Name);
+				if (DeclaringType == null)
+                    return Name.Qualify();
+                else
+                    return Name.Qualify(DeclaringType.FullName);
 			}
 		}
 
@@ -67,13 +66,13 @@ namespace Flame.Ecs
 
 		public override string ToString()
 		{
-			return this.FullName;
+            return FullName.ToString();
 		}
 	}
 
 	public class LazyDescribedMethod : LazyDescribedTypeMember, IBodyMethod
 	{
-		public LazyDescribedMethod(string Name, IType DeclaringType, Action<LazyDescribedMethod> AnalyzeBody)
+		public LazyDescribedMethod(UnqualifiedName Name, IType DeclaringType, Action<LazyDescribedMethod> AnalyzeBody)
 			: base(Name, DeclaringType)
 		{
 			this.baseMethods = new List<IMethod>();

@@ -14,13 +14,13 @@ namespace Flame.Ecs
 	public sealed class TypeOrExpression
 	{
 		public TypeOrExpression(IExpression Expression)
-			: this(Expression, Enumerable.Empty<IType>(), null)
+            : this(Expression, Enumerable.Empty<IType>(), default(QualifiedName))
 		{ }
 		public TypeOrExpression(IExpression Expression, IEnumerable<IType> Types)
-			: this(Expression, Types, null)
+            : this(Expression, Types, default(QualifiedName))
 		{ }
 		public TypeOrExpression(IEnumerable<IType> Types)
-			: this(null, Types, null)
+            : this(null, Types, default(QualifiedName))
 		{ }
 		public TypeOrExpression(IExpression Expression, QualifiedName Namespace)
 			: this(Expression, Enumerable.Empty<IType>(), Namespace)
@@ -43,7 +43,7 @@ namespace Flame.Ecs
 
 		public bool IsExpression { get { return Expression != null; } }
 		public bool IsType { get { return typeSet.Count > 0; } }
-		public bool IsNamespace { get { return Namespace != null; } }
+		public bool IsNamespace { get { return !Namespace.IsEmpty; } }
 
 		/// <summary>
 		/// Adds a source location to this type-or-expression object.
@@ -83,7 +83,9 @@ namespace Flame.Ecs
 
 				Scope.Log.LogError(new LogEntry(
 					"ambiguous type",
-					NodeHelpers.HighlightEven("there are ", typeSet.Count.ToString(), " types named '", result.FullName, "'."),
+					NodeHelpers.HighlightEven(
+                        "there are ", typeSet.Count.ToString(), 
+                        " types named '", result.FullName.ToString(), "'."),
 					Location));
 
 				return result;
@@ -94,7 +96,8 @@ namespace Flame.Ecs
 		/// Gets the empty type-or-expression: an entity that is neither
 		/// an expression, nor a type, nor a namespace.
 		/// </summary>
-		public static readonly TypeOrExpression Empty = new TypeOrExpression(null, Enumerable.Empty<IType>(), null);
+        public static readonly TypeOrExpression Empty = 
+            new TypeOrExpression(null, Enumerable.Empty<IType>(), default(QualifiedName));
 	}
 }
 

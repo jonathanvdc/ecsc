@@ -84,7 +84,10 @@ namespace Flame.Ecs
 					{
 						Scope.Log.LogError(new LogEntry(
 							"type resolution",
-							NodeHelpers.HighlightEven("could not resolve base type '", item.ToString(), "' for '", name.Item1, "'."),
+							NodeHelpers.HighlightEven(
+                                "could not resolve base type '", 
+                                item.ToString(), "' for '", 
+                                name.Item1.ToString(), "'."),
 							NodeHelpers.ToSourceLocation(item.Range)));
 					}
 					else

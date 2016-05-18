@@ -110,7 +110,12 @@ namespace Flame.Ecs
 		public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
 		{
 			// TODO: actually implement name lookup algorithm
-			return Type.GetAllMembers(Name).Where(item => !item.IsStatic && CurrentType.CanAccess(item));
+            return Type.GetAllMembers().Where(item =>
+            {
+                var itemName = item.Name as SimpleName;
+                return itemName != null && itemName.Name == Name 
+                    && !item.IsStatic && CurrentType.CanAccess(item);
+            });
 		}
 
 		/// <summary>
@@ -120,7 +125,12 @@ namespace Flame.Ecs
 		public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
 		{
 			// TODO: actually implement name lookup algorithm
-			return Type.GetAllMembers(Name).Where(item => item.IsStatic && CurrentType.CanAccess(item));
+            return Type.GetAllMembers().Where((item =>
+            {
+                var itemName = item.Name as SimpleName;
+                return itemName != null && itemName.Name == Name 
+                    && item.IsStatic && CurrentType.CanAccess(item);
+            }));
 		}
 	}
 

@@ -6,7 +6,7 @@ namespace Flame.Ecs
 {
     public class LazyDescribedField : LazyDescribedTypeMember, IInitializedField
     {
-        public LazyDescribedField(string Name, IType DeclaringType, Action<LazyDescribedField> AnalyzeBody)
+        public LazyDescribedField(UnqualifiedName Name, IType DeclaringType, Action<LazyDescribedField> AnalyzeBody)
             : base(Name, DeclaringType)
         {
             this.analyzeBody = AnalyzeBody;

@@ -15,7 +15,7 @@ namespace Flame.Ecs
 	public interface IMutableNamespace
 	{
 		IType DefineType(
-			string Name, Action<LazyDescribedType> AnalyzeBody);
+			UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody);
 		IMutableNamespace DefineNamespace(string Name);
 	}
 
@@ -31,9 +31,9 @@ namespace Flame.Ecs
 		}
 
 		public abstract IAssembly DeclaringAssembly { get; }
-		public abstract string FullName { get; }
-		public abstract IEnumerable<IAttribute> Attributes { get; }
-		public abstract string Name { get; }
+		public abstract QualifiedName FullName { get; }
+		public abstract AttributeMap Attributes { get; }
+		public abstract UnqualifiedName Name { get; }
 
 		private List<IType> types;
 		private List<INamespaceBranch> nsBranches;
@@ -52,7 +52,7 @@ namespace Flame.Ecs
 		}
 
 		public IType DefineType(
-			string Name, Action<LazyDescribedType> AnalyzeBody)
+			UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody)
 		{
 			var result = new LazyDescribedType(Name, this, AnalyzeBody);
 			AddType(result);
@@ -61,7 +61,7 @@ namespace Flame.Ecs
 
 		public IMutableNamespace DefineNamespace(string Name)
 		{
-			var result = new ChildNamespace(Name, this);
+            var result = new ChildNamespace(new SimpleName(Name), this);
 			AddNamespace(result);
 			return result;
 		}
@@ -78,46 +78,46 @@ namespace Flame.Ecs
 
 		public override IAssembly DeclaringAssembly { get { return asm; } }
 
-		public override string FullName
+		public override QualifiedName FullName
 		{
-			get { return Name; }
+            get { return default(QualifiedName); }
 		}
 
-		public override IEnumerable<IAttribute> Attributes
+        public override AttributeMap Attributes
 		{
-			get { return Enumerable.Empty<IAttribute>(); }
+            get { return AttributeMap.Empty; }
 		}
 
-		public override string Name
+		public override UnqualifiedName Name
 		{
-			get { return ""; }
+            get { return new SimpleName(""); }
 		}
 	}
 
 	public sealed class ChildNamespace : MutableNamespaceBase
 	{
-		public ChildNamespace(string Name, INamespace DeclaringNamespace)
+        public ChildNamespace(UnqualifiedName Name, INamespace DeclaringNamespace)
 		{
 			this.DeclaringNamespace = DeclaringNamespace;
 			this.nsName = Name;
 		}
 
 		public INamespace DeclaringNamespace { get; private set; }
-		private string nsName;
+        private UnqualifiedName nsName;
 
 		public override IAssembly DeclaringAssembly { get { return DeclaringAssembly; } }
 
-		public override string FullName
+		public override QualifiedName FullName
 		{
-			get { return Name; }
+            get { return Name.Qualify(DeclaringNamespace.FullName); }
 		}
 
-		public override IEnumerable<IAttribute> Attributes
+		public override AttributeMap Attributes
 		{
-			get { return Enumerable.Empty<IAttribute>(); }
+            get { return AttributeMap.Empty; }
 		}
 
-		public override string Name
+        public override UnqualifiedName Name
 		{
 			get { return nsName; }
 		}
@@ -134,7 +134,7 @@ namespace Flame.Ecs
 
 
 		public IType DefineType(
-			string Name, Action<LazyDescribedType> AnalyzeBody)
+			UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody)
 		{
 			var result = new LazyDescribedType(Name, Type, AnalyzeBody);
 			Type.AddNestedType(result);
@@ -144,7 +144,7 @@ namespace Flame.Ecs
 		public IMutableNamespace DefineNamespace(string Name)
 		{
 			return new TypeNamespace((LazyDescribedType)DefineType(
-				Name, _ => { }));
+                new SimpleName(Name), _ => { }));
 		}
 	}
 }

@@ -22,7 +22,9 @@ namespace Flame.Ecs
 			{
 				Scope.Log.LogError(new LogEntry(
 					"type resolution",
-					NodeHelpers.HighlightEven("could not resolve parameter type '", Node.Args[0].ToString(), "' for parameter '", name.Item1, "'."),
+					NodeHelpers.HighlightEven(
+                        "could not resolve parameter type '", Node.Args[0].ToString(), 
+                        "' for parameter '", name.Item1.ToString(), "'."),
 					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 				paramTy = PrimitiveTypes.Void;
 			}
@@ -138,12 +140,12 @@ namespace Flame.Ecs
 				var ptrVarType = parameter.ParameterType.AsPointerType();
 				if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
 				{
-					paramVarDict[parameter.Name] = new AtAddressVariable(
+                    paramVarDict[parameter.Name.ToString()] = new AtAddressVariable(
 						argVar.CreateGetExpression());
 				}
 				else
 				{
-					paramVarDict[parameter.Name] = argVar;
+                    paramVarDict[parameter.Name.ToString()] = argVar;
 				}
 				paramIndex++;
 			}
@@ -184,7 +186,8 @@ namespace Flame.Ecs
 						"type resolution",
 						NodeHelpers.HighlightEven(
 							"could not resolve return type '", 
-							Node.Args[0].ToString(), "' for method '", name.Item1, "'."),
+                            Node.Args[0].ToString(), "' for method '", 
+                            name.Item1.ToString(), "'."),
 						NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
 					retType = PrimitiveTypes.Void;
 				}
@@ -285,7 +288,7 @@ namespace Flame.Ecs
 
                 var valNode = decomp.Item2;
                 var field = new LazyDescribedField(
-                    decomp.Item1.Name.Name, DeclaringType, 
+                    new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
                     fieldDef =>
                     {
                         // Set the field's type.

@@ -88,7 +88,7 @@ namespace Flame.Ecs
             }
             else if (TypeArguments.Count > 0)
             {
-                LogCannotInstantiate(Member.Name, Scope, Location);
+                LogCannotInstantiate(Member.Name.ToString(), Scope, Location);
                 return;
             }
 
@@ -128,6 +128,14 @@ namespace Flame.Ecs
                 }
             }
 
+            if (exprSet.Count == 0 && method != null)
+            {
+                // We want to provide a diagnostic here if we
+                // encountered a method, but it was not given
+                // the right amount of type arguments.
+                LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
+            }
+
             return exprSet.Count > 0 
                 ? IntersectionExpression.Create(exprSet)
                 : null;
@@ -149,7 +157,7 @@ namespace Flame.Ecs
             var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(Name));
             if (ty == null)
             {
-                string genericName = GenericNameExtensions.ChangeTypeArguments(Name, Enumerable.Repeat("", TypeArguments.Count));
+                var genericName = new SimpleName(Name, TypeArguments.Count);
                 ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
                 if (ty == null)
                     return Enumerable.Empty<IType>();
@@ -173,7 +181,7 @@ namespace Flame.Ecs
             return new TypeOrExpression(
                 LookupUnqualifiedNameExpressionInstance(Name, TypeArguments, Scope, Location),
                 LookupUnqualifiedNameTypeInstances(Name, TypeArguments, Scope, Location),
-                null);
+                default(QualifiedName));
         }
 
 		public static IStatement ToStatement(IExpression Expression)
@@ -413,7 +421,7 @@ namespace Flame.Ecs
             Scope.Log.LogError(new LogEntry(
                 "generic arity mismatch",
                 NodeHelpers.HighlightEven(
-                    "'", Declaration.Name, "' takes '", Declaration.GenericParameters.Count().ToString(), 
+                    "'", Declaration.Name.ToString(), "' takes '", Declaration.GenericParameters.Count().ToString(), 
                     "' type parameters, but was given '", ArgumentCount.ToString(), "'."),
                 Location));
         }
@@ -492,8 +500,6 @@ namespace Flame.Ecs
             IReadOnlyList<IType> TypeArguments, LocalScope Scope,
             SourceLocation Location)
         {
-            bool isGeneric = TypeArguments.Count > 0;
-
             // First, try to resolve member-access expressions, which
             // look like this (instance member access):
             //
@@ -503,35 +509,19 @@ namespace Flame.Ecs
             //
             //     <type>.<identifier>
             //
-            var exprSet = new List<IExpression>();
+
             IMethod method = null;
+
+            var exprSet = new HashSet<IExpression>();
+
             if (Target.IsExpression)
             {
                 var targetTy = Target.Expression.Type;
-                var members = Scope.Function.GetInstanceMembers(targetTy, MemberName);
-
-                foreach (var item in members)
+                foreach (var item in Scope.Function.GetInstanceMembers(targetTy, MemberName))
                 {
-                    var member = item;
-                    method = member as IMethod;
-                    if (method != null)
-                    {
-                        if (!CheckGenericConstraints(method, TypeArguments, Scope.Function.Global, Location))
-                            // Just ignore this method for now.
-                            continue;
-
-                        member = method.MakeGenericMethod(TypeArguments);
-                    }
-                    else if (isGeneric)
-                    {
-                        LogCannotInstantiate(MemberName, Scope.Function.Global, Location);
-                        continue;
-                    }
-
-                    var acc = AccessMember(Target.Expression, member, Scope.Function.Global);
-
-                    if (acc != null)
-                        exprSet.Add(acc);
+                    CreateMemberAccess(
+                        item, TypeArguments, Target.Expression, exprSet, 
+                        Scope.Function.Global, Location, ref method);
                 }
             }
 
@@ -539,29 +529,11 @@ namespace Flame.Ecs
             {
                 foreach (var ty in Target.Types)
                 {
-                    var members = Scope.Function.GetStaticMembers(ty, MemberName);
-
-                    foreach (var item in members)
+                    foreach (var item in Scope.Function.GetStaticMembers(ty, MemberName))
                     {
-                        var member = item;
-                        method = member as IMethod;
-                        if (method != null)
-                        {
-                            if (!CheckGenericConstraints(method, TypeArguments, Scope.Function.Global, Location))
-                                // Just ignore this method for now.
-                                continue;
-
-                            member = method.MakeGenericMethod(TypeArguments);
-                        }
-                        else if (isGeneric)
-                        {
-                            LogCannotInstantiate(MemberName, Scope.Function.Global, Location);
-                            continue;
-                        }
-
-                        var acc = AccessMember(null, member, Scope.Function.Global);
-                        if (acc != null)
-                            exprSet.Add(acc);
+                        CreateMemberAccess(
+                            item, TypeArguments, null, exprSet, 
+                            Scope.Function.Global, Location, ref method);
                     }
                 }
             }
@@ -582,7 +554,7 @@ namespace Flame.Ecs
             // really just qualified names.
             var nsName = Target.IsNamespace 
                 ? new QualifiedName(MemberName).Qualify(Target.Namespace)
-                : null;
+                : default(QualifiedName);
 
             // Finally, let's do types.
             // Qualified type names can look like:
@@ -597,30 +569,23 @@ namespace Flame.Ecs
             // and namespace names don't overlap 
             // here.
             var typeSet = new HashSet<IType>();
-            string genericName = isGeneric 
-                ? GenericNameExtensions.ChangeTypeArguments(MemberName, Enumerable.Repeat("", TypeArguments.Count)) 
-                : null;
             foreach (var ty in Target.Types)
             {
                 if (ty is INamespace)
                 {
-                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => item.Name == MemberName || item.Name == genericName));
+                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => 
+                    {
+                        var itemName = item.Name as SimpleName;
+                        return itemName.Name == MemberName 
+                            && itemName.TypeParameterCount == TypeArguments.Count;
+                    }));
                 }
             }
             if (Target.IsNamespace)
             {
                 var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
                 if (topLevelTy != null)
-                {
                     typeSet.Add(topLevelTy);
-                }
-                else if (isGeneric)
-                {
-                    topLevelTy = Scope.Function.Global.Binder.BindType(
-                        new QualifiedName(genericName).Qualify(Target.Namespace));
-                    if (topLevelTy != null)
-                        typeSet.Add(topLevelTy);
-                }
             }
 
             return new TypeOrExpression(

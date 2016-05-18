@@ -11,8 +11,8 @@ namespace Flame.Ecs
 	{
 		private QualifiedBinder(
 			IBinder Binder, List<QualifiedName> namespaceUsings, 
-			Dictionary<string, QualifiedName> nameAliases,
-			Dictionary<string, IType> typeAliases)
+            Dictionary<UnqualifiedName, QualifiedName> nameAliases,
+            Dictionary<UnqualifiedName, IType> typeAliases)
 		{
 			this.Binder = Binder;
 			this.namespaceUsings = namespaceUsings;
@@ -23,8 +23,8 @@ namespace Flame.Ecs
 		public QualifiedBinder(IBinder Binder)
 			: this(
 				Binder, new List<QualifiedName>(), 
-				new Dictionary<string, QualifiedName>(),
-				new Dictionary<string, IType>())
+                new Dictionary<UnqualifiedName, QualifiedName>(),
+                new Dictionary<UnqualifiedName, IType>())
 		{ }
 
 		/// <summary>
@@ -33,8 +33,8 @@ namespace Flame.Ecs
 		public IBinder Binder { get; private set; }
 
 		private List<QualifiedName> namespaceUsings;
-		private Dictionary<string, QualifiedName> nameAliases;
-		private Dictionary<string, IType> typeAliases;
+		private Dictionary<UnqualifiedName, QualifiedName> nameAliases;
+		private Dictionary<UnqualifiedName, IType> typeAliases;
 		private ConcurrentDictionary<QualifiedName, IType> resolvedTypeCache;
 
 		/// <summary>
@@ -50,9 +50,9 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Creates an alias for a qualified name.
 		/// </summary>
-		public QualifiedBinder AliasName(string Alias, QualifiedName Name)
+        public QualifiedBinder AliasName(UnqualifiedName Alias, QualifiedName Name)
 		{
-			var newAliases = new Dictionary<string, QualifiedName>(nameAliases);
+            var newAliases = new Dictionary<UnqualifiedName, QualifiedName>(nameAliases);
 			newAliases[Alias] = Name;
 			return new QualifiedBinder(Binder, namespaceUsings, newAliases, typeAliases);
 		}
@@ -60,9 +60,9 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Creates an alias for the given type.
 		/// </summary>
-		public QualifiedBinder AliasType(string Alias, IType Type)
+        public QualifiedBinder AliasType(UnqualifiedName Alias, IType Type)
 		{
-			var tyAliases = new Dictionary<string, IType>(typeAliases);
+            var tyAliases = new Dictionary<UnqualifiedName, IType>(typeAliases);
 			tyAliases[Alias] = Type;
 			return new QualifiedBinder(Binder, namespaceUsings, nameAliases, tyAliases);
 		}
@@ -88,13 +88,13 @@ namespace Flame.Ecs
 			if (nameAliases.TryGetValue(Name.Qualifier, out aliasedQualifier))
 				Name = Name.Qualify(aliasedQualifier);
 
-			result = Binder.BindType(Name.FullName);
+			result = Binder.BindType(Name);
 			if (result != null)
 				return result;
 
 			foreach (var prefix in namespaceUsings)
 			{
-				result = Binder.BindType(Name.Qualify(prefix).FullName);
+				result = Binder.BindType(Name.Qualify(prefix));
 				if (result != null)
 					return result;
 			}

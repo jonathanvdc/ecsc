@@ -8,7 +8,7 @@ namespace Flame.Ecs
     public class LazyDescribedType : LazyDescribedMember, IType, INamespace
 	{
 		public LazyDescribedType(
-			string Name, INamespace Namespace,
+			UnqualifiedName Name, INamespace Namespace,
 			Action<LazyDescribedType> AnalyzeBody)
 			: base(Name)
 		{
@@ -32,11 +32,11 @@ namespace Flame.Ecs
 		/// <value>The declaring namespace.</value>
 		public INamespace DeclaringNamespace { get; private set; }
 
-		public override string FullName
+		public override QualifiedName FullName
 		{
 			get
 			{
-				return MemberExtensions.CombineNames(DeclaringNamespace.FullName, Name);
+				return Name.Qualify(DeclaringNamespace.FullName);
 			}
 		}
 

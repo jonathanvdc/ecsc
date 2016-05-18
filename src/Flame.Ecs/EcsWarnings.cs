@@ -18,6 +18,24 @@ namespace Flame.Ecs
 			new WarningDescription("duplicate-access-modifier", Warnings.Instance.All);
 
         /// <summary>
+        /// The -Winvalid-main-sig warning.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription InvalidMainSignatureWarning = 
+            new WarningDescription("invalid-main-sig", Warnings.Instance.All);
+
+        /// <summary>
+        /// The -Wgeneric-main-sig warning.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Winvalid-main-sig warning.
+        /// </remarks>
+        public static readonly WarningDescription GenericMainSignatureWarning =
+            new WarningDescription("generic-main-sig", InvalidMainSignatureWarning);
+
+        /// <summary>
         /// The -Walways warning group, which is responsible for
         /// flagging expressions that always evaluate to some 
         /// known value.

@@ -28,15 +28,17 @@ namespace Flame.Ecs
 		{
 			var name = Node.Name;
 			if (Node.IsCall && (name == CodeSymbols.Dot || name == CodeSymbols.ColonColon))
-			{
+            {
 				var left = ToQualifiedName(Node.Args[0]);
 				var right = ToQualifiedName(Node.Args[1]);
-				return left == null || right == null ? null : right.Qualify(left);
+                return left.IsEmpty || right.IsEmpty 
+                    ? default(QualifiedName) 
+                    : right.Qualify(left);
 			}
 			else if (Node.IsId)
 				return new QualifiedName(name.Name);
 			else
-				return null;
+                return default(QualifiedName);
 		}
 
 		/// <summary>
@@ -113,32 +115,41 @@ namespace Flame.Ecs
 			return new DescribedGenericParameter(name, Parent);
 		}
 
-		public static Tuple<string, Func<IGenericMember, IEnumerable<IGenericParameter>>> ToUnqualifiedName(
+		public static Tuple<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>> ToUnqualifiedName(
 			LNode Node, GlobalScope Scope)
 		{
 			var name = Node.Name;
-			if (name == CodeSymbols.Of)
-			{
-				var innerResults = ToUnqualifiedName(Node.Args[0], Scope);
+            if (name == CodeSymbols.Of)
+            {
+                var innerResults = ToUnqualifiedName(Node.Args[0], Scope);
 
-				return Tuple.Create<string, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
-					innerResults.Item1, parent =>
-					{
-						var genParams = new List<IGenericParameter>(innerResults.Item2(parent));
-						foreach (var item in Node.Args.Slice(1))
-						{
-							var genParam = ToGenericParameter(item, parent, Scope);
-							if (genParam != null)
-								genParams.Add(genParam);
-						}
-						return genParams;
-					});
-			}
-			else
-			{
-				return Tuple.Create<string, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
-					name.Name, _ => Enumerable.Empty<IGenericParameter>());
-			}
+                return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
+                    new SimpleName(
+                        innerResults.Item1.Name, 
+                        innerResults.Item1.TypeParameterCount + Node.Args.Count - 1), 
+                    parent =>
+                    {
+                        var genParams = new List<IGenericParameter>(innerResults.Item2(parent));
+                        foreach (var item in Node.Args.Slice(1))
+                        {
+                            var genParam = ToGenericParameter(item, parent, Scope);
+                            if (genParam != null)
+                                genParams.Add(genParam);
+                        }
+                        return genParams;
+                    });
+            }
+            else if (!Node.IsId)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid syntax",
+                    NodeHelpers.HighlightEven(
+                        "node '", Node.ToString(), 
+                        "' could not be interpreted as an unqualified name."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+            return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
+                new SimpleName(name.Name), _ => Enumerable.Empty<IGenericParameter>());
 		}
 
         /// <summary>
