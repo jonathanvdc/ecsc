@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
@@ -10,6 +11,8 @@ namespace Flame.Ecs
 {
     public static class UnaryConverters
     {
+        #region Increment/Decrement
+
         // Describes all primitive types that can be used in 
         // the decrement/increment operators.
         private static readonly HashSet<IType> primitiveIncDecTypes = new HashSet<IType>()
@@ -175,6 +178,75 @@ namespace Flame.Ecs
 
         public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPostfixDecrement = 
             CreatePostfixIncDecConverter("--", -1);
+
+        #endregion
+
+        #region Indexing
+
+        /// <summary>
+        /// Converts an indexing expression (type @_[]).
+        /// </summary>
+        public static IExpression ConvertIndex(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var containerExpr = Converter.ConvertExpression(Node.Args[0], Scope);
+            var dimExprs = Node.Args.Slice(1).Select(n => Converter.ConvertExpression(n, Scope)).ToArray();
+
+            var containerTy = containerExpr.Type;
+
+            if (containerTy.GetIsArray() || containerTy.GetIsVector())
+            {
+                // We will handle built-in container types (arrays, vectors)
+                // here, because they are a special case.
+
+                var elemTy = containerTy.AsContainerType().ElementType;
+
+                int dims = containerTy.GetIsArray()
+                    ? containerTy.AsArrayType().ArrayRank
+                    : containerTy.AsVectorType().Dimensions.Count;
+
+                if (dims != dimExprs.Length)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "wrong number of indexes '", dimExprs.Length.ToString(), "' inside ", 
+                            "[]", ", expected '", dims.ToString(), "'.")));
+                    return new UnknownExpression(elemTy);
+                }
+
+                foreach (var item in dimExprs)
+                {
+                    var ty = item.Type;
+                    if (!ty.GetIsInteger() && !PrimitiveTypes.Char.Equals(ty))
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "type error",
+                            NodeHelpers.HighlightEven(
+                                "index inside ", "[]", " of type '", Scope.Function.Global.TypeNamer.Convert(ty),
+                                "' was not an integer.")));
+                    }
+                }
+                return new ElementVariable(containerExpr, dimExprs).CreateGetExpression();
+            }
+            else
+            {
+                // TODO: indexer properties
+                Scope.Log.LogError(new LogEntry(
+                    "type error", 
+                    NodeHelpers.HighlightEven(
+                        "cannot apply indexing with ", "[]", 
+                        " to an expression of type '", 
+                        Scope.Function.Global.TypeNamer.Convert(containerTy), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+        }
+
+        #endregion
     }
 }
 

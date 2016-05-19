@@ -2,6 +2,7 @@
 tests
 {
     arithmetic/Arithmetic.test;
+    arrays/Arrays.test;
     assign/Assign.test;
     cast/Cast.test;
     constructor/Constructor.test;

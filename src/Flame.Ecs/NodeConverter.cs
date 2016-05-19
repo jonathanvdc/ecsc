@@ -511,6 +511,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.PreDec, UnaryConverters.ConvertPrefixDecrement);
                 result.AddExprConverter(CodeSymbols.PostInc, UnaryConverters.ConvertPostfixIncrement);
                 result.AddExprConverter(CodeSymbols.PostDec, UnaryConverters.ConvertPostfixDecrement);
+                result.AddExprConverter(CodeSymbols.IndexBracks, UnaryConverters.ConvertIndex);
 
 				// - Assignment operator
                 result.AddExprConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
