@@ -463,6 +463,7 @@ namespace Flame.Ecs
 				// Statements
 				result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
                 result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
+                result.AddExprConverter(CodeSymbols.For, ExpressionConverters.ConvertForExpression);
 
 				// Expressions
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
@@ -504,6 +505,12 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
                 result.AddExprConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
                 result.AddExprConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
+
+                // - Unary operators
+                result.AddExprConverter(CodeSymbols.PreInc, UnaryConverters.ConvertPrefixIncrement);
+                result.AddExprConverter(CodeSymbols.PreDec, UnaryConverters.ConvertPrefixDecrement);
+                result.AddExprConverter(CodeSymbols.PostInc, UnaryConverters.ConvertPostfixIncrement);
+                result.AddExprConverter(CodeSymbols.PostDec, UnaryConverters.ConvertPostfixDecrement);
 
 				// - Assignment operator
                 result.AddExprConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);

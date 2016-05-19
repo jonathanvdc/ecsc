@@ -159,6 +159,7 @@
     <Compile Include="TypeOrExpression.cs" />
     <Compile Include="BinaryOperatorResolution.cs" />
     <Compile Include="LazyDescribedField.cs" />
+    <Compile Include="UnaryConverters.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

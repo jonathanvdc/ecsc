@@ -904,12 +904,22 @@ namespace Flame.Ecs
 			};
 		}
 
+        /// <summary>
+        /// Determines if the given variable is a local variable.
+        /// Loading a local variable has no side-effects, and 
+        /// is efficient.
+        /// </summary>
+        public static bool IsLocalVariable(IVariable Variable)
+        {
+            return Variable is LocalVariableBase
+                || Variable is ArgumentVariable
+                || Variable is ThisVariable;
+        }
+
 		public static IExpression CreateUncheckedAssignment(
 			IVariable Variable, IExpression Value)
 		{
-			if (Variable is LocalVariableBase 
-				|| Variable is ArgumentVariable 
-				|| Variable is ThisVariable)
+            if (IsLocalVariable(Variable))
 			{
 				return new InitializedExpression(
 					Variable.CreateSetStatement(Value),
@@ -1148,6 +1158,26 @@ namespace Flame.Ecs
 
 			return ToExpression(new WhileStatement(cond, body));
 		}
+
+        /// <summary>
+        /// Converts a for-statement node (type #for), 
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertForExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+                return VoidExpression.Instance;
+
+            var childScope = new LocalScope(Scope);
+
+            var init = Converter.ConvertStatement(Node.Args[0], childScope);
+            var cond = Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
+            var delta = Converter.ConvertStatement(Node.Args[2], childScope);
+            var body = Converter.ConvertScopedStatement(Node.Args[3], childScope);
+
+            return ToExpression(new ForStatement(init, cond, delta, body, childScope.Release()));
+        }
 
         /// <summary>
         /// Converts a default-value node (type #default).
