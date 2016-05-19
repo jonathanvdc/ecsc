@@ -102,6 +102,16 @@ public static class Program
         Console.WriteLine(i);
     }
 
+    public static void IncDecChar()
+    {
+        char i = 'A';
+        Console.WriteLine(i++);
+        Console.WriteLine(++i);
+        Console.WriteLine(i--);
+        Console.WriteLine(--i);
+        Console.WriteLine(i);
+    }
+
     public static void Main()
     {
         IncDecInt8();
@@ -113,6 +123,8 @@ public static class Program
         IncDecUInt16();
         IncDecUInt32();
         IncDecUInt64();
+
+        IncDecChar();
 
         IncDecFloat32();
         IncDecFloat64();

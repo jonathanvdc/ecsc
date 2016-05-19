@@ -18,6 +18,7 @@ namespace Flame.Ecs
             PrimitiveTypes.Int32, PrimitiveTypes.Int64,
             PrimitiveTypes.UInt8, PrimitiveTypes.UInt16,
             PrimitiveTypes.UInt32, PrimitiveTypes.UInt64,
+            PrimitiveTypes.Char,
             PrimitiveTypes.Float32, PrimitiveTypes.Float64
         };
 
@@ -50,7 +51,7 @@ namespace Flame.Ecs
                     scope.Log.LogError(new LogEntry(
                         "type error",
                         NodeHelpers.HighlightEven(
-                            "the '", OperatorName, "' cannot be applied to operand of type '", 
+                            "the '", OperatorName, "' operator cannot be applied to operand of type '", 
                             scope.Function.Global.TypeNamer.Convert(innerTy), "'."),
                         NodeHelpers.ToSourceLocation(node.Range)));
                     return innerExpr;
