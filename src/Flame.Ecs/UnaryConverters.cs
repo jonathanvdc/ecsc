@@ -36,6 +36,14 @@ namespace Flame.Ecs
                 var innerExpr = converter.ConvertExpression(node.Args[0], scope);
                 var innerVar = ExpressionConverters.AsVariable(innerExpr);
 
+                if (innerVar == null)
+                {
+                    scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        "the operand of an increment or decrement operator must be a variable, property or indexer.",
+                        NodeHelpers.ToSourceLocation(node.Range)));
+                }
+
                 var innerTy = innerVar.Type;
 
                 if (primitiveIncDecTypes.Contains(innerTy))
