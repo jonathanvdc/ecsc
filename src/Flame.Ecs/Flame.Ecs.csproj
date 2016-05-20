@@ -160,9 +160,13 @@
     <Compile Include="BinaryOperatorResolution.cs" />
     <Compile Include="LazyDescribedField.cs" />
     <Compile Include="UnaryConverters.cs" />
+    <Compile Include="Passes\AutoInitializationPass.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Passes\" />
   </ItemGroup>
 </Project>
