@@ -76,9 +76,8 @@ namespace Flame.Ecs
 					descTy.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
 				}
 
-                // A boolean that tells us if all of this type's base types 
-                // are interfaces.
-                bool allInterfaces = true;
+                // Remember the base class.
+                IType baseClass = null;
 				foreach (var item in Node.Args[1].Args)
 				{
 					// Convert the base types.
@@ -95,11 +94,51 @@ namespace Flame.Ecs
 					}
 					else
 					{
+                        if (!innerTy.GetIsInterface())
+                        {
+                            if (innerTy.GetIsValueType())
+                            {
+                                Scope.Log.LogError(new LogEntry(
+                                    "invalid base type",
+                                    NodeHelpers.HighlightEven(
+                                        "'", Scope.TypeNamer.Convert(descTy), 
+                                        "' cannot inherit from '", "struct", 
+                                        "' type '", 
+                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                    NodeHelpers.ToSourceLocation(item.Range)));
+                            }
+                            else if (innerTy.GetIsGenericParameter())
+                            {
+                                Scope.Log.LogError(new LogEntry(
+                                    "invalid base type",
+                                    NodeHelpers.HighlightEven(
+                                        "'", Scope.TypeNamer.Convert(descTy), 
+                                        "' cannot inherit from generic parameter '", 
+                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                    NodeHelpers.ToSourceLocation(item.Range)));
+                            }
+
+                            if (baseClass == null)
+                            {
+                                baseClass = innerTy;
+                            }
+                            else
+                            {
+                                Scope.Log.LogError(new LogEntry(
+                                    "multiple base classes",
+                                    NodeHelpers.HighlightEven(
+                                        "'", Scope.TypeNamer.Convert(descTy), 
+                                        "' cannot have multiple base classes '", 
+                                        Scope.TypeNamer.Convert(baseClass), "' and '", 
+                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                    NodeHelpers.ToSourceLocation(item.Range)));
+                            }
+                        }
 						descTy.AddBaseType(innerTy);
 					}
 				}
 
-                if (allInterfaces && !descTy.GetIsInterface())
+                if (baseClass == null && !descTy.GetIsInterface())
                 {
                     var rootType = Scope.Binder.Environment.RootType;
                     if (rootType != null)
