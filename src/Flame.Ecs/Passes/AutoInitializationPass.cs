@@ -58,7 +58,7 @@ namespace Flame.Ecs.Passes
                         "missing parameterless constructor",
                         (Visitor.CurrentFlow.Max == 0 ? 
                             "a constructor that did not manually initialize the constructed instance " : 
-                            "A constructor that contains some constrol flow paths that may not manually initialize the constructed instance ") +
+                            "A constructor that contains some control flow paths that may not manually initialize the constructed instance ") +
                         "could not auto-initialize said instance, because the base type does not have a parameterless constructor.",
                         DeclaringMethod.GetSourceLocation());
                     entry = new LogEntry(entry.Name, RedefinitionHelpers.Instance.AppendDiagnosticsRemark(entry.Contents, "Base type: ", baseType.GetSourceLocation()));
@@ -115,7 +115,8 @@ namespace Flame.Ecs.Passes
         public IStatement Apply(Tuple<IStatement, IMethod, ICompilerLog> Value)
         {
             var method = Value.Item2;
-            if (method.IsConstructor && !method.IsStatic && (method.DeclaringType.GetIsValueType() || method.DeclaringType.GetParent() != null))
+            if (method.IsConstructor && !method.IsStatic 
+                && (method.DeclaringType.GetIsValueType() || method.DeclaringType.GetParent() != null))
             {
                 var visitor = InitializationCountHelpers.CreateVisitor();
                 var body = Value.Item1;

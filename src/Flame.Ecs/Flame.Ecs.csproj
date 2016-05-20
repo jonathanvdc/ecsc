@@ -161,6 +161,7 @@
     <Compile Include="LazyDescribedField.cs" />
     <Compile Include="UnaryConverters.cs" />
     <Compile Include="Passes\AutoInitializationPass.cs" />
+    <Compile Include="OverloadResolution.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

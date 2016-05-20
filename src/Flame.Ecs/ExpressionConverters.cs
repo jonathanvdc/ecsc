@@ -746,96 +746,59 @@ namespace Flame.Ecs
 		{
 			var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
 			var delegates = IntersectionExpression.GetIntersectedExpressions(target);
-			var args = Node.Args.Select(item => 
+            var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
+            var argTypes = OverloadResolution.GetArgumentTypes(args);
+
+            var result = OverloadResolution.CreateInvocation(delegates, args, Scope.Function.Global);
+
+            if (result != null)
+                // Awesome! Everything went well.
+                return result;
+
+            // Something went wrong. Try to provide accurate diagnostics.
+			var matches = target.GetMethodGroup();
+			var namer = Scope.Function.Global.TypeNamer;
+
+			var retType = matches.Any() ? matches.First().ReturnType : PrimitiveTypes.Void;
+			var expectedSig = CreateExpectedSignatureDescription(namer, retType, argTypes);
+
+			// Create an inner expression that consists of the invocation's target and arguments,
+			// whose values are calculated and then popped. Said expression will return an 
+			// unknown value of the return type.
+			var innerStmts = new List<IStatement>();
+			innerStmts.Add(new ExpressionStatement(target));
+			innerStmts.AddRange(args.Select(arg => new ExpressionStatement(arg.Item1)));
+			var innerExpr = new InitializedExpression(
+				new BlockStatement(innerStmts), new UnknownExpression(retType));
+
+			var log = Scope.Log;
+			if (matches.Any())
 			{
-				var argExpr = Converter.ConvertExpression(item, Scope);
-				foreach (var attr in item.Attrs)
-				{
-					if (attr.IsIdNamed(CodeSymbols.Ref) || attr.IsIdNamed(CodeSymbols.Out))
-					{
-						var argVar = AsVariable(argExpr) as IUnmanagedVariable;
-						if (argVar != null)
-						{
-							argExpr = argVar.CreateAddressOfExpression();
-						}
-						else
-						{
-							Scope.Log.LogError(new LogEntry(
-								"invalid syntax", 
-								NodeHelpers.HighlightEven(
-									"a ", "ref", " or ", "out", 
-									" argument must be an assignable variable."),
-								NodeHelpers.ToSourceLocation(attr.Range)));
-						}
-					}
-				}
-				return argExpr;
-			}).ToArray();
-			var argTypes = args.GetTypes();
+				var failedMatchesList = matches.Select(
+					m => CreateSignatureDiff(namer, argTypes, m));
 
-			// TODO: implement and use C#-specific overload resolution
-			// here. (i.e. read and implement the language spec)
-			var bestDelegate = delegates.GetBestDelegate(argTypes);
+				var explanationNodes = NodeHelpers.HighlightEven(
+            		"method call could not be resolved. " +
+					"Expected signature compatible with '", expectedSig,
+            		"'. Incompatible or ambiguous matches:");
 
-			if (bestDelegate == null)
-			{
-				var matches = target.GetMethodGroup();
-				var namer = Scope.Function.Global.TypeNamer;
-
-				var retType = matches.Any() ? matches.First().ReturnType : PrimitiveTypes.Void;
-				var expectedSig = CreateExpectedSignatureDescription(namer, retType, argTypes);
-
-				// Create an inner expression that consists of the invocation's target and arguments,
-				// whose values are calculated and then popped. Said expression will return an 
-				// unknown value of the return type.
-				var innerStmts = new List<IStatement>();
-				innerStmts.Add(new ExpressionStatement(target));
-				innerStmts.AddRange(args.Select(arg => new ExpressionStatement(arg)));
-				var innerExpr = new InitializedExpression(
-					new BlockStatement(innerStmts), new UnknownExpression(retType));
-
-				var log = Scope.Log;
-				if (matches.Any())
-				{
-					var failedMatchesList = matches.Select(
-						m => CreateSignatureDiff(namer, argTypes, m));
-
-					var explanationNodes = NodeHelpers.HighlightEven(
-                		"method call could not be resolved. " +
-						"Expected signature compatible with '", expectedSig,
-                		"'. Incompatible or ambiguous matches:");
-
-					var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
-					log.LogError(new LogEntry(
-						"method resolution",
-						explanationNodes.Concat(new MarkupNode[] { failedMatchesNode }),
-						NodeHelpers.ToSourceLocation(Node.Range)));
-				}
-				else
-				{
-					log.LogError(new LogEntry(
-						"method resolution",
-						NodeHelpers.HighlightEven(
-							"method call could not be resolved because the call's target was not invocable. " +
-							"Expected signature compatible with '", expectedSig,
-							"', got an expression of type '", namer.Convert(target.Type), "'."),
-						NodeHelpers.ToSourceLocation(Node.Range)));
-				}
-				return innerExpr;
+				var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
+				log.LogError(new LogEntry(
+					"method resolution",
+					explanationNodes.Concat(new MarkupNode[] { failedMatchesNode }),
+					NodeHelpers.ToSourceLocation(Node.Range)));
 			}
 			else
 			{
-				var delegateParams = bestDelegate.GetDelegateParameterTypes().ToArray();
-
-				var delegateArgs = new IExpression[args.Length];
-				for (int i = 0; i < delegateArgs.Length; i++)
-				{
-					delegateArgs[i] = Scope.Function.Global.ConvertImplicit(
-						args[i], delegateParams[i], NodeHelpers.ToSourceLocation(Node.Args[i].Range));
-				}
-
-				return bestDelegate.CreateDelegateInvocationExpression(delegateArgs);
+				log.LogError(new LogEntry(
+					"method resolution",
+					NodeHelpers.HighlightEven(
+						"method call could not be resolved because the call's target was not invocable. " +
+						"Expected signature compatible with '", expectedSig,
+						"', got an expression of type '", namer.Convert(target.Type), "'."),
+					NodeHelpers.ToSourceLocation(Node.Range)));
 			}
+			return innerExpr;
 		}
 
 		/// <summary>

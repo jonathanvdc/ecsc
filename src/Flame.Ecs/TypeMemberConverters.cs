@@ -177,6 +177,7 @@ namespace Flame.Ecs
 
 				// Attributes next.
 				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+                methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
 
 				// Resolve the return type.
 				var retType = Converter.ConvertType(Node.Args[0], innerScope);
@@ -238,6 +239,7 @@ namespace Flame.Ecs
 
 				// Attributes next.
 				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+                methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
 
 				// Resolve the parameters
 				var funScope = AnalyzeParameters(
@@ -296,6 +298,7 @@ namespace Flame.Ecs
 
                         // Update the attribute list.
                         UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
+                        fieldDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(decomp.Item1.Range)));
 
                         if (decomp.Item2 != null)
                         {

@@ -67,6 +67,7 @@ namespace Flame.Ecs
 					}
 				}, Scope);
                 descTy.AddAttribute(TypeKind);
+                descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 foreach (var item in convAttrs)
 				{
 					descTy.AddAttribute(item);
