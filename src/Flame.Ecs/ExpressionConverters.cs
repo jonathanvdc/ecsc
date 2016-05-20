@@ -695,50 +695,6 @@ namespace Flame.Ecs
             }
         }
 
-		private static string CreateExpectedSignatureDescription(
-			TypeConverterBase<string> TypeNamer, IType ReturnType, 
-			IType[] ArgumentTypes)
-		{
-			// Create a method signature, then turn that
-			// into a delegate, and finally feed that to
-			// the type namer.
-
-			var descMethod = new DescribedMethod("", null, ReturnType, true);
-
-			for (int i = 0; i < ArgumentTypes.Length; i++)
-			{
-				descMethod.AddParameter(
-					new DescribedParameter("param" + i, ArgumentTypes[i]));
-			}
-
-			return TypeNamer.Convert(MethodType.Create(descMethod));
-		}
-
-		private static MarkupNode CreateSignatureDiff(
-			TypeConverterBase<string> TypeNamer, IType[] ArgumentTypes, 
-			IMethod Target)
-		{
-			var methodDiffBuilder = new MethodDiffComparer(TypeNamer);
-			var argDiff = methodDiffBuilder.CompareArguments(ArgumentTypes, Target);
-
-			var nodes = new List<MarkupNode>();
-			if (Target.IsStatic)
-			{
-				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "static "));
-			}
-			if (Target.IsConstructor)
-			{
-				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "new " + TypeNamer.Convert(Target.DeclaringType)));
-			}
-			else
-			{
-				nodes.Add(new MarkupNode(NodeConstants.TextNodeType, TypeNamer.Convert(Target.ReturnType) + " " + Target.FullName));
-			}
-
-			nodes.Add(argDiff);
-			return new MarkupNode("#group", nodes);
-		}
-
 		/// <summary>
 		/// Converts a call-expression.
 		/// </summary>
@@ -747,58 +703,10 @@ namespace Flame.Ecs
 			var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
 			var delegates = IntersectionExpression.GetIntersectedExpressions(target);
             var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
-            var argTypes = OverloadResolution.GetArgumentTypes(args);
 
-            var result = OverloadResolution.CreateInvocation(delegates, args, Scope.Function.Global);
-
-            if (result != null)
-                // Awesome! Everything went well.
-                return result;
-
-            // Something went wrong. Try to provide accurate diagnostics.
-			var matches = target.GetMethodGroup();
-			var namer = Scope.Function.Global.TypeNamer;
-
-			var retType = matches.Any() ? matches.First().ReturnType : PrimitiveTypes.Void;
-			var expectedSig = CreateExpectedSignatureDescription(namer, retType, argTypes);
-
-			// Create an inner expression that consists of the invocation's target and arguments,
-			// whose values are calculated and then popped. Said expression will return an 
-			// unknown value of the return type.
-			var innerStmts = new List<IStatement>();
-			innerStmts.Add(new ExpressionStatement(target));
-			innerStmts.AddRange(args.Select(arg => new ExpressionStatement(arg.Item1)));
-			var innerExpr = new InitializedExpression(
-				new BlockStatement(innerStmts), new UnknownExpression(retType));
-
-			var log = Scope.Log;
-			if (matches.Any())
-			{
-				var failedMatchesList = matches.Select(
-					m => CreateSignatureDiff(namer, argTypes, m));
-
-				var explanationNodes = NodeHelpers.HighlightEven(
-            		"method call could not be resolved. " +
-					"Expected signature compatible with '", expectedSig,
-            		"'. Incompatible or ambiguous matches:");
-
-				var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
-				log.LogError(new LogEntry(
-					"method resolution",
-					explanationNodes.Concat(new MarkupNode[] { failedMatchesNode }),
-					NodeHelpers.ToSourceLocation(Node.Range)));
-			}
-			else
-			{
-				log.LogError(new LogEntry(
-					"method resolution",
-					NodeHelpers.HighlightEven(
-						"method call could not be resolved because the call's target was not invocable. " +
-						"Expected signature compatible with '", expectedSig,
-						"', got an expression of type '", namer.Convert(target.Type), "'."),
-					NodeHelpers.ToSourceLocation(Node.Range)));
-			}
-			return innerExpr;
+            return OverloadResolution.CreateCheckedInvocation(
+                "method", delegates, args, Scope.Function.Global, 
+                NodeHelpers.ToSourceLocation(Node.Range));
 		}
 
 		/// <summary>
@@ -1040,22 +948,38 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 0, Scope.Log))
-				return VoidExpression.Instance;
+            var thisVar = GetThisVariable(Scope);
+            if (thisVar == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid syntax", 
+                    NodeHelpers.HighlightEven(
+                        "keyword '", "this", 
+                        "' is not valid in a static property, static method, or static field initializer."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+            var thisExpr = thisVar.CreateGetExpression();
 
-			var thisVar = GetThisVariable(Scope);
-			if (thisVar == null)
-			{
-				Scope.Log.LogError(new LogEntry(
-					"invalid syntax", 
-					NodeHelpers.HighlightEven(
-						"keyword '", "this", 
-						"' is not valid in a static property, static method, or static field initializer."),
-					NodeHelpers.ToSourceLocation(Node.Range)));
-				return VoidExpression.Instance;
-			}
+            if (Node.Args.Count == 0)
+            {
+                // Regular 'this' expression.
+                return thisExpr;
+            }
+            else
+            {
+                // Constructor call.
+                var candidates = thisExpr.Type.GetConstructors()
+                    .Where(item => !item.IsStatic)
+                    .Select(item => new GetMethodExpression(item, thisExpr))
+                    .ToArray();
 
-			return thisVar.CreateGetExpression();
+                var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
+
+                return OverloadResolution.CreateCheckedInvocation(
+                    "constructor", candidates, args, Scope.Function.Global, 
+                    NodeHelpers.ToSourceLocation(Node.Range));
+            }
 		}
 
 		/// <summary>
