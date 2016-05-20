@@ -76,6 +76,9 @@ namespace Flame.Ecs
 					descTy.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
 				}
 
+                // A boolean that tells us if all of this type's base types 
+                // are interfaces.
+                bool allInterfaces = true;
 				foreach (var item in Node.Args[1].Args)
 				{
 					// Convert the base types.
@@ -95,6 +98,13 @@ namespace Flame.Ecs
 						descTy.AddBaseType(innerTy);
 					}
 				}
+
+                if (allInterfaces && !descTy.GetIsInterface())
+                {
+                    var rootType = Scope.Binder.Environment.RootType;
+                    if (rootType != null)
+                        descTy.AddBaseType(rootType);
+                }
 
 				foreach (var item in Node.Args[2].Args)
 				{
