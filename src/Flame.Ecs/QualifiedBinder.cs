@@ -7,7 +7,7 @@ namespace Flame.Ecs
 	/// <summary>
 	/// A type of object that maps qualified names to types.
 	/// </summary>
-	public sealed class QualifiedBinder
+	public sealed class QualifiedBinder : IBinder
 	{
 		private QualifiedBinder(
 			IBinder Binder, List<QualifiedName> namespaceUsings, 
@@ -31,6 +31,11 @@ namespace Flame.Ecs
 		/// Gets this qualified name binder's underlying binder.
 		/// </summary>
 		public IBinder Binder { get; private set; }
+
+        /// <summary>
+        /// Gets the environment for this binder.
+        /// </summary>
+        public IEnvironment Environment { get { return Binder.Environment; } }
 
 		private List<QualifiedName> namespaceUsings;
 		private Dictionary<UnqualifiedName, QualifiedName> nameAliases;
@@ -66,6 +71,11 @@ namespace Flame.Ecs
 			tyAliases[Alias] = Type;
 			return new QualifiedBinder(Binder, namespaceUsings, nameAliases, tyAliases);
 		}
+
+        public IEnumerable<IType> GetTypes()
+        {
+            return Binder.GetTypes();
+        }
 
 		/// <summary>
 		/// Binds the given qualified name to a type.
