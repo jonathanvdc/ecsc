@@ -1,3 +1,4 @@
+using System;
 
 public struct Vector2
 {
@@ -61,6 +62,9 @@ public class Program
 {
     public static void Main()
     {
-
+        var b = new Base(4);
+        Console.WriteLine(new Derived().x);
+        Console.WriteLine(new Derived(3).x);
+        Console.WriteLine(new Derived(ref b.x).x);
     }
 }
