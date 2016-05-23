@@ -66,5 +66,6 @@ public class Program
         Console.WriteLine(new Derived().x);
         Console.WriteLine(new Derived(3).x);
         Console.WriteLine(new Derived(ref b.x).x);
+        Console.WriteLine(new Derived() { x = 2 }.x);
     }
 }
