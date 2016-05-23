@@ -36,6 +36,15 @@ namespace Flame.Ecs
             new WarningDescription("generic-main-sig", InvalidMainSignatureWarning);
 
         /// <summary>
+        /// The -Wduplicate-initialization warning.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription DuplicateInitializationWarning = 
+            new WarningDescription("duplicate-initialization", Warnings.Instance.All);
+
+        /// <summary>
         /// The -Walways warning group, which is responsible for
         /// flagging expressions that always evaluate to some 
         /// known value.

@@ -57,6 +57,48 @@ namespace Flame.Ecs
 			return results;
 		}
 
+        /// <summary>
+        /// Checks that the given node is an id node.
+        /// </summary>
+        public static bool CheckId(LNode Node, ICompilerLog Log)
+        {
+            if (!Node.IsId)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node type", 
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' was not an ", 
+                        "identifier", " node, expected an identifier node."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Checks that the given node is a call node.
+        /// </summary>
+        public static bool CheckCall(LNode Node, ICompilerLog Log)
+        {
+            if (!Node.IsCall)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node type", 
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' was not a ", 
+                        "call", " node, expected a call node."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
 		/// <summary>
 		/// Checks the given node's arity.
 		/// </summary>
@@ -68,7 +110,7 @@ namespace Flame.Ecs
 					"unexpected node arity", 
 					HighlightEven(
 						"syntax node '", Node.Name.Name, "' had an argument count of '", 
-						Node.ArgCount.ToString(), "'. Expected: '", Arity.ToString(), "'."),
+						Node.ArgCount.ToString(), "', expected: '", Arity.ToString(), "'."),
 					ToSourceLocation(Node.Range)));
 				return false;
 			}

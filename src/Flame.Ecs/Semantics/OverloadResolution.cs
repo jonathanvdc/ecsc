@@ -222,7 +222,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Tries to create an expression that invokes the most
-        /// appropriate delegate in the given candidate expressions 
+        /// appropriate delegate in the list of candidate expressions 
         /// with the given list of arguments, for the given scope. 
         /// Null is never returned: if the operation is impossible 
         /// or ambiguous, then a diagnostic is logged.
@@ -248,6 +248,33 @@ namespace Flame.Ecs
                     InvocationType, Candidates, Arguments, Scope, 
                     Location, argTypes);
             }
+        }
+
+        /// <summary>
+        /// Creates a new-object creation delegate expression
+        /// from the given constructor.
+        /// </summary>
+        public static IExpression ToNewObjectDelegate(IMethod Constructor)
+        {
+            return new NewObjectDelegate(Constructor);
+        }
+
+        /// <summary>
+        /// Tries to create an expression that creates a new
+        /// object instance, by using the most
+        /// appropriate constructor in the candidate list 
+        /// with the given list of arguments, for the given scope. 
+        /// Null is never returned: if the operation is impossible 
+        /// or ambiguous, then a diagnostic is logged.
+        /// </summary>
+        public static IExpression CreateCheckedNewObject(
+            IEnumerable<IMethod> CandidateConstructors, 
+            IReadOnlyList<Tuple<IExpression, SourceLocation>> Arguments,
+            GlobalScope Scope, SourceLocation Location)
+        {
+            var delegates = CandidateConstructors.Select(ToNewObjectDelegate).ToArray();
+
+            return CreateCheckedInvocation("new-object", delegates, Arguments, Scope, Location);
         }
     }
 }

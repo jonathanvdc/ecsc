@@ -238,8 +238,8 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type error", 
                     NodeHelpers.HighlightEven(
-                        "cannot apply indexing with ", "[]", 
-                        " to an expression of type '", 
+                        "cannot apply indexing with '", "[]", 
+                        "' to an expression of type '", 
                         Scope.Function.Global.TypeNamer.Convert(containerTy), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return VoidExpression.Instance;

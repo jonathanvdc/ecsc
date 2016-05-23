@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Flame.Build;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
-using Loyc.Syntax;
-using Pixie;
-using Flame.Build;
 using Flame.Compiler.Variables;
 using Flame.Compiler.Emit;
+using Loyc;
+using Loyc.Syntax;
+using Pixie;
 
 namespace Flame.Ecs
 {
@@ -709,6 +710,324 @@ namespace Flame.Ecs
                 NodeHelpers.ToSourceLocation(Node.Range));
 		}
 
+        /// <summary>
+        /// Converts a new-expression. (type #new)
+        /// </summary>
+        public static IExpression ConvertNewExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            // The given C# new-expressions:
+            // 
+            //     new T(args...) { values... }
+            //     new T[args...] { values... }
+            //     new[] { values... }
+            //
+            // are converted to the given Loyc trees:
+            //
+            //     #new(T(args...), values...)
+            //     #new(#of(@`[]`, T)(args...), values...)
+            //     #new(@`[]`, values...)
+            //
+
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return VoidExpression.Instance;
+
+            var ctorCallNode = Node.Args[0];
+
+            NodeHelpers.CheckCall(ctorCallNode, Scope.Log);
+
+            var loc = NodeHelpers.ToSourceLocation(Node.Range);
+            var globalScope = Scope.Function.Global;
+
+            if (ctorCallNode.Target.IsIdNamed(CodeSymbols.Array))
+            {
+                // Type-inferred array type.
+                var elems = OverloadResolution.ConvertArguments(Node.Args.Slice(1), Scope, Converter);
+
+                var elemType = TypeInference.GetBestType(elems.Select(item => item.Item1.Type), globalScope);
+
+                if (elemType == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type inference",
+                        NodeHelpers.HighlightEven(
+                            "could not infer an element type for a " +
+                            "type-inferred initialized arrays."),
+                        loc));
+                    return VoidExpression.Instance;
+                }
+                else
+                {
+                    return new InitializedArrayExpression(
+                        elemType, elems.Select(expr => 
+                            globalScope.ConvertImplicit(
+                                expr.Item1, elemType, expr.Item2)).ToArray());
+                }
+            }
+
+            var ctorType = Converter.ConvertCheckedType(ctorCallNode.Target, globalScope);
+            var ctorArgs = OverloadResolution.ConvertArguments(ctorCallNode.Args, Scope, Converter);
+
+            if (ctorType == null)
+                return VoidExpression.Instance;
+
+            if (ctorType.GetIsArray())
+            {
+                var arrTy = ctorType.AsArrayType();
+                var initializerList = Node.Args.Slice(1)
+                    .Select(n => 
+                        globalScope.ConvertImplicit(
+                            Converter.ConvertExpression(n, Scope),
+                            arrTy.ElementType,
+                            loc))
+                    .ToArray();
+                var arrDims = ctorArgs
+                    .Select(item => 
+                        Scope.Function.Global.ConvertImplicit(
+                            item.Item1, PrimitiveTypes.Int32, item.Item2))
+                    .ToArray();
+
+                if (arrDims.Length == 0)
+                {
+                    // Stuff that looks like: new T[] { values... }
+                    if (initializerList.Length == 0)
+                    {
+                        // Syntax error.
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "array creation must have array size or array initializer."),
+                            loc));
+                        return new UnknownExpression(ctorType);
+                    }
+                    else if (arrTy.ArrayRank == 1)
+                    {
+                        // This is actually pretty easy. Just
+                        // create a new-array expression.
+                        return new InitializedArrayExpression(
+                            arrTy.ElementType, initializerList);
+                    }
+                    else
+                    {
+                        // TODO: implement this at some point.
+                        Scope.Log.LogError(new LogEntry(
+                            "array creation",
+                            NodeHelpers.HighlightEven(
+                                "initialized array creation for array ranks greater than '", 
+                                "1", "' has not been implemented yet."),
+                            loc));
+                        return new UnknownExpression(ctorType);
+                    }
+                }
+                else
+                {
+                    // Stuff that looks like: new T[args...] { values... }
+                    if (initializerList.Length == 0)
+                    {
+                        // Nothing can go wrong here, so this is pretty easy.
+                        return new NewArrayExpression(
+                            arrTy.ElementType, arrDims);
+                    }
+                    else if (arrTy.ArrayRank == 1)
+                    {
+                        // This is doable. We ought to check for 
+                        // size mismatches, though.
+                        int expectedSize = initializerList.Length;
+                        var dim = arrDims[0];
+                        if (!dim.EvaluatesTo(expectedSize))
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "array creation",
+                                NodeHelpers.HighlightEven(
+                                    "expected a constant size '", 
+                                    expectedSize.ToString(), 
+                                    "' for this initialized array."),
+                                loc));
+                        }
+
+                        return new InitializedArrayExpression(
+                            arrTy.ElementType, initializerList);
+                    }
+                    else
+                    {
+                        // TODO: implement this at some point.
+                        Scope.Log.LogError(new LogEntry(
+                            "array creation",
+                            NodeHelpers.HighlightEven(
+                                "initialized array creation for array ranks greater than '", 
+                                "1", "' has not been implemented yet."),
+                            loc));
+                        return new UnknownExpression(ctorType);
+                    }
+                }
+            }
+            else if (ctorType.GetIsPointer())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "object creation",
+                    NodeHelpers.HighlightEven(
+                        "pointer type '", Scope.Function.Global.TypeNamer.Convert(ctorType), 
+                        "' cannot be used in an object creation expression."),
+                    loc));
+                return new UnknownExpression(ctorType);
+            }
+            else if (ctorType.GetIsStaticType())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "object creation",
+                    NodeHelpers.HighlightEven(
+                        "cannot create an instance of static type '", 
+                        Scope.Function.Global.TypeNamer.Convert(ctorType),
+                        "'."),
+                    loc));
+                return new UnknownExpression(ctorType);
+            }
+            else if (ctorType.GetIsGenericParameter())
+            {
+                // TODO: implement the `T : new()` constraint
+                Scope.Log.LogError(new LogEntry(
+                    "object creation",
+                    NodeHelpers.HighlightEven(
+                        "cannot create an instance of generic parameter type '", 
+                        Scope.Function.Global.TypeNamer.Convert(ctorType),
+                        "'."),
+                    loc));
+                return new UnknownExpression(ctorType);
+            }
+            else
+            {
+                var newInstExpr = OverloadResolution.CreateCheckedNewObject(
+                    ctorType.GetConstructors().Where(item => !item.IsStatic), 
+                    ctorArgs, Scope.Function.Global, loc);
+
+                var initializerList = Node.Args.Slice(1);
+
+                if (initializerList.Count == 0)
+                    // Empty initializer list. Easy.
+                    return newInstExpr;
+
+                // We have a non-empty initializer list.
+                var constructedObjTy = newInstExpr.Type;
+                var tmp = new LocalVariable("tmp", constructedObjTy);
+                var constructedObjExpr = AsTargetObject(tmp.CreateGetExpression());
+                var addDelegates = new Lazy<IExpression[]>(() => 
+                    Scope.Function.GetInstanceMembers(constructedObjTy, "Add")
+                    .OfType<IMethod>()
+                    .Select(m => AccessMember(constructedObjExpr, m, Scope.Function.Global))
+                    .ToArray());
+
+                var initMembers = new HashSet<string>();
+                var init = new IStatement[]
+                {
+                    tmp.CreateSetStatement(newInstExpr),
+                }.Concat(initializerList.Select(n => 
+                    ConvertInitializerNode(
+                        constructedObjExpr, constructedObjTy,
+                        addDelegates, n, Scope, Converter, 
+                        initMembers)));
+
+                return new InitializedExpression(
+                    new BlockStatement(init.ToArray()),
+                    tmp.CreateGetExpression(),
+                    tmp.CreateReleaseStatement());
+            }
+        }
+
+        /// <summary>
+        /// Converts the given initializer list element.
+        /// </summary>
+        private static IStatement ConvertInitializerNode(
+            IExpression ConstructedObject, IType NewObjectType, 
+            Lazy<IExpression[]> LazyAddDelegates, 
+            LNode Node, LocalScope Scope, NodeConverter Converter,
+            HashSet<string> InitializedMembers)
+        {
+            var loc = NodeHelpers.ToSourceLocation(Node.Range);
+            if (Node.Calls(CodeSymbols.Assign))
+            {
+                // Object initializer.
+                if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                    return EmptyStatement.Instance;
+
+                var val = Converter.ConvertExpression(Node.Args[1], Scope);
+                if (!NodeHelpers.CheckId(Node.Args[0], Scope.Log))
+                    return new ExpressionStatement(val);
+
+                string fieldName = Node.Args[0].Name.Name;
+                var members = Scope.Function.GetInstanceMembers(NewObjectType, fieldName)
+                    .Where(m => m is IField || m is IProperty)
+                    .ToArray();
+
+                if (members.Length == 0)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "initializer list",
+                        NodeHelpers.HighlightEven(
+                            "could not resolve initialized member '", fieldName, "'."),
+                        loc));
+                    return new ExpressionStatement(val);
+                }
+                else if (members.Length > 1)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "initializer list",
+                        NodeHelpers.HighlightEven(
+                            "initialized member '", fieldName, "' was ambiguous in this context."),
+                        loc));
+                    return new ExpressionStatement(val);
+                }
+                else
+                {
+                    var accMember = AccessMember(ConstructedObject, members[0], Scope.Function.Global);
+                    var memberVar = AsVariable(accMember);
+
+                    if (memberVar == null)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "initializer list",
+                            NodeHelpers.HighlightEven(
+                                "could not assign a value to member '", fieldName, "'."),
+                            loc));
+                        return new ExpressionStatement(val);
+                    }
+
+                    // Only check for duplicate initialization if nothing
+                    // went wrong. We don't want to pollute the log
+                    // with warnings when we have actual errors to worry
+                    // about.
+                    if (!InitializedMembers.Add(fieldName) 
+                        && EcsWarnings.DuplicateInitializationWarning.UseWarning(Scope.Log.Options))
+                    {
+                        Scope.Log.LogWarning(new LogEntry(
+                            "duplicate initialization",
+                            NodeHelpers.HighlightEven(
+                                "object initializer contains more than one member '",
+                                fieldName, "' initialization. ")
+                            .Concat(new[] { EcsWarnings.DuplicateInitializationWarning.CauseNode }),
+                            loc));
+                    }
+
+                    return ToStatement(CreateCheckedAssignment(
+                        memberVar, val, Scope.Function.Global, loc));
+                }
+            }
+            else
+            {
+                // Collection initializer.
+                var args = Node.Calls(CodeSymbols.Braces)
+                    ? OverloadResolution.ConvertArguments(Node.Args, Scope, Converter)
+                    : new Tuple<IExpression, SourceLocation>[] 
+                    { 
+                        Tuple.Create(
+                            Converter.ConvertExpression(Node, Scope), loc) 
+                    };
+
+                return new ExpressionStatement(
+                    OverloadResolution.CreateCheckedInvocation(
+                        "initializer", LazyAddDelegates.Value, 
+                        args, Scope.Function.Global, loc));
+            }
+        }
+
 		/// <summary>
 		/// Creates a binary operator application expression
 		/// for the given operator and operands. A scope is
@@ -809,6 +1128,15 @@ namespace Flame.Ecs
 			}
 		}
 
+        public static IExpression CreateCheckedAssignment(
+            IVariable Variable, IExpression Value, 
+            GlobalScope Scope, SourceLocation Location)
+        {
+            return CreateUncheckedAssignment(
+                Variable, Scope.ConvertImplicit(
+                    Value, Variable.Type, Location));
+        }
+
 		/// <summary>
 		/// Converts an assignment node (type @=).
 		/// </summary>
@@ -831,10 +1159,9 @@ namespace Flame.Ecs
 				return rhs;
 			}
 
-			return CreateUncheckedAssignment(
-				lhsVar, Scope.Function.Global.ConvertImplicit(
-					rhs, lhsVar.Type, 
-					NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+            return CreateCheckedAssignment(
+                lhsVar, rhs, Scope.Function.Global, 
+                NodeHelpers.ToSourceLocation(Node.Args[1].Range));
 		}
 
 		/// <summary>

@@ -157,11 +157,13 @@
     <Compile Include="LazyDescribedType.cs" />
     <Compile Include="LazyDescribedMethod.cs" />
     <Compile Include="TypeOrExpression.cs" />
-    <Compile Include="BinaryOperatorResolution.cs" />
     <Compile Include="LazyDescribedField.cs" />
     <Compile Include="UnaryConverters.cs" />
     <Compile Include="Passes\AutoInitializationPass.cs" />
-    <Compile Include="OverloadResolution.cs" />
+    <Compile Include="Semantics\OverloadResolution.cs" />
+    <Compile Include="Semantics\NewObjectDelegate.cs" />
+    <Compile Include="Semantics\BinaryOperatorResolution.cs" />
+    <Compile Include="Semantics\TypeInference.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -169,5 +171,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Passes\" />
+    <Folder Include="Semantics\" />
   </ItemGroup>
 </Project>
