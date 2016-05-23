@@ -961,7 +961,7 @@ namespace Flame.Ecs
             }
             var thisExpr = thisVar.CreateGetExpression();
 
-            if (Node.Args.Count == 0)
+            if (Node.IsId)
             {
                 // Regular 'this' expression.
                 return thisExpr;
@@ -981,6 +981,64 @@ namespace Flame.Ecs
                     NodeHelpers.ToSourceLocation(Node.Range));
             }
 		}
+
+        /// <summary>
+        /// Converts a 'base'-expression node (type #base).
+        /// </summary>
+        public static IExpression ConvertBaseExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            var thisVar = GetThisVariable(Scope);
+            if (thisVar == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "invalid syntax", 
+                    NodeHelpers.HighlightEven(
+                        "keyword '", "base", 
+                        "' is not valid in a static property, static method, or static field initializer."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+
+            var baseType = Scope.Function.CurrentType.GetParent();
+            if (baseType == null)
+            {
+                // This can only happen when we're compiling code for
+                // a platform that doesn't have a root type.
+                Scope.Log.LogError(new LogEntry(
+                    "invalid syntax", 
+                    NodeHelpers.HighlightEven(
+                        "keyword '", "base", 
+                        "' is only valid for types that have a base type."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+            
+            var baseExpr = new ReinterpretCastExpression(
+                thisVar.CreateGetExpression(),
+                ThisVariable.GetThisType(baseType));
+
+            if (Node.IsId)
+            {
+                // A 'base' expression can only occur in a 'call'
+                // expression, and needs to get special treatment.
+                // We can't do that here
+                return baseExpr;
+            }
+            else
+            {
+                // Constructor call. This we can do.
+                var candidates = baseExpr.Type.GetConstructors()
+                    .Where(item => !item.IsStatic)
+                    .Select(item => new GetMethodExpression(item, baseExpr))
+                    .ToArray();
+
+                var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
+
+                return OverloadResolution.CreateCheckedInvocation(
+                    "constructor", candidates, args, Scope.Function.Global, 
+                    NodeHelpers.ToSourceLocation(Node.Range));
+            }
+        }
 
 		/// <summary>
 		/// Converts an if-statement node (type #if),

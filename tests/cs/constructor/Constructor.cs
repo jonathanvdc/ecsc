@@ -27,16 +27,28 @@ public class Base
 
 public class Derived : Base
 {
+    public Derived()
+        : base()
+    {
+
+    }
+
+    public Derived(string x)
+        : this()
+    {
+
+    }
+
     public Derived(int x)
     {
 
     }
 
-    // public Derived(ref int x)
-    //     : base(x)
-    // {
+    public Derived(ref int x)
+        : base(x)
+    {
 
-    // }
+    }
 
     public Derived(double x)
         : this((int)x)
@@ -47,11 +59,6 @@ public class Derived : Base
 
 public class Program
 {
-    public Program(ref int x)
-    {
-        return;
-    }
-
     public static void Main()
     {
 

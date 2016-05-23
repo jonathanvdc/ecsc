@@ -473,6 +473,7 @@ namespace Flame.Ecs
 
 				// Keyword expressions
                 result.AddExprConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
+                result.AddExprConverter(CodeSymbols.Base, ExpressionConverters.ConvertBaseExpression);
                 result.AddExprConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
 
                 // Cast expressions
