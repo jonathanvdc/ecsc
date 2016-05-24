@@ -20,5 +20,8 @@ public static class Program
         vec.Y = 4;
         Console.WriteLine(vec.X);
         Console.WriteLine(vec.Y);
+        vec = new Vector2<int>(4, 3);
+        Console.WriteLine(vec.X);
+        Console.WriteLine(vec.Y);
     }
 }
