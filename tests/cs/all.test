@@ -1,6 +1,7 @@
 
 tests
 {
+    anonymous-types/AnonymousTypes.test;
     arithmetic/Arithmetic.test;
     arrays/Arrays.test;
     assign/Assign.test;
