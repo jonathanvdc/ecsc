@@ -10,6 +10,8 @@ using Flame.Compiler.Emit;
 using Loyc;
 using Loyc.Syntax;
 using Pixie;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace Flame.Ecs
 {
@@ -720,12 +722,14 @@ namespace Flame.Ecs
             //     new T(args...) { values... }
             //     new T[args...] { values... }
             //     new[] { values... }
+            //     new { values... }
             //
             // are converted to the given Loyc trees:
             //
             //     #new(T(args...), values...)
             //     #new(#of(@`[]`, T)(args...), values...)
             //     #new(@`[]`, values...)
+            //     #new(@``, values...)
             //
 
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
@@ -733,15 +737,21 @@ namespace Flame.Ecs
 
             var ctorCallNode = Node.Args[0];
 
-            NodeHelpers.CheckCall(ctorCallNode, Scope.Log);
-
             var loc = NodeHelpers.ToSourceLocation(Node.Range);
             var globalScope = Scope.Function.Global;
+            var initializerList = Node.Args.Slice(1);
+
+            if (ctorCallNode.IsIdNamed(GSymbol.Empty))
+            {
+                return ConvertNewAnonymousTypeInstance(initializerList, loc, Scope, Converter);
+            }
+
+            NodeHelpers.CheckCall(ctorCallNode, Scope.Log);
 
             if (ctorCallNode.Target.IsIdNamed(CodeSymbols.Array))
             {
                 // Type-inferred array type.
-                var elems = OverloadResolution.ConvertArguments(Node.Args.Slice(1), Scope, Converter);
+                var elems = OverloadResolution.ConvertArguments(initializerList, Scope, Converter);
 
                 var elemType = TypeInference.GetBestType(elems.Select(item => item.Item1.Type), globalScope);
 
@@ -773,7 +783,7 @@ namespace Flame.Ecs
             if (ctorType.GetIsArray())
             {
                 var arrTy = ctorType.AsArrayType();
-                var initializerList = Node.Args.Slice(1)
+                var initializerExprs = initializerList
                     .Select(n => 
                         globalScope.ConvertImplicit(
                             Converter.ConvertExpression(n, Scope),
@@ -789,7 +799,7 @@ namespace Flame.Ecs
                 if (arrDims.Length == 0)
                 {
                     // Stuff that looks like: new T[] { values... }
-                    if (initializerList.Length == 0)
+                    if (initializerExprs.Length == 0)
                     {
                         // Syntax error.
                         Scope.Log.LogError(new LogEntry(
@@ -804,7 +814,7 @@ namespace Flame.Ecs
                         // This is actually pretty easy. Just
                         // create a new-array expression.
                         return new InitializedArrayExpression(
-                            arrTy.ElementType, initializerList);
+                            arrTy.ElementType, initializerExprs);
                     }
                     else
                     {
@@ -821,7 +831,7 @@ namespace Flame.Ecs
                 else
                 {
                     // Stuff that looks like: new T[args...] { values... }
-                    if (initializerList.Length == 0)
+                    if (initializerExprs.Length == 0)
                     {
                         // Nothing can go wrong here, so this is pretty easy.
                         return new NewArrayExpression(
@@ -831,7 +841,7 @@ namespace Flame.Ecs
                     {
                         // This is doable. We ought to check for 
                         // size mismatches, though.
-                        int expectedSize = initializerList.Length;
+                        int expectedSize = initializerExprs.Length;
                         var dim = arrDims[0];
                         if (!dim.EvaluatesTo(expectedSize))
                         {
@@ -845,7 +855,7 @@ namespace Flame.Ecs
                         }
 
                         return new InitializedArrayExpression(
-                            arrTy.ElementType, initializerList);
+                            arrTy.ElementType, initializerExprs);
                     }
                     else
                     {
@@ -899,8 +909,6 @@ namespace Flame.Ecs
                     ctorType.GetConstructors().Where(item => !item.IsStatic), 
                     ctorArgs, Scope.Function.Global, loc);
 
-                var initializerList = Node.Args.Slice(1);
-
                 if (initializerList.Count == 0)
                     // Empty initializer list. Easy.
                     return newInstExpr;
@@ -930,6 +938,208 @@ namespace Flame.Ecs
                     tmp.CreateGetExpression(),
                     tmp.CreateReleaseStatement());
             }
+        }
+
+        // A table that counts the number of anonymous types per type.
+        // This is used to generate unique names for anonymous types.
+        private static readonly ConditionalWeakTable<IType, Box<int>> anonymousTypeCounts = 
+            new ConditionalWeakTable<IType, Box<int>>();
+
+        private static IExpression ConvertNewAnonymousTypeInstance(
+            IEnumerable<LNode> InitializerList, SourceLocation Location,
+            LocalScope Scope, NodeConverter Converter)
+        {
+            var curType = Scope.Function.CurrentType;
+            Debug.Assert(curType != null);
+            if (curType.GetIsPointer())
+                curType = curType.AsPointerType().ElementType;
+
+            var declTy = curType.GetRecursiveGenericDeclaration();
+            Debug.Assert(declTy != null);
+            Debug.Assert(declTy is INamespace);
+
+            var curMethod = Scope.Function.CurrentMethod;
+            // It's okay for the enclosing method to be null.
+            var genericParams = curMethod == null 
+                ? new IGenericParameter[0]
+                : curMethod.GenericParameters.ToArray();
+
+            // Get the anonymous type index for the enclosing type,
+            // and increment the counter.
+            var tyBox = anonymousTypeCounts.GetValue(declTy, _ => new Box<int>(0));
+            int tyIndex;
+            lock (tyBox)
+            {
+                tyIndex = tyBox.Value;
+                tyBox.Value = tyIndex + 1;
+            }
+
+            // Create a new type to instantiate.
+            var anonTy = new DescribedType(
+                new SimpleName(
+                    "__anonymous_type$" + tyIndex, genericParams.Length), 
+                (INamespace)declTy);
+            foreach (var tParam in GenericExtensions.CloneGenericParameters(genericParams, anonTy))
+            {
+                anonTy.AddGenericParameter(tParam);
+            }
+            var genericParamConv = new TypeParameterConverter(anonTy);
+
+            // Mark the anonymous type as a private reference type. 
+            anonTy.AddAttribute(new AccessAttribute(AccessModifier.Private));
+            anonTy.AddAttribute(PrimitiveAttributes.Instance.ReferenceTypeAttribute);
+            // Throw in a source location, as well.
+            anonTy.AddAttribute(new SourceLocationAttribute(Location));
+
+            // Add a base type if that's appropriate.
+            var rootTy = Scope.Function.Global.Binder.Environment.RootType;
+            if (rootTy != null)
+                anonTy.AddBaseType(rootTy);
+
+            // Synthesize a constructor.
+            var ctor = new DescribedBodyMethod("this", anonTy);
+            ctor.IsConstructor = true;
+            ctor.IsStatic = false;
+            ctor.AddAttribute(new AccessAttribute(AccessModifier.Public));
+            ctor.ReturnType = PrimitiveTypes.Void;
+
+            if (rootTy == null)
+            {
+                ctor.Body = new ReturnStatement();
+            }
+            else
+            {
+                var baseCtor = rootTy.GetConstructor(new IType[] { }, false);
+                if (baseCtor == null)
+                {
+                    // This means that the back-end is doing something
+                    // highly unorthodox.
+                    Scope.Log.LogError(new LogEntry(
+                        "missing root constructor",
+                        NodeHelpers.HighlightEven(
+                            "could not create an anonymous type, because " +
+                            "root type '", Scope.Function.Global.TypeNamer.Convert(rootTy), 
+                            "' does not have a parameterless constructor."),
+                        Location));
+                    ctor.Body = new ReturnStatement();
+                }
+                else
+                {
+                    // A generic instance of the anonymous type, instantiated with
+                    // its own generic parameters.
+                    var anonGenericTyInst = (curType.GetIsRecursiveGenericInstance()
+                        ? new GenericInstanceType(anonTy, ((GenericTypeBase)curType).Resolver, curType)
+                        : (IType)anonTy).MakeGenericType(anonTy.GenericParameters);
+
+                    // Call the root type's parameterless constructor in the 
+                    // anonymous type's (parameterless) constructor.
+                    var anonThisExpr = new ThisVariable(anonGenericTyInst).CreateGetExpression();
+                    ctor.Body = new BlockStatement(new IStatement[] 
+                    {
+                        new ExpressionStatement(new InvocationExpression(
+                            baseCtor, anonThisExpr, 
+                            Enumerable.Empty<IExpression>())),
+                        new ReturnStatement()
+                    });
+                }
+            }
+            anonTy.AddMethod(ctor);
+
+            // A generic instance of the anonymous type, instantiated with
+            // the generic parameters of the enclosing method, if any.
+            var anonMethodTyInst = (curType.GetIsRecursiveGenericInstance()
+                ? new GenericInstanceType(anonTy, ((GenericTypeBase)curType).Resolver, curType)
+                : (IType)anonTy).MakeGenericType(genericParams);
+
+            var anonTyVar = new LocalVariable("tmp", anonMethodTyInst);
+            var anonTyVal = anonTyVar.CreateGetExpression();
+            
+            var initStmts = new List<IStatement>();
+            initStmts.Add(anonTyVar.CreateSetStatement(
+                new NewObjectExpression(
+                    anonMethodTyInst.GetConstructor(new IType[0], false), 
+                    Enumerable.Empty<IExpression>())));
+            var fieldDecls = new Dictionary<string, IField>();
+            foreach (var node in InitializerList)
+            {
+                string fieldName;
+                IExpression val;
+                var loc = NodeHelpers.ToSourceLocation(node.Range);
+                if (node.IsId)
+                {
+                    fieldName = node.Name.Name;
+                    val = Converter.ConvertExpression(node, Scope);
+                }
+                else if (node.Calls(CodeSymbols.Assign))
+                {
+                    if (!NodeHelpers.CheckArity(node, 2, Scope.Log))
+                        continue;
+
+                    val = Converter.ConvertExpression(node.Args[1], Scope);
+                    if (!NodeHelpers.CheckId(node.Args[0], Scope.Log))
+                        continue;
+                    
+                    fieldName = node.Args[0].Name.Name;
+                }
+                else if (node.Calls(CodeSymbols.Dot))
+                {
+                    if (!NodeHelpers.CheckArity(node, 2, Scope.Log))
+                        continue;
+
+                    val = Converter.ConvertExpression(node, Scope);
+                    if (!NodeHelpers.CheckId(node.Args[1], Scope.Log))
+                        continue;
+
+                    fieldName = node.Args[1].Name.Name;
+                }
+                else 
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        "invalid anonymous type member declarator: " +
+                        "anonymous type members must be a member assignment, " +
+                        "simple name or member access expression.",
+                        loc));
+                    continue;
+                }
+
+                if (fieldDecls.ContainsKey(fieldName))
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "member redefinition",
+                        NodeHelpers.HighlightEven(
+                            "anonymous type member '", fieldName, 
+                            "' is declared more than once.").Concat(new MarkupNode[] {
+                                fieldDecls[fieldName].GetSourceLocation()
+                                    .CreateRemarkDiagnosticsNode("previous declaration: ") }),
+                        loc));
+                    continue;
+                }
+
+                var field = new DescribedField(
+                    new SimpleName(fieldName), anonTy, 
+                    genericParamConv.Convert(val.Type));
+                field.IsStatic = false;
+                field.AddAttribute(new AccessAttribute(AccessModifier.Public));
+                anonTy.AddField(field);
+                fieldDecls[fieldName] = field;
+                if (anonMethodTyInst.GetIsRecursiveGenericInstance())
+                {
+                    var genericInst = (GenericTypeBase)anonMethodTyInst;
+                    initStmts.Add(new FieldVariable(
+                        new GenericInstanceField(field, genericInst.Resolver, genericInst), 
+                        anonTyVal).CreateSetStatement(val));
+                }
+                else
+                {
+                    initStmts.Add(new FieldVariable(field, anonTyVal).CreateSetStatement(val));
+                }
+            }
+
+            return new InitializedExpression(
+                new BlockStatement(initStmts),
+                anonTyVal,
+                anonTyVar.CreateReleaseStatement());
         }
 
         /// <summary>

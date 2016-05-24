@@ -46,11 +46,12 @@ namespace Flame.Ecs
 	{
 		public FunctionScope(
 			GlobalScope Global, IType CurrentType, 
-			IType ReturnType,
+            IMethod CurrentMethod, IType ReturnType,
 			IReadOnlyDictionary<string, IVariable> ParameterVariables)
 		{
 			this.Global = Global;
 			this.CurrentType = CurrentType;
+            this.CurrentMethod = CurrentMethod;
 			this.ReturnType = ReturnType;
 			this.ParameterVariables = ParameterVariables;
 		}
@@ -67,6 +68,12 @@ namespace Flame.Ecs
 		/// its own generic parameters.
 		/// </summary>
 		public IType CurrentType { get; private set; }
+
+        /// <summary>
+        /// Gets the enclosing method. This may be null if there is
+        /// no enclosing method.
+        /// </summary>
+        public IMethod CurrentMethod { get; private set; }
 
 		/// <summary>
 		/// Gets the return type of this scope.

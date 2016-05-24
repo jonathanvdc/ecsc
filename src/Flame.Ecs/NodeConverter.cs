@@ -118,8 +118,9 @@ namespace Flame.Ecs
 		public IType ConvertType(
 			LNode Node, GlobalScope Scope)
 		{
-			var localScope = new LocalScope(
-				new FunctionScope(Scope, null, null, new Dictionary<string, IVariable>()));
+			var localScope = new LocalScope(new FunctionScope(
+                Scope, null, null, null, 
+                new Dictionary<string, IVariable>()));
 
 			return ConvertTypeOrExpression(Node, localScope).CollapseTypes(
 				NodeHelpers.ToSourceLocation(Node.Range), Scope);

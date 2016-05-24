@@ -149,7 +149,7 @@ namespace Flame.Ecs
 				}
 				paramIndex++;
 			}
-			return new FunctionScope(Scope, thisTy, Target.ReturnType, paramVarDict);
+            return new FunctionScope(Scope, thisTy, Target, Target.ReturnType, paramVarDict);
 		}
 
 		/// <summary>
@@ -304,7 +304,8 @@ namespace Flame.Ecs
                         {
                             fieldDef.Value = Converter.ConvertExpression(
                                 valNode, new LocalScope(new FunctionScope(
-                                    Scope, DeclaringType, fieldDef.FieldType, 
+                                    Scope, DeclaringType, null,
+                                    fieldDef.FieldType, 
                                     new Dictionary<string, IVariable>())), 
                                 fieldDef.FieldType);
                         }

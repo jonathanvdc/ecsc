@@ -164,6 +164,7 @@
     <Compile Include="Semantics\NewObjectDelegate.cs" />
     <Compile Include="Semantics\BinaryOperatorResolution.cs" />
     <Compile Include="Semantics\TypeInference.cs" />
+    <Compile Include="Box.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
