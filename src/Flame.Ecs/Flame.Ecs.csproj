@@ -146,7 +146,6 @@
     <Compile Include="NodeHelpers.cs" />
     <Compile Include="LoycSourceDocument.cs" />
     <Compile Include="GlobalScope.cs" />
-    <Compile Include="ConversionRules.cs" />
     <Compile Include="QualifiedBinder.cs" />
     <Compile Include="GlobalConverters.cs" />
     <Compile Include="TypeMemberConverters.cs" />
@@ -165,6 +164,7 @@
     <Compile Include="Semantics\BinaryOperatorResolution.cs" />
     <Compile Include="Semantics\TypeInference.cs" />
     <Compile Include="Box.cs" />
+    <Compile Include="Semantics\ConversionRules.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
