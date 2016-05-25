@@ -164,7 +164,7 @@ namespace Flame.Ecs
 
 			// Handle the function's name first.
 			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
-			var def = new LazyDescribedMethod(name.Item1, DeclaringType, methodDef =>
+            var def = new LazyDescribedMethod(new SimpleName(name.Item1.Name), DeclaringType, methodDef =>
 			{
 				// Take care of the generic parameters next.
 				var innerScope = Scope;
