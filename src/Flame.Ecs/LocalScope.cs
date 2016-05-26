@@ -49,6 +49,10 @@ namespace Flame.Ecs
             IMethod CurrentMethod, IType ReturnType,
 			IReadOnlyDictionary<string, IVariable> ParameterVariables)
 		{
+            this.globalMemberCache = new Dictionary<IType, ITypeMember[]>();
+            this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
+            this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
+
 			this.Global = Global;
 			this.CurrentType = CurrentType;
             this.CurrentMethod = CurrentMethod;
@@ -110,6 +114,44 @@ namespace Flame.Ecs
 				return null;
 		}
 
+        private Dictionary<IType, ITypeMember[]> globalMemberCache;
+        private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
+        private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache; 
+
+        private ITypeMember[] GetMembers(IType Type)
+        {
+            ITypeMember[] result;
+            if (globalMemberCache.TryGetValue(Type, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = Type.GetAllMembers().ToArray();
+                globalMemberCache[Type] = result;
+                return result;
+            }
+        }
+
+        private ITypeMember[] GetMembers(
+            IType Type, string Name, 
+            Dictionary<Tuple<IType, string>, ITypeMember[]> MemberCache,
+            Func<ITypeMember, bool> Predicate)
+        {
+            var key = Tuple.Create(Type, Name);
+            ITypeMember[] result;
+            if (MemberCache.TryGetValue(key, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = GetMembers(Type).Where(Predicate).ToArray();
+                MemberCache[key] = result;
+                return result;
+            }
+        }
+
 		/// <summary>
 		/// Gets all members with the given name that can be accessed
 		/// on an instance of the given type. 
@@ -117,7 +159,7 @@ namespace Flame.Ecs
 		public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
 		{
 			// TODO: actually implement name lookup algorithm
-            return Type.GetAllMembers().Where(item =>
+            return GetMembers(Type, Name, instanceMemberCache, item =>
             {
                 var itemName = item.Name as SimpleName;
                 return itemName != null && itemName.Name == Name 
@@ -132,12 +174,12 @@ namespace Flame.Ecs
 		public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
 		{
 			// TODO: actually implement name lookup algorithm
-            return Type.GetAllMembers().Where((item =>
+            return GetMembers(Type, Name, staticMemberCache, item =>
             {
                 var itemName = item.Name as SimpleName;
                 return itemName != null && itemName.Name == Name 
                     && item.IsStatic && CurrentType.CanAccess(item);
-            }));
+            });
 		}
 	}
 
