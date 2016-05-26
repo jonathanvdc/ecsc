@@ -36,7 +36,7 @@ namespace Flame.Ecs
 				return local.CreateGetExpression();
 			}
 
-            var declType = Scope.Function.CurrentType;
+            var declType = Scope.Function.DeclaringType;
 
             if (declType == null)
                 return null;
@@ -104,7 +104,7 @@ namespace Flame.Ecs
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
-            var declType = Scope.Function.CurrentType;
+            var declType = Scope.Function.DeclaringType;
 
             if (declType == null)
                 return null;

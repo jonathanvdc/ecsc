@@ -55,6 +55,9 @@ namespace Flame.Ecs
 
 			this.Global = Global;
 			this.CurrentType = CurrentType;
+            this.DeclaringType = CurrentType != null && CurrentType.GetIsPointer() 
+                ? CurrentType.AsPointerType().ElementType
+                : CurrentType;
             this.CurrentMethod = CurrentMethod;
 			this.ReturnType = ReturnType;
 			this.ParameterVariables = ParameterVariables;
@@ -69,9 +72,18 @@ namespace Flame.Ecs
 		/// <summary>
 		/// Gets the type of a hypothetical 'this' pointer:
 		/// the enclosing type, optionally instantiated by
-		/// its own generic parameters.
+		/// its own generic parameters. Additionally, 
+        /// value types have a pointer current type.
 		/// </summary>
 		public IType CurrentType { get; private set; }
+
+        /// <summary>
+        /// Gets the type of a hypothetical 'this' expression:
+        /// the enclosing type, optionally instantiated by
+        /// its own generic parameters. Value types do not
+        /// have a pointer current type.
+        /// </summary>
+        public IType DeclaringType { get; private set; }
 
         /// <summary>
         /// Gets the enclosing method. This may be null if there is
@@ -163,7 +175,7 @@ namespace Flame.Ecs
             {
                 var itemName = item.Name as SimpleName;
                 return itemName != null && itemName.Name == Name 
-                    && !item.IsStatic && CurrentType.CanAccess(item);
+                    && !item.IsStatic && DeclaringType.CanAccess(item);
             });
 		}
 
@@ -178,7 +190,7 @@ namespace Flame.Ecs
             {
                 var itemName = item.Name as SimpleName;
                 return itemName != null && itemName.Name == Name 
-                    && item.IsStatic && CurrentType.CanAccess(item);
+                    && item.IsStatic && DeclaringType.CanAccess(item);
             });
 		}
 	}
