@@ -12,7 +12,7 @@ namespace Flame.Ecs
 	/// An interface for namespaces that support inserting 
 	/// additional types and nested namespaces.
 	/// </summary>
-	public interface IMutableNamespace
+	public interface IMutableNamespace : IMember
 	{
 		IType DefineType(
 			UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody);
@@ -132,6 +132,9 @@ namespace Flame.Ecs
 
 		public LazyDescribedType Type { get; private set; }
 
+        public UnqualifiedName Name { get { return Type.Name; } }
+        public QualifiedName FullName { get { return Type.FullName; } }
+        public AttributeMap Attributes { get { return Type.Attributes; } }
 
 		public IType DefineType(
 			UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody)

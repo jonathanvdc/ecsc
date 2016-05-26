@@ -448,6 +448,7 @@ namespace Flame.Ecs
 
 				// Global entities
 				result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
+                result.AddGlobalConverter(CodeSymbols.Namespace, GlobalConverters.ConvertNamespaceDefinition);
                 result.AddGlobalConverter(CodeSymbols.Class, GlobalConverters.ConvertClassDefinition);
                 result.AddGlobalConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
                 result.AddGlobalConverter(CodeSymbols.Interface, GlobalConverters.ConvertInterfaceDefinition);

@@ -21,6 +21,34 @@ namespace Flame.Ecs
 			return Scope.WithBinder(Scope.Binder.UseNamespace(qualName));
 		}
 
+        /// <summary>
+        /// Converts a '#namespace' node.
+        /// </summary>
+        public static GlobalScope ConvertNamespaceDefinition(
+            LNode Node, IMutableNamespace Namespace, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+                return Scope;
+
+            var qualName = NodeHelpers.ToQualifiedName(Node.Args[0]);
+
+            var ns = Namespace;
+            var nsScope = Scope;
+            foreach (var name in qualName.Path)
+            {
+                ns = Namespace.DefineNamespace(name.ToString());
+                nsScope = Scope.WithBinder(Scope.Binder.UseNamespace(ns.FullName));
+            }
+
+            foreach (var elem in Node.Args[2].Args)
+            {
+                nsScope = Converter.ConvertGlobal(elem, Namespace, nsScope);
+            }
+
+            return Scope;
+        }
+
 		/// <summary>
 		/// Converts a type.
 		/// </summary>
