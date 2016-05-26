@@ -284,7 +284,7 @@ namespace Flame.Ecs
 		/// Creates an expression that can be used
 		/// as target object for a member-access expression.
 		/// </summary>
-		private static IExpression AsTargetObject(IExpression Expr)
+		public static IExpression AsTargetObject(IExpression Expr)
 		{
 			if (Expr == null)
 				return null;
@@ -1765,9 +1765,7 @@ namespace Flame.Ecs
                 return new ReinterpretCastExpression(op, ty);
             }
 
-            var conv = Scope.Function.Global.ConversionRules.TryConvertExplicit(op, ty);
-
-            if (conv == null)
+            if (Scope.Function.Global.ConversionRules.HasReferenceConversion(op.Type, ty))
             {
                 Scope.Log.LogError(new LogEntry(
                     "invalid expression",

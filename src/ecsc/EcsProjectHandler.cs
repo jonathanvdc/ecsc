@@ -9,6 +9,7 @@ using Flame.Compiler.Visitors;
 using Flame.DSProject;
 using Flame.Ecs;
 using Flame.Ecs.Passes;
+using Flame.Ecs.Semantics;
 using Flame.Front;
 using Flame.Front.Options;
 using Flame.Front.Projects;
