@@ -18,6 +18,17 @@ namespace Flame.Ecs
 		/// </summary>
 		FunctionScope Function { get; }
 
+        /// <summary>
+        /// Gets the enclosing control-flow node's
+        /// tag, if there is an enclosing control-flow node.
+        /// Otherwise, null is returned.
+        /// </summary>
+        /// <remarks>
+        /// This tag can be used as a target for break
+        /// and continue nodes.
+        /// </remarks>
+        UniqueTag FlowTag { get; }
+
 		/// <summary>
 		/// Gets this local scope's return type.
 		/// </summary>
@@ -107,6 +118,9 @@ namespace Flame.Ecs
 		/// Gets this local scope's function scope.
 		/// </summary>
 		public FunctionScope Function { get { return this; } }
+
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get { return null; } }
 
 		/// <summary>
 		/// Gets the set of all local variable identifiers
@@ -231,6 +245,9 @@ namespace Flame.Ecs
         /// </summary>
         public ICompilerLog Log { get { return Function.Global.Log; } }
 
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+
 		/// <summary>
 		/// Gets this local scope's return type.
 		/// </summary>
@@ -310,5 +327,59 @@ namespace Flame.Ecs
 				return Parent.GetVariable(Name);
 		}
 	}
+
+    /// <summary>
+    /// A data structure that represents a local scope for a 
+    /// control-flow node.
+    /// </summary>
+    public sealed class FlowScope : ILocalScope
+    {
+        public FlowScope(ILocalScope Parent, UniqueTag FlowTag)
+        {
+            this.Parent = Parent;
+            this.FlowTag = FlowTag;
+        }
+
+        /// <summary>
+        /// Gets this local scope's parent scope.
+        /// </summary>
+        public ILocalScope Parent { get; private set; }
+
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get; private set; }
+
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get { return Parent.Function; } }
+
+        /// <summary>
+        /// Gets the log object for this scope.
+        /// </summary>
+        public ICompilerLog Log { get { return Function.Global.Log; } }
+
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        public IType ReturnType
+        {
+            get { return Parent.ReturnType; }
+        }
+
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<string> VariableNames { get { return Parent.VariableNames; } }
+
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(string Name)
+        {
+            return Parent.GetVariable(Name);
+        }
+    }
 }
 

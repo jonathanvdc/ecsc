@@ -202,17 +202,17 @@ namespace Flame.Ecs
 			return ToStatement(Converter.ConvertExpression(Node, Scope));
 		}
 
-		public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, LocalScope Scope)
+		public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, ILocalScope Scope)
 		{
 			var childScope = new LocalScope(Scope);
-			var stmt = Converter.ConvertStatement(Node, Scope);
+            var stmt = Converter.ConvertStatement(Node, childScope);
 			return new BlockStatement(new IStatement[] { stmt, childScope.Release() });
 		}
 
-		public static IExpression ConvertScopedExpression(this NodeConverter Converter, LNode Node, LocalScope Scope)
+		public static IExpression ConvertScopedExpression(this NodeConverter Converter, LNode Node, ILocalScope Scope)
 		{
 			var childScope = new LocalScope(Scope);
-			var expr = Converter.ConvertExpression(Node, Scope);
+            var expr = Converter.ConvertExpression(Node, childScope);
 			return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
 		}
 
@@ -1638,10 +1638,12 @@ namespace Flame.Ecs
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
-			var body = Converter.ConvertScopedStatement(Node.Args[1], Scope);
+            var tag = new UniqueTag("for");
 
-			return ToExpression(new WhileStatement(cond, body));
+			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var body = Converter.ConvertScopedStatement(Node.Args[1], new FlowScope(Scope, tag));
+
+			return ToExpression(new WhileStatement(tag, cond, body));
 		}
 
         /// <summary>
@@ -1656,12 +1658,14 @@ namespace Flame.Ecs
 
             var childScope = new LocalScope(Scope);
 
+            var tag = new UniqueTag("for");
+
             var init = Converter.ConvertStatement(Node.Args[0], childScope);
             var cond = Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
             var delta = Converter.ConvertStatement(Node.Args[2], childScope);
-            var body = Converter.ConvertScopedStatement(Node.Args[3], childScope);
+            var body = Converter.ConvertScopedStatement(Node.Args[3], new FlowScope(childScope, tag));
 
-            return ToExpression(new ForStatement(init, cond, delta, body, childScope.Release()));
+            return ToExpression(new ForStatement(tag, init, cond, delta, body, childScope.Release()));
         }
 
         /// <summary>
