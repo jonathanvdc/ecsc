@@ -11,6 +11,7 @@ tests
     generics/Generics.test;
     hello-world/HelloWorld.test;
     inc-dec/IncDec.test;
+    internal/Internal.test;
     local-decl/LocalDecl.test;
     ref-out/RefOut.test;
     return/Return.test;
