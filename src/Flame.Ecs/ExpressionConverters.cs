@@ -1583,12 +1583,15 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
+                && !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
 				return VoidExpression.Instance;
 
 			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
 			var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
-			var elseExpr = Converter.ConvertScopedStatement(Node.Args[2], Scope);
+            var elseExpr = Node.ArgCount == 3 
+                ? Converter.ConvertScopedStatement(Node.Args[2], Scope)
+                : EmptyStatement.Instance;
 
 			return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
 		}

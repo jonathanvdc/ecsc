@@ -141,6 +141,27 @@ namespace Flame.Ecs
 			}
 		}
 
+        /// <summary>
+        /// Checks the given node's maximal arity.
+        /// </summary>
+        public static bool CheckMaxArity(LNode Node, int MaxArity, ICompilerLog Log)
+        {
+            if (Node.ArgCount > MaxArity)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node arity", 
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        Node.ArgCount.ToString(), "'. Expected: no more than '", MaxArity.ToString(), "'."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
 		public static IGenericParameter ToGenericParameter(
 			LNode Node, IGenericMember Parent, GlobalScope Scope)
 		{
