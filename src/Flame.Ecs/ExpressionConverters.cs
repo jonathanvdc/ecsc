@@ -1584,7 +1584,7 @@ namespace Flame.Ecs
 		public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
 		{
 			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
-                && !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
+                || !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
 				return VoidExpression.Instance;
 
 			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
