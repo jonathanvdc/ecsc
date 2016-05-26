@@ -1628,6 +1628,58 @@ namespace Flame.Ecs
 			return new SelectExpression(cond, ifExpr, elseExpr);
 		}
 
+        /// <summary>
+        /// Converts a break-statement (type #break), and
+        /// wraps it in an expression.
+        /// </summary>
+        public static IExpression ConvertBreakExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            NodeHelpers.CheckId(Node, Scope.Log);
+
+            var tag = Scope.FlowTag;
+            if (tag == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "no enclosing loop out of which to ", 
+                        "break", "."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+            else
+            {
+                return ToExpression(new BreakStatement(Scope.FlowTag));
+            }
+        }
+
+        /// <summary>
+        /// Converts a continue-statement (type #continue), and
+        /// wraps it in an expression.
+        /// </summary>
+        public static IExpression ConvertContinueExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            NodeHelpers.CheckId(Node, Scope.Log);
+
+            var tag = Scope.FlowTag;
+            if (tag == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "no enclosing loop out of which to ", 
+                        "continue", "."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return VoidExpression.Instance;
+            }
+            else
+            {
+                return ToExpression(new ContinueStatement(Scope.FlowTag));
+            }
+        }
+
 		/// <summary>
 		/// Converts a while-statement node (type #while),
 		/// and wraps it in a void expression.
@@ -1638,7 +1690,7 @@ namespace Flame.Ecs
 			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
 				return VoidExpression.Instance;
 
-            var tag = new UniqueTag("for");
+            var tag = new UniqueTag("while");
 
 			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var body = Converter.ConvertScopedStatement(Node.Args[1], new FlowScope(Scope, tag));

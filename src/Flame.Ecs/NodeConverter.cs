@@ -463,9 +463,11 @@ namespace Flame.Ecs
                 result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
 
 				// Statements
-				result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
-                result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
+                result.AddExprConverter(CodeSymbols.Break, ExpressionConverters.ConvertBreakExpression);
+                result.AddExprConverter(CodeSymbols.Continue, ExpressionConverters.ConvertContinueExpression);
                 result.AddExprConverter(CodeSymbols.For, ExpressionConverters.ConvertForExpression);
+                result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
+                result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
 
 				// Expressions
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
