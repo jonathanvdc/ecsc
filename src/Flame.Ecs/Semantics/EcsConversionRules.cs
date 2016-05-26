@@ -78,6 +78,7 @@ namespace Flame.Ecs.Semantics
             }
 
             // TODO: user-defined conversions
+            // TODO: pointer conversions
 
             // Didn't find any applicable conversions.
             return new ConversionDescription[0];
