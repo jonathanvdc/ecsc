@@ -8,6 +8,7 @@ tests
     cast/Cast.test;
     constructor/Constructor.test;
     field/Field.test;
+    flow/Flow.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
     inc-dec/IncDec.test;
