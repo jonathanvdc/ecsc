@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Flame.Ecs
+namespace Flame.Ecs.Semantics
 {
 	public static class BinaryOperatorResolution
 	{
