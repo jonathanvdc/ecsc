@@ -6,6 +6,7 @@ tests
     arrays/Arrays.test;
     assign/Assign.test;
     cast/Cast.test;
+    concat/Concat.test;
     constructor/Constructor.test;
     field/Field.test;
     flow/Flow.test;
