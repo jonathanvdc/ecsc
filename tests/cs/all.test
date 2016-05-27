@@ -18,4 +18,5 @@ tests
     return/Return.test;
     sealed/Sealed.test;
     this-keyword/ThisKeyword.test;
+    unary/Unary.test;
 }
