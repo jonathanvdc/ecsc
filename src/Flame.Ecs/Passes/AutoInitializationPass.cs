@@ -46,11 +46,11 @@ namespace Flame.Ecs.Passes
                     Log.LogWarning(entry);
                 }
 
-                return ThisReferenceVariable.Instance.Create(DeclaringType).CreateSetStatement(new DefaultValueExpression(DeclaringType));
+                return thisVariable.CreateSetStatement(new DefaultValueExpression(thisVariable.Type));
             }
             else
             {
-                var baseType = DeclaringType.GetParent();
+                var baseType = thisVariable.Type.GetParent();
                 var parameterlessCtor = baseType.GetConstructor(new IType[] { }, false);
                 if (parameterlessCtor == null)
                 {
