@@ -11,7 +11,9 @@ namespace Flame.Ecs
     {
         public static IType GetBestType(IType Left, IType Right, GlobalScope Scope)
         {
-            if (Scope.ConversionRules.HasImplicitConversion(Left, Right))
+            if (Left == null || Right == null)
+                return null;
+            else if (Scope.ConversionRules.HasImplicitConversion(Left, Right))
                 return Right;
             else if (Scope.ConversionRules.HasImplicitConversion(Right, Left))
                 return Left;
