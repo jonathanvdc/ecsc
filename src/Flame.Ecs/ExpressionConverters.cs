@@ -1239,6 +1239,62 @@ namespace Flame.Ecs
             }
         }
 
+        /// <summary>
+        /// Creates an expression that converts the value returned
+        /// by the given expression to a string.
+        /// </summary>
+        private static IExpression ValueToString(
+            IExpression Value, FunctionScope Scope,
+            SourceLocation Location)
+        {
+            if (PrimitiveTypes.String.Equals(Value))
+                return Value;
+
+            var toStringMethods = 
+                Scope.GetInstanceMembers(Value.Type, "ToString")
+                    .OfType<IMethod>()
+                    .Where(item => 
+                        !item.Parameters.Any() 
+                        && !item.GenericParameters.Any()
+                        && PrimitiveTypes.String.Equals(item.ReturnType))
+                    .ToArray();
+
+            // The existence of a 'ToString' method is dependent on
+            // the back-end.
+            if (toStringMethods.Length == 0)
+            {
+                Scope.Global.Log.LogError(new LogEntry(
+                    "missing conversion",
+                    NodeHelpers.HighlightEven(
+                        "value of type '", Scope.Global.TypeNamer.Convert(Value.Type),
+                        "' could not be converted to type '", 
+                        Scope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        "', because it did not have a parameterless, non-generic '", 
+                        "ToString", "' method that returns a '", 
+                        Scope.Global.TypeNamer.Convert(PrimitiveTypes.String), 
+                        "' instance.")));
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+            else if (toStringMethods.Length > 1)
+            {
+                // This shouldn't happen, but we should check for it anyway.
+                Scope.Global.Log.LogError(new LogEntry(
+                    "missing conversion",
+                    NodeHelpers.HighlightEven(
+                        "value of type '", Scope.Global.TypeNamer.Convert(Value.Type),
+                        "' could not be converted to type '", 
+                        Scope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        "', there was more than one parameterless, non-generic '", 
+                        "ToString", "' method that returns a '", 
+                        Scope.Global.TypeNamer.Convert(PrimitiveTypes.String), 
+                        "' instance.")));
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+
+            return new InvocationExpression(
+                toStringMethods[0], AsTargetObject(Value), new IExpression[0]);
+        }
+
 		/// <summary>
 		/// Creates a binary operator application expression
 		/// for the given operator and operands. A scope is
@@ -1248,36 +1304,48 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IExpression CreateBinary(
 			Operator Op, IExpression Left, IExpression Right, 
-			GlobalScope Scope,
+			FunctionScope Scope,
 			SourceLocation LeftLocation, SourceLocation RightLocation)
 		{
 			var lTy = Left.Type;
 			var rTy = Right.Type;
+
+            var globalScope = Scope.Global;
+
+            if (Op.Equals(Operator.Add)
+                && (PrimitiveTypes.String.Equals(lTy) || PrimitiveTypes.String.Equals(rTy)))
+            {
+                return new ConcatExpression(new IExpression[] 
+                {
+                    ValueToString(Left, Scope, LeftLocation), 
+                    ValueToString(Right, Scope, RightLocation) 
+                });
+            }
 
 			IType opTy;
 			if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
 			{
 				if (opTy == null)
 				{
-					Scope.Log.LogError(new LogEntry(
+                    globalScope.Log.LogError(new LogEntry(
 						"operator application",
 						NodeHelpers.HighlightEven(
 							"operator '", Op.Name, "' cannot be applied to operands of type '", 
-							Scope.TypeNamer.Convert(lTy), "' and '",
-							Scope.TypeNamer.Convert(rTy), "'."),
+                            globalScope.TypeNamer.Convert(lTy), "' and '",
+                            globalScope.TypeNamer.Convert(rTy), "'."),
 						LeftLocation.Concat(RightLocation)));
 					return new UnknownExpression(lTy);
 				}
 
 				return DirectBinaryExpression.Instance.Create(
-					Scope.ConvertImplicit(Left, opTy, LeftLocation), 
+                    globalScope.ConvertImplicit(Left, opTy, LeftLocation), 
 					Op, 
-					Scope.ConvertImplicit(Right, opTy, RightLocation));
+                    globalScope.ConvertImplicit(Right, opTy, RightLocation));
 			}
 
 			// TODO: actually implement this
 
-			Scope.Log.LogError(new LogEntry(
+            globalScope.Log.LogError(new LogEntry(
 				"operators not yet implemented",
 				"custom binary operator resolution has not been implemented yet. Sorry. :/",
 				LeftLocation.Concat(RightLocation)));
@@ -1299,7 +1367,7 @@ namespace Flame.Ecs
 					Op, 
 					conv.ConvertExpression(node.Args[0], scope), 
 					conv.ConvertExpression(node.Args[1], scope), 
-					scope.Function.Global,
+					scope.Function,
 					NodeHelpers.ToSourceLocation(node.Args[0].Range),
 					NodeHelpers.ToSourceLocation(node.Args[1].Range));
 			};
@@ -1403,7 +1471,7 @@ namespace Flame.Ecs
 				}
 
 				var result = CreateBinary(
-					Op, lhs, rhs, scope.Function.Global, leftLoc, rightLoc);
+					Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
 
 				return CreateUncheckedAssignment(
 					lhsVar, scope.Function.Global.ConvertImplicit(

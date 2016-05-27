@@ -356,7 +356,7 @@ namespace Flame.Ecs
                         Op, 
                         conv.ConvertExpression(node.Args[0], scope), 
                         conv.ConvertExpression(node.Args[1], scope), 
-                        scope.Function.Global,
+                        scope.Function,
                         NodeHelpers.ToSourceLocation(node.Args[0].Range),
                         NodeHelpers.ToSourceLocation(node.Args[1].Range));
                 }
