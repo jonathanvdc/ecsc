@@ -1635,7 +1635,8 @@ namespace Flame.Ecs
         public static IExpression ConvertBreakExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            NodeHelpers.CheckId(Node, Scope.Log);
+            if (NodeHelpers.CheckCall(Node, Scope.Log))
+                NodeHelpers.CheckArity(Node, 0, Scope.Log);
 
             var tag = Scope.FlowTag;
             if (tag == null)
@@ -1661,7 +1662,8 @@ namespace Flame.Ecs
         public static IExpression ConvertContinueExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            NodeHelpers.CheckId(Node, Scope.Log);
+            if (NodeHelpers.CheckCall(Node, Scope.Log))
+                NodeHelpers.CheckArity(Node, 0, Scope.Log);
 
             var tag = Scope.FlowTag;
             if (tag == null)
