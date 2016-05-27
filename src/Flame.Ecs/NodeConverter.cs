@@ -6,6 +6,7 @@ using Loyc;
 using Flame.Build;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using Flame.Ecs.Semantics;
 using Pixie;
 
 namespace Flame.Ecs
@@ -497,8 +498,8 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.QuestionMark,  ExpressionConverters.ConvertSelectExpression);
 
 				// - Binary operators
-                result.AddExprConverter(CodeSymbols.Add, ExpressionConverters.CreateBinaryOpConverter(Operator.Add));
-                result.AddExprConverter(CodeSymbols.Sub, ExpressionConverters.CreateBinaryOpConverter(Operator.Subtract));
+                result.AddExprConverter(CodeSymbols.Add, UnaryConverters.CreateUnaryOrBinaryOpConverter(Operator.Add));
+                result.AddExprConverter(CodeSymbols.Sub, UnaryConverters.CreateUnaryOrBinaryOpConverter(Operator.Subtract));
                 result.AddExprConverter(CodeSymbols.Mul, ExpressionConverters.CreateBinaryOpConverter(Operator.Multiply));
                 result.AddExprConverter(CodeSymbols.Div, ExpressionConverters.CreateBinaryOpConverter(Operator.Divide));
                 result.AddExprConverter(CodeSymbols.Mod, ExpressionConverters.CreateBinaryOpConverter(Operator.Remainder));
@@ -519,6 +520,8 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.PreDec, UnaryConverters.ConvertPrefixDecrement);
                 result.AddExprConverter(CodeSymbols.PostInc, UnaryConverters.ConvertPostfixIncrement);
                 result.AddExprConverter(CodeSymbols.PostDec, UnaryConverters.ConvertPostfixDecrement);
+                result.AddExprConverter(CodeSymbols.NotBits, UnaryConverters.CreateUnaryOpConverter(UnaryOperatorResolution.BitwiseComplement));
+                result.AddExprConverter(CodeSymbols.Not, UnaryConverters.CreateUnaryOpConverter(Operator.Not));
                 result.AddExprConverter(CodeSymbols.IndexBracks, UnaryConverters.ConvertIndex);
 
 				// - Assignment operator

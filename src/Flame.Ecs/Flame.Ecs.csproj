@@ -167,6 +167,7 @@
     <Compile Include="Semantics\ConversionRules.cs" />
     <Compile Include="Semantics\ConversionDescription.cs" />
     <Compile Include="Semantics\EcsConversionRules.cs" />
+    <Compile Include="Semantics\UnaryOperatorResolution.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

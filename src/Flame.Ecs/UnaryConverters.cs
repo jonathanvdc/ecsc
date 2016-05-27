@@ -5,6 +5,7 @@ using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
+using Flame.Ecs.Semantics;
 using Loyc.Syntax;
 
 namespace Flame.Ecs
@@ -244,6 +245,122 @@ namespace Flame.Ecs
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return VoidExpression.Instance;
             }
+        }
+
+        #endregion
+
+        #region Other unary operators
+
+        /// <summary>
+        /// Creates a built-in unary operator expression.
+        /// </summary>
+        private static IExpression CreatePrimitiveUnary(
+            Operator Op, IExpression Operand)
+        {
+            if (Op.Equals(UnaryOperatorResolution.BitwiseComplement))
+                // Bitwise complement and logical 'not' are equivalent
+                // in Flame.
+                return new NotExpression(Operand);
+            else if (Op.Equals(Operator.Add))
+                // Unary plus doesn't really do anything.
+                return Operand;
+            else
+                return DirectUnaryExpression.Instance.Create(Op, Operand);
+        }
+
+        /// <summary>
+        /// Creates a unary operator application expression
+        /// for the given operator and operand. A scope is
+        /// used to perform conversions and log error messages,
+        /// and a source location is used to highlight potential
+        /// issues.
+        /// </summary>
+        public static IExpression CreateUnary(
+            Operator Op, IExpression Operand, 
+            GlobalScope Scope,
+            SourceLocation Location)
+        {
+            var ty = Operand.Type;
+
+            IType opTy;
+            if (UnaryOperatorResolution.TryGetPrimitiveOperatorType(Op, ty, out opTy))
+            {
+                if (opTy == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "operator application",
+                        NodeHelpers.HighlightEven(
+                            "operator '", Op.Name, "' cannot be applied to an operand of type '", 
+                            Scope.TypeNamer.Convert(ty), "'."),
+                        Location));
+                    return new UnknownExpression(ty);
+                }
+
+                return CreatePrimitiveUnary(
+                    Op, Scope.ConvertImplicit(Operand, opTy, Location));
+            }
+
+            // TODO: actually implement this
+
+            Scope.Log.LogError(new LogEntry(
+                "operators not yet implemented",
+                "custom unary operator resolution has not been implemented yet. Sorry. :/",
+                Location));
+
+            return VoidExpression.Instance;
+        }
+
+        /// <summary>
+        /// Creates a converter that analyzes unary operator nodes.
+        /// </summary>
+        public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateUnaryOpConverter(
+            Operator Op)
+        {
+            return (node, scope, conv) =>
+            {
+                if (!NodeHelpers.CheckArity(node, 1, scope.Log))
+                    return VoidExpression.Instance;
+
+                return CreateUnary(
+                    Op, 
+                    conv.ConvertExpression(node.Args[0], scope), 
+                    scope.Function.Global,
+                    NodeHelpers.ToSourceLocation(node.Args[0].Range));
+            };
+        }
+
+        /// <summary>
+        /// Creates a converter that analyzes operator nodes which may
+        /// either be unary or binary.
+        /// </summary>
+        public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateUnaryOrBinaryOpConverter(
+            Operator Op)
+        {
+            return (node, scope, conv) =>
+            {
+                if (!NodeHelpers.CheckMinArity(node, 1, scope.Log)
+                    || !NodeHelpers.CheckMaxArity(node, 2, scope.Log))
+                    return VoidExpression.Instance;
+
+                if (node.ArgCount == 1)
+                {
+                    return CreateUnary(
+                        Op, 
+                        conv.ConvertExpression(node.Args[0], scope), 
+                        scope.Function.Global,
+                        NodeHelpers.ToSourceLocation(node.Args[0].Range));
+                }
+                else
+                {
+                    return ExpressionConverters.CreateBinary(
+                        Op, 
+                        conv.ConvertExpression(node.Args[0], scope), 
+                        conv.ConvertExpression(node.Args[1], scope), 
+                        scope.Function.Global,
+                        NodeHelpers.ToSourceLocation(node.Args[0].Range),
+                        NodeHelpers.ToSourceLocation(node.Args[1].Range));
+                }
+            };
         }
 
         #endregion
