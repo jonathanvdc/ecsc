@@ -105,37 +105,6 @@ namespace ecsc
 			return Task.WhenAll(units);
 		}
 
-		private static IReadOnlyDictionary<string, IVariable> GetParameters(IMethod Value)
-		{
-			var dict = new Dictionary<string, IVariable>();
-			if (Value != null)
-			{
-				if (!Value.IsStatic && Value.DeclaringType != null)
-				{
-					dict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(Value.DeclaringType);
-				}
-
-				var parameters = Value.GetParameters();
-				for (int i = 0; i < parameters.Length; i++)
-				{
-					var arg = new ArgumentVariable(parameters[i], i);
-					if (parameters[i].ParameterType.GetIsPointer() && 
-						parameters[i].ParameterType.AsContainerType().AsPointerType().PointerKind.Equals(PointerKind.ReferencePointer))
-					{
-                        dict[parameters[i].Name.ToString()] = new AtAddressVariable(arg.CreateGetExpression());
-					}
-					else
-					{
-                        dict[parameters[i].Name.ToString()] = arg;
-					}
-				}
-
-				return dict;
-			}
-
-			return dict;
-		}
-
 		private static IParsingService GetParsingService(ICompilerOptions Options, string Key, IParsingService Default)
 		{
 			switch (Options.GetOption<string>(Key, "").ToLower())
