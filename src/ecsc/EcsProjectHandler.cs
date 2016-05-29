@@ -74,7 +74,7 @@ namespace ecsc
 				asm.AddNamespace(item);
 			}
 
-            asm.EntryPoint = EntryPoint.InferEntryPoint(asm, Parameters.Log);
+            asm.EntryPoint = EntryPointHelpers.InferEntryPoint(asm, Parameters.Log);
 
 			return asm;
 		}

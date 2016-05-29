@@ -6,7 +6,7 @@ using Pixie;
 
 namespace Flame.Ecs.Semantics
 {
-    public static class EntryPoint
+    public static class EntryPointHelpers
     {
         /// <summary>
         /// Infers an assembly's entry point, 
