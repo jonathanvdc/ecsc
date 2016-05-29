@@ -66,7 +66,8 @@ namespace Flame.Ecs
         /// </summary>
         private static Tuple<IEnumerable<IAttribute>, bool> AnalyzeTypeMemberAttributes(
             IEnumerable<LNode> Attributes, IType DeclaringType,
-            GlobalScope Scope, NodeConverter Converter)
+            GlobalScope Scope, NodeConverter Converter,
+            Func<LNode, bool> HandleSpecial)
         {
             bool isStatic = false;
             var attrs = Converter.ConvertAttributeListWithAccess(
@@ -80,11 +81,25 @@ namespace Flame.Ecs
                     }
                     else
                     {
-                        return false;
+                        return HandleSpecial(node);
                     }
                 }, Scope);
             return Tuple.Create<IEnumerable<IAttribute>, bool>(
                 attrs.ToArray(), isStatic);
+        }
+
+        /// <summary>
+        /// Analyzes an attribute list that belongs to a type 
+        /// member. A sequence of arguments and a boolean that
+        /// specifies static-ness are returned.
+        /// </summary>
+        private static Tuple<IEnumerable<IAttribute>, bool> AnalyzeTypeMemberAttributes(
+            IEnumerable<LNode> Attributes, IType DeclaringType,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            return AnalyzeTypeMemberAttributes(
+                Attributes, DeclaringType, Scope, 
+                Converter, _ => false);
         }
 
         /// <summary>
@@ -109,13 +124,29 @@ namespace Flame.Ecs
 		/// </summary>
 		private static void UpdateTypeMemberAttributes(
 			IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
-			GlobalScope Scope, NodeConverter Converter)
+			GlobalScope Scope, NodeConverter Converter,
+            Func<LNode, bool> HandleSpecial)
 		{
+            UpdateTypeMemberAttributes(
+                AnalyzeTypeMemberAttributes(
+                    Attributes, Target.DeclaringType, 
+                    Scope, Converter, HandleSpecial),
+                Target);
+		}
+
+        /// <summary>
+        /// Analyzes the given type member's attribute list,
+        /// and updates said list right away.
+        /// </summary>
+        private static void UpdateTypeMemberAttributes(
+            IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
+            GlobalScope Scope, NodeConverter Converter)
+        {
             UpdateTypeMemberAttributes(
                 AnalyzeTypeMemberAttributes(
                     Attributes, Target.DeclaringType, Scope, Converter),
                 Target);
-		}
+        }
 
 		/// <summary>
 		/// Analyzes the given parameter list for the
