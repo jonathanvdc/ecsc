@@ -159,7 +159,8 @@ namespace Flame.Ecs
 			LNode Node, LazyDescribedType DeclaringType, 
 			GlobalScope Scope, NodeConverter Converter)
 		{
-			if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+            if (!NodeHelpers.CheckMinArity(Node, 3, Scope.Log) 
+                || !NodeHelpers.CheckMaxArity(Node, 4, Scope.Log))
 				return Scope;
 
 			// Handle the function's name first.
@@ -198,11 +199,42 @@ namespace Flame.Ecs
 				var funScope = AnalyzeParameters(
 					Node.Args[2].Args, methodDef, innerScope, Converter);
 
-				// Analyze the function body.
-				var localScope = new LocalScope(funScope);
-				methodDef.Body = ExpressionConverters.AutoReturn(
-					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-					NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
+                bool isExtern = methodDef.HasAttribute(
+                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+                bool isAbstractOrExtern = methodDef.GetIsAbstract() || isExtern;
+
+                if (Node.ArgCount > 3)
+                {
+                    if (isAbstractOrExtern)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "method '", methodDef.Name.ToString(), "' cannot both be marked '", 
+                                isExtern ? "extern" : "abstract", "' and have a body."),
+                            methodDef.GetSourceLocation()));
+                    }
+
+                    // Analyze the function body.
+                    var localScope = new LocalScope(funScope);
+                    methodDef.Body = ExpressionConverters.AutoReturn(
+                        methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
+                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);  
+                }
+                else
+                {
+                    if (!isAbstractOrExtern)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "method '", methodDef.Name.ToString(), 
+                                "' must have a body because it is not marked '", 
+                                "abstract", "', '", "extern", "' or '", "partial", "'."),
+                            methodDef.GetSourceLocation()));
+                    }
+                    methodDef.Body = EmptyStatement.Instance;
+                }
 			});
 
 			// Finally, add the function to the declaring type.
