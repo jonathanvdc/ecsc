@@ -3,4 +3,5 @@ tests
 {
     cs/all.test;
     ecs/all.test;
+    wasm/all.test;
 }
