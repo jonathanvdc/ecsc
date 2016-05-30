@@ -33,6 +33,18 @@ namespace Flame.Ecs
             attributeList.AddRange(Attributes);
         }
 
+        public void AddAttributes(AttributeMap Attributes)
+        {
+            CreateBody();
+            attributeList.AddRange(Attributes);
+        }
+
+        public void AddAttributes(AttributeMapBuilder Attributes)
+        {
+            CreateBody();
+            attributeList.AddRange(Attributes);
+        }
+
         public AttributeMap Attributes
         {
             get 

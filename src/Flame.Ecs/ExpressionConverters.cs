@@ -233,6 +233,9 @@ namespace Flame.Ecs
 		/// </summary>
 		public static IVariable AsVariable(IExpression Expression)
 		{
+            if (Expression == null)
+                return null;
+
 			var innerExpr = Expression.GetEssentialExpression();
 			if (innerExpr is IVariableNode)
 			{
@@ -299,7 +302,7 @@ namespace Flame.Ecs
 		/// Accesses the given type member on the given target
 		/// expression.
 		/// </summary>
-		private static IExpression AccessMember(
+		public static IExpression AccessMember(
 			IExpression Target, ITypeMember Member, GlobalScope Scope)
 		{
 			if (Member is IField)
@@ -309,8 +312,15 @@ namespace Flame.Ecs
 			}
 			else if (Member is IProperty)
 			{
-				return new PropertyVariable(
-					(IProperty)Member, AsTargetObject(Target)).CreateGetExpression();
+                // Indexers are special, and shouldn't be handled 
+                // here.
+                var prop = (IProperty)Member;
+                if (prop.GetIsIndexer())
+                    return null;
+                
+                var result = new PropertyVariable(
+                    prop, AsTargetObject(Target)).CreateGetExpression();
+                return result;
 			}
 			else if (Member is IMethod)
 			{
@@ -922,6 +932,7 @@ namespace Flame.Ecs
                     Scope.Function.GetInstanceMembers(constructedObjTy, "Add")
                     .OfType<IMethod>()
                     .Select(m => AccessMember(constructedObjExpr, m, Scope.Function.Global))
+                    .Where(expr => expr != null)
                     .ToArray());
 
                 var initMembers = new HashSet<string>();

@@ -424,7 +424,8 @@ namespace Flame.Ecs
             // then we'll recognize that by creating a backing field,
             // which can be used when analyzing the property.
             IField backingField = null;
-            if (Node.Args[3].Args.Any(item => item.IsId))
+            if (Node.Args[3].Calls(CodeSymbols.Braces) 
+                && Node.Args[3].Args.Any(item => item.IsId))
             {
                 backingField = new LazyDescribedField(
                     new SimpleName(name.ToString() + "$value"), 
@@ -464,7 +465,20 @@ namespace Flame.Ecs
                 UpdateTypeMemberAttributes(Node.Attrs, propDef, Scope, Converter);
                 propDef.AddAttribute(locAttr);
                 if (isIndexer)
+                {
                     propDef.AddAttribute(PrimitiveAttributes.Instance.IndexerAttribute);
+                    if (propDef.IsStatic)
+                    {
+                        // Nope. Nope. Nope.
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "indexer '", name.ToString(), 
+                                "' cannot be '", "static", "'."),
+                            locAttr.Location));
+                        return;
+                    }
+                }
 
                 // Resolve the indexer parameters.
                 foreach (var item in Node.Args[2].Args)
@@ -597,19 +611,17 @@ namespace Flame.Ecs
                     // C# 6 expression-bodies property syntax.
                     // We will synthesize a 'get' accessor,
                     // and set its body to the expression body.
-
                     var getAcc = SynthesizeAccessor(
-                        AccessorType.GetAccessor, propDef, 
+                        AccessorType.GetAccessor, propDef,
                         propDef.PropertyType);
 
-                    var fScope = CreateFunctionScope(getAcc, Scope);
+                    propDef.AddAccessor(getAcc);
 
+                    var localScope = new LocalScope(CreateFunctionScope(getAcc, Scope));
                     getAcc.Body = ExpressionConverters.AutoReturn(
                         getAcc.ReturnType, 
-                        Converter.ConvertExpression(Node.Args[3], new LocalScope(fScope)),
+                        Converter.ConvertExpression(Node.Args[3], localScope),
                         locAttr.Location, Scope);
-                        
-                    propDef.AddAccessor(getAcc);
                 }
             });
 
@@ -691,19 +703,9 @@ namespace Flame.Ecs
             foreach (var attr in Attributes)
                 getAcc.AddAttribute(attr);
 
-            // Inherit access and source location attributes,
-            // if they haven't been specified already.
-            if (!getAcc.HasAttribute(AccessAttribute.AccessAttributeType))
-            {
-                getAcc.AddAttribute(DeclaringProperty.GetAccessAttribute());
-            }
-            if (!getAcc.HasAttribute(SourceLocationAttribute.AccessAttributeType))
-            {
-                var locAttr = DeclaringProperty.GetAttribute(
-                    SourceLocationAttribute.AccessAttributeType);
-                if (locAttr != null)
-                    getAcc.AddAttribute(locAttr);
-            }
+            // Inherit attributes from the declaring property.
+            foreach (var attr in InheritAccessorAttributes(getAcc, DeclaringProperty))
+                getAcc.AddAttribute(attr);
 
             return getAcc;
         }
@@ -715,6 +717,26 @@ namespace Flame.Ecs
             return Converter.ConvertAttributeListWithAccess(
                 Attributes, DeclaringProperty.GetAccess(), 
                 _ => false, Scope);
+        }
+
+        private static AttributeMapBuilder InheritAccessorAttributes(
+            IAccessor Accessor, IProperty DeclaringProperty)
+        {
+            // Inherit access and source location attributes,
+            // if they haven't been specified already.
+            var results = new AttributeMapBuilder();
+            if (!Accessor.HasAttribute(AccessAttribute.AccessAttributeType))
+            {
+                results.Add(DeclaringProperty.GetAccessAttribute());
+            }
+            if (!Accessor.HasAttribute(SourceLocationAttribute.AccessAttributeType))
+            {
+                var locAttr = DeclaringProperty.GetAttribute(
+                    SourceLocationAttribute.AccessAttributeType);
+                if (locAttr != null)
+                    results.Add(locAttr);
+            }
+            return results;
         }
 
         /// <summary>
@@ -747,6 +769,9 @@ namespace Flame.Ecs
                 // Analyze the attributes first.
                 accDef.AddAttributes(ConvertAccessorAttributes(
                     Node.Attrs, DeclaringProperty, Scope, Converter));
+
+                // Inherit attributes from the parent property.
+                accDef.AddAttributes(InheritAccessorAttributes(accDef, DeclaringProperty));
 
                 // Getters return the property's type,
                 // setters always return value.

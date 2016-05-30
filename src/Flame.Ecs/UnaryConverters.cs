@@ -194,7 +194,7 @@ namespace Flame.Ecs
                 return VoidExpression.Instance;
 
             var containerExpr = Converter.ConvertExpression(Node.Args[0], Scope);
-            var dimExprs = Node.Args.Slice(1).Select(n => Converter.ConvertExpression(n, Scope)).ToArray();
+            var dimExprs = OverloadResolution.ConvertArguments(Node.Args.Slice(1), Scope, Converter);
 
             var containerTy = containerExpr.Type;
 
@@ -209,19 +209,19 @@ namespace Flame.Ecs
                     ? containerTy.AsArrayType().ArrayRank
                     : containerTy.AsVectorType().Dimensions.Count;
 
-                if (dims != dimExprs.Length)
+                if (dims != dimExprs.Count)
                 {
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         NodeHelpers.HighlightEven(
-                            "wrong number of indexes '", dimExprs.Length.ToString(), "' inside ", 
+                            "wrong number of indexes '", dimExprs.Count.ToString(), "' inside ", 
                             "[]", ", expected '", dims.ToString(), "'.")));
                     return new UnknownExpression(elemTy);
                 }
 
                 foreach (var item in dimExprs)
                 {
-                    var ty = item.Type;
+                    var ty = item.Item1.Type;
                     if (!ty.GetIsInteger() && !PrimitiveTypes.Char.Equals(ty))
                     {
                         Scope.Log.LogError(new LogEntry(
@@ -231,19 +231,31 @@ namespace Flame.Ecs
                                 "' was not an integer.")));
                     }
                 }
-                return new ElementVariable(containerExpr, dimExprs).CreateGetExpression();
+                return new ElementVariable(containerExpr, dimExprs.Select(t => t.Item1)).CreateGetExpression();
             }
             else
             {
-                // TODO: indexer properties
-                Scope.Log.LogError(new LogEntry(
-                    "type error", 
-                    NodeHelpers.HighlightEven(
-                        "cannot apply indexing with '", "[]", 
-                        "' to an expression of type '", 
-                        Scope.Function.Global.TypeNamer.Convert(containerTy), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                var indexers = 
+                    Scope.Function.GetInstanceIndexers(containerTy)
+                        .Select(p => new IndexerDelegateExpression(p, containerExpr))
+                        .ToArray();
+
+                var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
+                if (indexers.Length == 0)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type error", 
+                        NodeHelpers.HighlightEven(
+                            "cannot apply indexing with '", "[]", 
+                            "' to an expression of type '", 
+                            Scope.Function.Global.TypeNamer.Convert(containerTy), "'."),
+                        srcLoc));
+                    return VoidExpression.Instance;
+                }
+
+                return OverloadResolution.CreateCheckedInvocation(
+                    "indexer", indexers, dimExprs, 
+                    Scope.Function.Global, srcLoc);
             }
         }
 

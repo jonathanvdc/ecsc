@@ -8,7 +8,7 @@ namespace Flame.Ecs
     /// <summary>
     /// Defines a delegate expression for object creation.
     /// These expressions must always be invoked: they
-    /// cannot be invoked.
+    /// cannot be used in any other context.
     /// </summary>
     public class NewObjectDelegate : IDelegateExpression, IMemberNode
     {
