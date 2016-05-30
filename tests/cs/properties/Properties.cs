@@ -41,10 +41,10 @@ public static class Program
         var vec = new Vector2(3, 4);
         Console.WriteLine(vec.X);
         Console.WriteLine(vec.Y);
-        // Console.WriteLine(vec[0]);
-        // Console.WriteLine(vec[1]);
-        // Console.WriteLine(vec[0L]);
-        // Console.WriteLine(vec[1L]);
+        Console.WriteLine(vec[0]);
+        Console.WriteLine(vec[1]);
+        Console.WriteLine(vec[0L]);
+        Console.WriteLine(vec[1L]);
         Console.WriteLine(vec.LengthSquared);
         Console.WriteLine(vec.Length);
     }
