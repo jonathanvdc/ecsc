@@ -112,10 +112,7 @@ namespace Flame.Ecs
             LazyDescribedTypeMember Target)
         {
             Target.IsStatic = Attributes.Item2;
-            foreach (var item in Attributes.Item1)
-            {
-                Target.AddAttribute(item);
-            }
+            Target.AddAttributes(Attributes.Item1);
         }
 
 		/// <summary>
@@ -148,6 +145,23 @@ namespace Flame.Ecs
                 Target);
         }
 
+        /// <summary>
+        /// Creates a variable that represents the given parameter.
+        /// </summary>
+        private static IVariable CreateArgumentVariable(IParameter Parameter, int Index)
+        {
+            var argVar = new ArgumentVariable(Parameter, Index);
+            var ptrVarType = Parameter.ParameterType.AsPointerType();
+            if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
+            {
+                return new AtAddressVariable(argVar.CreateGetExpression());
+            }
+            else
+            {
+                return argVar;
+            }
+        }
+
 		/// <summary>
 		/// Analyzes the given parameter list for the
 		/// given described method.
@@ -156,32 +170,33 @@ namespace Flame.Ecs
 			IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
 			GlobalScope Scope, NodeConverter Converter)
 		{
-			var thisTy = ThisVariable.GetThisType(Target.DeclaringType);
-			var paramVarDict = new Dictionary<string, IVariable>();
-			if (!Target.IsStatic)
-			{
-				paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
-			}
-			int paramIndex = 0;
 			foreach (var item in Parameters)
 			{
-				var parameter = ConvertParameter(item, Scope, Converter);
-				Target.AddParameter(parameter);
-				var argVar = new ArgumentVariable(parameter, paramIndex);
-				var ptrVarType = parameter.ParameterType.AsPointerType();
-				if (ptrVarType != null && ptrVarType.PointerKind.Equals(PointerKind.ReferencePointer))
-				{
-                    paramVarDict[parameter.Name.ToString()] = new AtAddressVariable(
-						argVar.CreateGetExpression());
-				}
-				else
-				{
-                    paramVarDict[parameter.Name.ToString()] = argVar;
-				}
-				paramIndex++;
+                Target.AddParameter(ConvertParameter(item, Scope, Converter));
 			}
-            return new FunctionScope(Scope, thisTy, Target, Target.ReturnType, paramVarDict);
+            return CreateFunctionScope(Target, Scope);
 		}
+
+        /// <summary>
+        /// Creates a function scope for the given method.
+        /// </summary>
+        private static FunctionScope CreateFunctionScope(
+            IMethod Method, GlobalScope Scope)
+        {
+            var thisTy = ThisVariable.GetThisType(Method.DeclaringType);
+            var paramVarDict = new Dictionary<string, IVariable>();
+            if (!Method.IsStatic)
+            {
+                paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
+            }
+            int paramIndex = 0;
+            foreach (var parameter in Method.Parameters)
+            {
+                paramVarDict[parameter.Name.ToString()] = CreateArgumentVariable(parameter, paramIndex);
+                paramIndex++;
+            }
+            return new FunctionScope(Scope, thisTy, Method, Method.ReturnType, paramVarDict);
+        }
 
 		/// <summary>
 		/// Converts an '#fn' function declaration node.
@@ -380,6 +395,388 @@ namespace Flame.Ecs
 
             return Scope;
 		}
+
+        /// <summary>
+        /// Converts a '#property' property declaration node.
+        /// </summary>
+        public static GlobalScope ConvertProperty(
+            LNode Node, LazyDescribedType DeclaringType,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+                return Scope;
+
+            bool isIndexer = Node.Args[2].ArgCount > 0;
+            // Handle the parameter's name first.
+            var name = NodeHelpers.ToSimpleName(Node.Args[1], Scope);
+
+            // Analyze the propert's type here, because we may want
+            // to share this with an optional backing field.
+            var lazyRetType = new Lazy<IType>(() => 
+                Converter.ConvertType(Node.Args[0], Scope));
+
+            // We'll also share the location attribute, which need
+            // not be resolved lazily.
+            var locAttr = new SourceLocationAttribute(
+                NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+
+            // Detect auto-properties early. If we bump into one,
+            // then we'll recognize that by creating a backing field,
+            // which can be used when analyzing the property.
+            IField backingField = null;
+            if (Node.Args[3].Args.Any(item => item.IsId))
+            {
+                backingField = new LazyDescribedField(
+                    new SimpleName(name.ToString() + "$value"), 
+                    DeclaringType, fieldDef =>
+                {
+                    fieldDef.FieldType = lazyRetType.Value ?? PrimitiveTypes.Void;
+                    // Make the backing field private and hidden, 
+                    // then assign it the enclosing property's 
+                    // source location.
+                    fieldDef.AddAttribute(new AccessAttribute(AccessModifier.Private));
+                    fieldDef.AddAttribute(PrimitiveAttributes.Instance.HiddenAttribute);
+                    fieldDef.AddAttribute(locAttr);
+                });
+                // Add the backing field to the declaring type.
+                DeclaringType.AddField(backingField);
+            }
+
+            // Create the property/indexer.
+            // Note that all indexers are actually called 'Item'.
+            var def = new LazyDescribedProperty(
+                isIndexer ? new SimpleName("Item") : name, 
+                DeclaringType, propDef =>
+            {
+                if (lazyRetType.Value == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type resolution",
+                        NodeHelpers.HighlightEven(
+                            "could not resolve property type '", 
+                            Node.Args[0].ToString(), "' for property '", 
+                            name.ToString(), "'."),
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                }
+                propDef.PropertyType = lazyRetType.Value ?? PrimitiveTypes.Void;
+
+                // Attributes next.
+                UpdateTypeMemberAttributes(Node.Attrs, propDef, Scope, Converter);
+                propDef.AddAttribute(locAttr);
+                if (isIndexer)
+                    propDef.AddAttribute(PrimitiveAttributes.Instance.IndexerAttribute);
+
+                // Resolve the indexer parameters.
+                foreach (var item in Node.Args[2].Args)
+                {
+                    propDef.AddParameter(ConvertParameter(item, Scope, Converter));
+                }
+
+                if (Node.Args[3].Calls(CodeSymbols.Braces))
+                {
+                    // Typical pre-C# 6 syntax.
+                    if (Node.Args[3].ArgCount == 0)
+                    {
+                        // Check that we have at least one accessor.
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "property or indexer '", name.ToString(), 
+                                "' must have at least one accessor."),
+                            locAttr.Location));
+                        return;
+                    }
+
+                    // We may be dealing with an auto-property here.
+                    // Better check for that by looking at the backing 
+                    // field.
+                    if (backingField != null)
+                    {
+                        // This definitely is an auto-property, all right.
+                        if (isIndexer)
+                        {
+                            // Indexers cannot also be auto-properties.
+                            // Let's make that abundantly clear to the
+                            // user.
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                "an indexer cannot also be an auto-property.",
+                                locAttr.Location));
+                            return;
+                        }
+
+                        // Create a backing field variable now, because we'll be
+                        // needing it later.
+                        var backingFieldVar = GetThisOrStaticFieldVariable(backingField);
+
+                        // Analyze the auto-property's accessors.
+                        foreach (var accNode in Node.Args[3].Args)
+                        {
+                            // Handle attributes first, because they are specified
+                            // first, and because 'get' and 'set' accessors have
+                            // these in common.
+                            var accAttrs = ConvertAccessorAttributes(
+                                accNode.Attrs, propDef, Scope, Converter);
+
+                            // Now try to find out what kind of attribute we're 
+                            // dealing with.
+                            if (accNode.IsIdNamed(CodeSymbols.get))
+                            {
+                                // Synthesize a 'get' accessor.
+                                var getAcc = SynthesizeAccessor(
+                                    AccessorType.GetAccessor, propDef, 
+                                    propDef.PropertyType, accAttrs);
+
+                                getAcc.Body = new ReturnStatement(
+                                    backingFieldVar.CreateGetExpression());
+
+                                propDef.AddAccessor(getAcc);
+                            }
+                            else if (accNode.IsIdNamed(CodeSymbols.set))
+                            {
+                                // Synthesize a 'set' accessor.
+                                var setAcc = SynthesizeAccessor(
+                                    AccessorType.SetAccessor, propDef, 
+                                    PrimitiveTypes.Void, accAttrs);
+
+                                var valParam = new DescribedParameter("value", propDef.PropertyType);
+                                setAcc.AddParameter(valParam);
+
+                                setAcc.Body = new BlockStatement(new IStatement[]
+                                {
+                                    backingFieldVar.CreateSetStatement(
+                                        CreateArgumentVariable(valParam, 0)
+                                            .CreateGetExpression()),
+                                    new ReturnStatement()
+                                });
+
+                                propDef.AddAccessor(setAcc);
+                            }
+                            else if (accNode.IsId)
+                            {
+                                // Explain that this identifier is not a
+                                // valid accessor name.
+                                LogInvalidAccessorName(Scope.Log, locAttr.Location);
+                            }
+                            else if (accNode.IsCall)
+                            {
+                                // Looks like we've encountered some kind of weird
+                                // manual property/auto-property contraption.
+                                // Better log an error here.
+                                Scope.Log.LogError(new LogEntry(
+                                    "syntax error",
+                                    NodeHelpers.HighlightEven(
+                                        "accessor '", accNode.Name.Name, 
+                                        "' cannot have a body, because its enclosing property '", 
+                                        name.Name, "' is an auto-property."),
+                                    NodeHelpers.ToSourceLocation(accNode.Range)));
+                            }
+                            else
+                            {
+                                // I don't even know what to expect here.
+                                Scope.Log.LogError(new LogEntry(
+                                    "syntax error",
+                                    NodeHelpers.HighlightEven(
+                                        "unexpected syntax node '", accNode.ToString(), "'."),
+                                    NodeHelpers.ToSourceLocation(accNode.Range)));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // We have encountered a perfectly normal
+                        // property that is implemented manually.
+                        foreach (var accNode in Node.Args[3].Args)
+                        {
+                            ConvertAccessor(accNode, propDef, Scope, Converter);
+                        }
+                    }
+                }
+                else
+                {
+                    // C# 6 expression-bodies property syntax.
+                    // We will synthesize a 'get' accessor,
+                    // and set its body to the expression body.
+
+                    var getAcc = SynthesizeAccessor(
+                        AccessorType.GetAccessor, propDef, 
+                        propDef.PropertyType);
+
+                    var fScope = CreateFunctionScope(getAcc, Scope);
+
+                    getAcc.Body = ExpressionConverters.AutoReturn(
+                        getAcc.ReturnType, 
+                        Converter.ConvertExpression(Node.Args[3], new LocalScope(fScope)),
+                        locAttr.Location, Scope);
+                        
+                    propDef.AddAccessor(getAcc);
+                }
+            });
+
+            // Finally, add the property to the declaring type.
+            DeclaringType.AddProperty(def);
+
+            return Scope;
+        }
+
+        private static void LogInvalidAccessorName(
+            ICompilerLog Log, SourceLocation Location)
+        {
+            Log.LogError(new LogEntry(
+                "syntax error",
+                NodeHelpers.HighlightEven(
+                    "expected a '", "get", "' or '", 
+                    "set", "' accessor."),
+                Location));
+        }
+
+        /// <summary>
+        /// Creates a variable that accesses the given field. 
+        /// If this field is an instance field, then the 
+        /// 'this' variable is used to access the field.
+        /// If the field's declaring type is generic, 
+        /// then a generic instance field is accessed, for 
+        /// a self-instantiated version of the declaring type.  
+        /// </summary>
+        private static IVariable GetThisOrStaticFieldVariable(
+            IField Field)
+        {
+            var thisVar = new ThisVariable(Field.DeclaringType);
+            var thisTy = thisVar.Type;
+            if (thisTy.GetIsPointer())
+                thisTy = thisTy.AsPointerType().ElementType;
+            
+            var genericThisTy = thisTy as GenericTypeBase;
+            var genField = genericThisTy != null
+                ? new GenericInstanceField(
+                    Field, genericThisTy.Resolver, 
+                    genericThisTy)
+                : Field;
+
+            return new FieldVariable(
+                genField, 
+                Field.IsStatic ? null : thisVar.CreateGetExpression());
+        }
+
+        /// <summary>
+        /// Synthesizes an accessor of the given accessor 
+        /// kind and return type, for the given property.
+        /// </summary>
+        private static DescribedBodyAccessor SynthesizeAccessor(
+            AccessorType Kind, IProperty DeclaringProperty, 
+            IType ReturnType)
+        {
+            return SynthesizeAccessor(
+                Kind, DeclaringProperty, ReturnType, 
+                Enumerable.Empty<IAttribute>());
+        }
+
+        /// <summary>
+        /// Synthesizes an accessor of the given accessor 
+        /// kind and return type, for the given property.
+        /// </summary>
+        private static DescribedBodyAccessor SynthesizeAccessor(
+            AccessorType Kind, IProperty DeclaringProperty, 
+            IType ReturnType, IEnumerable<IAttribute> Attributes)
+        {
+            var getAcc = new DescribedBodyAccessor(
+                Kind, DeclaringProperty, ReturnType);
+
+            getAcc.IsConstructor = false;
+            getAcc.IsStatic = DeclaringProperty.IsStatic;
+            foreach (var param in DeclaringProperty.IndexerParameters)
+                getAcc.AddParameter(param);
+
+            // Add the explicitly specified attributes.
+            foreach (var attr in Attributes)
+                getAcc.AddAttribute(attr);
+
+            // Inherit access and source location attributes,
+            // if they haven't been specified already.
+            if (!getAcc.HasAttribute(AccessAttribute.AccessAttributeType))
+            {
+                getAcc.AddAttribute(DeclaringProperty.GetAccessAttribute());
+            }
+            if (!getAcc.HasAttribute(SourceLocationAttribute.AccessAttributeType))
+            {
+                var locAttr = DeclaringProperty.GetAttribute(
+                    SourceLocationAttribute.AccessAttributeType);
+                if (locAttr != null)
+                    getAcc.AddAttribute(locAttr);
+            }
+
+            return getAcc;
+        }
+
+        private static IEnumerable<IAttribute> ConvertAccessorAttributes(
+            IEnumerable<LNode> Attributes, IProperty DeclaringProperty,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            return Converter.ConvertAttributeListWithAccess(
+                Attributes, DeclaringProperty.GetAccess(), 
+                _ => false, Scope);
+        }
+
+        /// <summary>
+        /// Converts the given accessor declaration node.
+        /// </summary>
+        private static void ConvertAccessor(
+            LNode Node, LazyDescribedProperty DeclaringProperty,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            bool isGetter = Node.Calls(CodeSymbols.get);
+            if (!isGetter && !Node.Calls(CodeSymbols.set))
+            {
+                // The given node is neither a 'get' nor a 'set'
+                // call.
+                LogInvalidAccessorName(
+                    Scope.Log, 
+                    NodeHelpers.ToSourceLocation(Node.Range));
+                return;
+            }
+
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                return;
+
+            var accKind = isGetter 
+                ? AccessorType.GetAccessor 
+                : AccessorType.SetAccessor;
+            var def = new LazyDescribedAccessor(
+                accKind, DeclaringProperty, accDef =>
+            {
+                // Analyze the attributes first.
+                accDef.AddAttributes(ConvertAccessorAttributes(
+                    Node.Attrs, DeclaringProperty, Scope, Converter));
+
+                // Getters return the property's type,
+                // setters always return value.
+                accDef.ReturnType = isGetter 
+                    ? DeclaringProperty.PropertyType
+                    : PrimitiveTypes.Void;
+
+                // Inherit indexer parameters from the enclosing
+                // indexer/property.
+                foreach (var indParam in DeclaringProperty.IndexerParameters)
+                    accDef.AddParameter(indParam);
+
+                if (!isGetter)
+                    // Setters get an extra 'value' parameter.
+                    accDef.AddParameter(new DescribedParameter(
+                        "value", DeclaringProperty.PropertyType));
+                
+                var localScope = new LocalScope(
+                    CreateFunctionScope(accDef, Scope));
+
+                // Analyze the body.
+                accDef.Body = ExpressionConverters.AutoReturn(
+                    accDef.ReturnType, Converter.ConvertExpression(Node.Args[0], localScope), 
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range), Scope);  
+            });
+
+            // Don't forget to add this accessor to its enclosing
+            // property.
+            DeclaringProperty.AddAccessor(def);
+        }
 	}
 }
 

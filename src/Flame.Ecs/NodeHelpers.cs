@@ -168,7 +168,7 @@ namespace Flame.Ecs
 			if (!Node.IsId)
 			{
 				Scope.Log.LogError(new LogEntry(
-					"invalid syntax",
+					"syntax error",
 					"generic parameters must defined by a simple identifier.",
 					ToSourceLocation(Node.Range)));
 				return null;
@@ -205,7 +205,7 @@ namespace Flame.Ecs
             else if (!Node.IsId)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "invalid syntax",
+                    "syntax error",
                     NodeHelpers.HighlightEven(
                         "node '", Node.ToString(), 
                         "' could not be interpreted as an unqualified name."),
@@ -214,6 +214,19 @@ namespace Flame.Ecs
             return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
                 new SimpleName(name.Name), _ => Enumerable.Empty<IGenericParameter>());
 		}
+
+        public static SimpleName ToSimpleName(LNode Node, GlobalScope Scope)
+        {
+            var qualName = ToUnqualifiedName(Node, Scope);
+            if (qualName.Item1.TypeParameterCount > 0)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "simple names cannot have generic parameters in this context",
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+            return qualName.Item1;
+        }
 
         /// <summary>
         /// Checks that the given node is a valid
@@ -225,7 +238,7 @@ namespace Flame.Ecs
             if (!IdNode.IsId)
             {
                 Log.LogError(new LogEntry(
-                    "invalid syntax",
+                    "syntax error",
                     NodeHelpers.HighlightEven("expected an identifier."),
                     NodeHelpers.ToSourceLocation(IdNode.Range)));
                 return false;
@@ -233,7 +246,7 @@ namespace Flame.Ecs
             else if (IdNode.HasSpecialName)
             {
                 Log.LogError(new LogEntry(
-                    "invalid syntax",
+                    "syntax error",
                     NodeHelpers.HighlightEven("'", IdNode.Name.Name, "' is not an acceptable identifier."),
                     NodeHelpers.ToSourceLocation(IdNode.Range)));
                 return false;
@@ -270,7 +283,7 @@ namespace Flame.Ecs
             else
             {
                 Log.LogError(new LogEntry(
-                    "invalid syntax",
+                    "syntax error",
                     "expected an identifier or an assignment to an identifier.",
                     NodeHelpers.ToSourceLocation(AssignOrId.Range)));
                 return null;

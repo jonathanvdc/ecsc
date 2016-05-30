@@ -53,7 +53,7 @@ namespace Flame.Ecs
                         else
                         {
                             Scope.Log.LogError(new LogEntry(
-                                "invalid syntax", 
+                                "syntax error", 
                                 NodeHelpers.HighlightEven(
                                     "a ", "ref", " or ", "out", 
                                     " argument must be an assignable variable."),

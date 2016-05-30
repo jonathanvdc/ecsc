@@ -27,6 +27,12 @@ namespace Flame.Ecs
             attributeList.Add(Attribute);
         }
 
+        public void AddAttributes(IEnumerable<IAttribute> Attributes)
+        {
+            CreateBody();
+            attributeList.AddRange(Attributes);
+        }
+
         public AttributeMap Attributes
         {
             get 
@@ -76,10 +82,13 @@ namespace Flame.Ecs
 			: base(Name, DeclaringType)
 		{
 			this.baseMethods = new List<IMethod>();
-			this.analyzeBody = AnalyzeBody;
+            this.parameters = new List<IParameter>();
+            this.baseMethods = new List<IMethod>();
+            this.genericParams = new List<IGenericParameter>();
+            this.analyzeBody = new DeferredInitializer<LazyDescribedMethod>(AnalyzeBody);
 		}
 
-		private Action<LazyDescribedMethod> analyzeBody;
+		private DeferredInitializer<LazyDescribedMethod> analyzeBody;
 
 		private IType retType;
 
@@ -157,16 +166,7 @@ namespace Flame.Ecs
 
 		protected override void CreateBody()
 		{
-            var f = Interlocked.CompareExchange(
-                ref analyzeBody, null, analyzeBody);
-            if (f != null)
-            {
-				this.parameters = new List<IParameter>();
-				this.baseMethods = new List<IMethod>();
-				this.genericParams = new List<IGenericParameter>();
-
-				f(this);
-			}
+            analyzeBody.Initialize(this);
 		}
 
 		private List<IParameter> parameters;

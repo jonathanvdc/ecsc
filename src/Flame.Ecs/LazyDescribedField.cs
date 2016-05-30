@@ -9,10 +9,10 @@ namespace Flame.Ecs
         public LazyDescribedField(UnqualifiedName Name, IType DeclaringType, Action<LazyDescribedField> AnalyzeBody)
             : base(Name, DeclaringType)
         {
-            this.analyzeBody = AnalyzeBody;
+            this.analyzeBody = new DeferredInitializer<LazyDescribedField>(AnalyzeBody);
         }
 
-        private Action<LazyDescribedField> analyzeBody;
+        private DeferredInitializer<LazyDescribedField> analyzeBody;
 
         private IType fieldTy;
 
@@ -68,12 +68,7 @@ namespace Flame.Ecs
 
         protected override void CreateBody()
         {
-            var f = Interlocked.CompareExchange(
-                ref analyzeBody, null, analyzeBody);
-            if (f != null)
-            {
-                f(this);
-            }
+            analyzeBody.Initialize(this);
         }
     }
 }

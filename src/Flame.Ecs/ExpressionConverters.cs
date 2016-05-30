@@ -1524,7 +1524,7 @@ namespace Flame.Ecs
 				{
 					Scope.Log.LogError(
 						new LogEntry(
-							"invalid syntax",
+							"syntax error",
 							"an implicitly typed local variable declarator " +
 							"must include an initializer.",
 							srcLoc));
@@ -1558,7 +1558,7 @@ namespace Flame.Ecs
             if (thisVar == null)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "invalid syntax", 
+                    "syntax error", 
                     NodeHelpers.HighlightEven(
                         "keyword '", "this", 
                         "' is not valid in a static property, static method, or static field initializer."),
@@ -1597,7 +1597,7 @@ namespace Flame.Ecs
             if (thisVar == null)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "invalid syntax", 
+                    "syntax error", 
                     NodeHelpers.HighlightEven(
                         "keyword '", "base", 
                         "' is not valid in a static property, static method, or static field initializer."),
@@ -1611,7 +1611,7 @@ namespace Flame.Ecs
                 // This can only happen when we're compiling code for
                 // a platform that doesn't have a root type.
                 Scope.Log.LogError(new LogEntry(
-                    "invalid syntax", 
+                    "syntax error", 
                     NodeHelpers.HighlightEven(
                         "keyword '", "base", 
                         "' is only valid for types that have a base type."),
@@ -1809,7 +1809,7 @@ namespace Flame.Ecs
             else if (ty.Equals(PrimitiveTypes.Void))
             {
                 Scope.Log.LogError(new LogEntry(
-                    "invalid syntax",
+                    "syntax error",
                     NodeHelpers.HighlightEven("type '", "void", "' cannot be used in this context."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 return VoidExpression.Instance;

@@ -458,6 +458,7 @@ namespace Flame.Ecs
 				result.AddMemberConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);
                 result.AddMemberConverter(CodeSymbols.Constructor, TypeMemberConverters.ConvertConstructor);
                 result.AddMemberConverter(CodeSymbols.Var, TypeMemberConverters.ConvertField);
+                result.AddMemberConverter(CodeSymbols.Property, TypeMemberConverters.ConvertProperty);
 
                 // Attributes
                 result.AliasAttribute(CodeSymbols.Abstract, PrimitiveAttributes.Instance.AbstractAttribute);

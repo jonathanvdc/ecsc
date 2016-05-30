@@ -169,6 +169,9 @@
     <Compile Include="Semantics\EcsConversionRules.cs" />
     <Compile Include="Semantics\UnaryOperatorResolution.cs" />
     <Compile Include="Semantics\EntryPointHelpers.cs" />
+    <Compile Include="LazyDescribedProperty.cs" />
+    <Compile Include="DeferredInitializer.cs" />
+    <Compile Include="LazyDescribedAccessor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

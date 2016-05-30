@@ -13,8 +13,13 @@ namespace Flame.Ecs
 			: base(Name)
 		{
 			this.DeclaringNamespace = Namespace;
-			this.analyzeBody = AnalyzeBody;
+            this.analyzeBody = new DeferredInitializer<LazyDescribedType>(AnalyzeBody);
 			this.baseTypes = new List<IType>();
+            this.methods = new List<IMethod>();
+            this.fields = new List<IField>();
+            this.properties = new List<IProperty>();
+            this.nestedTypes = new List<IType>();
+            this.typeParams = new List<IGenericParameter>();
 		}
 
 		private List<IType> baseTypes;
@@ -24,7 +29,7 @@ namespace Flame.Ecs
 		private List<IType> nestedTypes;
 		private List<IGenericParameter> typeParams;
 
-		private Action<LazyDescribedType> analyzeBody;
+		private DeferredInitializer<LazyDescribedType> analyzeBody;
 
 		/// <summary>
 		/// Gets the declaring namespace.
@@ -51,18 +56,7 @@ namespace Flame.Ecs
 
 		protected override void CreateBody()
 		{
-            var f = Interlocked.CompareExchange(
-                ref analyzeBody, null, analyzeBody);
-            if (f != null)
-            {
-				methods = new List<IMethod>();
-				fields = new List<IField>();
-				properties = new List<IProperty>();
-				nestedTypes = new List<IType>();
-				typeParams = new List<IGenericParameter>();
-
-				f(this);
-			}
+            analyzeBody.Initialize(this);
 		}
 
 		/// <summary>
