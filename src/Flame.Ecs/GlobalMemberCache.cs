@@ -136,18 +136,38 @@ namespace Flame.Ecs
                     GetVisibleMembers(
                         bType, name, 
                         results.OfType<IMethod>().ToArray()));
-            }
 
-            if (results.Count > 0)
-                return results.ToArray();
+                if (results.Count > 0)
+                    return results.ToArray();
+            }
 
             // Okay, so that didn't work. Maybe we'll
-            // be luckier when examining the interfaces.
+            // have more luck in examining the interfaces.
+            var hidingMethods = results.OfType<IMethod>().ToArray();
             foreach (var inter in ty.GetInterfaces())
             {
-                results.UnionWith(GetAllMembers(inter, name));
+                results.UnionWith(GetVisibleMembers(
+                    inter, name, hidingMethods));
             }
             return results.ToArray();
+        }
+
+        private IEnumerable<IProperty> GetVisibleIndexers(
+            IType Type, HashSet<IProperty> HiddenSignatures)
+        {
+            var members = GetAllIndexers(Type);
+            if (HiddenSignatures.Count > 0)
+            {
+                // TODO: This is a silly O(n^2) approach. We could
+                // do better if we used hashing.
+                return members.OfType<IProperty>().Where(item => 
+                    !HiddenSignatures.Any(p => 
+                        PropertyExtensions.HasSameCallSignature(p, item)));
+            }
+            else
+            {
+                return members;
+            }
         }
 
         private IProperty[] LookupAllIndexers(IType Type)
@@ -164,20 +184,20 @@ namespace Flame.Ecs
             var bType = Type.GetParent();
             if (bType != null)
             {
-                results.UnionWith(GetAllIndexers(bType)
-                    .Where(ind1 => 
-                        !results.Any(ind2 =>
-                            ind1.HasSameCallSignature(ind2))));
-            }
+                results.UnionWith(GetVisibleIndexers(
+                    bType, results));
 
-            if (results.Count > 0)
-                return results.ToArray();
+                if (results.Count > 0)
+                    return results.ToArray();
+            }
 
             // Okay, so that didn't work. Maybe we'll
             // be luckier when examining the interfaces.
+            var hidingIndexers = new HashSet<IProperty>(results);
             foreach (var inter in Type.GetInterfaces())
             {
-                results.UnionWith(GetAllIndexers(inter));
+                results.UnionWith(GetVisibleIndexers(
+                    inter, hidingIndexers));
             }
             return results.ToArray();
         }
