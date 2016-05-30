@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Flame.Compiler;
 using Flame.Build;
 using Flame.Compiler.Expressions;
@@ -22,23 +23,38 @@ namespace Flame.Ecs
 		public GlobalScope(
 			QualifiedBinder Binder, ConversionRules ConversionRules, 
 			ICompilerLog Log, TypeConverterBase<string> TypeNamer)
-		{
-			this.Binder = Binder;
-			this.ConversionRules = ConversionRules;
-			this.Log = Log;
-			this.TypeNamer = TypeNamer;
-		}
+            : this(
+                Binder, ConversionRules, Log, TypeNamer, 
+                new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()))
+		{ }
+        private GlobalScope(
+            QualifiedBinder Binder, ConversionRules ConversionRules, 
+            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            ThreadLocal<GlobalMemberCache> MemberCache)
+        {
+            this.Binder = Binder;
+            this.ConversionRules = ConversionRules;
+            this.Log = Log;
+            this.TypeNamer = TypeNamer;
+            this.memCache = MemberCache;
+        }
 
 		public QualifiedBinder Binder { get; private set; }
         public ConversionRules ConversionRules { get; private set; }
 		public ICompilerLog Log { get; private set; }
 		public TypeConverterBase<string> TypeNamer { get; private set; }
 
+        private ThreadLocal<GlobalMemberCache> memCache;
+        public GlobalMemberCache MemberCache 
+        { 
+            get { return memCache.Value; }
+        }
+
 		public IEnvironment Environment { get { return Binder.Binder.Environment; } }
 
 		public GlobalScope WithBinder(QualifiedBinder NewBinder)
 		{
-			return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer);
+            return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer, memCache);
 		}
 
         private IExpression ApplyAnyConversion(

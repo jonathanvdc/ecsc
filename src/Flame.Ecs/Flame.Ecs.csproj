@@ -173,6 +173,7 @@
     <Compile Include="DeferredInitializer.cs" />
     <Compile Include="LazyDescribedAccessor.cs" />
     <Compile Include="Semantics\IndexerDelegateExpression.cs" />
+    <Compile Include="GlobalMemberCache.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

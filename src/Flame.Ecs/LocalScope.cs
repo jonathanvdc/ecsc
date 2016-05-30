@@ -60,8 +60,6 @@ namespace Flame.Ecs
             IMethod CurrentMethod, IType ReturnType,
 			IReadOnlyDictionary<string, IVariable> ParameterVariables)
 		{
-            this.globalMemberCache = new Dictionary<IType, ITypeMember[]>();
-            this.namedMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
@@ -142,46 +140,9 @@ namespace Flame.Ecs
 				return null;
 		}
 
-        private Dictionary<IType, ITypeMember[]> globalMemberCache;
-        private Dictionary<Tuple<IType, string>, ITypeMember[]> namedMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache; 
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
-
-        private ITypeMember[] GetMembers(IType Type)
-        {
-            ITypeMember[] result;
-            if (globalMemberCache.TryGetValue(Type, out result))
-            {
-                return result;
-            }
-            else
-            {
-                result = Type.GetAllMembers().ToArray();
-                globalMemberCache[Type] = result;
-                return result;
-            }
-        }
-
-        private ITypeMember[] GetMembers(IType Type, string Name)
-        {
-            var key = Tuple.Create(Type, Name);
-            ITypeMember[] result;
-            if (namedMemberCache.TryGetValue(key, out result))
-            {
-                return result;
-            }
-            else
-            {
-                result = GetMembers(Type).Where(m =>
-                {
-                    var sName = m.Name as SimpleName;
-                    return sName != null && sName.Name == Name;
-                }).ToArray();
-                namedMemberCache[key] = result;
-                return result;
-            }
-        }
 
         private ITypeMember[] GetMembers(
             IType Type, string Name, 
@@ -196,7 +157,9 @@ namespace Flame.Ecs
             }
             else
             {
-                result = GetMembers(Type, Name).Where(Predicate).ToArray();
+                result = Global.MemberCache.GetAllMembers(Type, Name)
+                    .Where(Predicate)
+                    .ToArray();
                 MemberCache[key] = result;
                 return result;
             }
@@ -215,11 +178,9 @@ namespace Flame.Ecs
             }
             else
             {
-                result = GetMembers(Type)
-                    .OfType<IProperty>()
+                result = Global.MemberCache.GetAllIndexers(Type)
                     .Where(p => 
-                        p.GetIsIndexer() && !p.IsStatic 
-                        && DeclaringType.CanAccess(p))
+                        !p.IsStatic && DeclaringType.CanAccess(p))
                     .ToArray();
                 instanceIndexerCache[Type] = result;
                 return result;
