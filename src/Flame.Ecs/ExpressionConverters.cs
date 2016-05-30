@@ -190,7 +190,30 @@ namespace Flame.Ecs
 
 		public static IStatement ToStatement(IExpression Expression)
 		{
-			return new ExpressionStatement(Expression);
+            if (Expression is AssignmentExpression)
+            {
+                return ((AssignmentExpression)Expression).ToStatement();
+            }
+            else if (Expression is InitializedExpression)
+            {
+                var initExpr = (InitializedExpression)Expression;
+                return new BlockStatement(new IStatement[]
+                {
+                    initExpr.Initialization,
+                    ToStatement(initExpr.Value),
+                    initExpr.Finalization
+                });
+            }
+            else if (Expression is SourceExpression)
+            {
+                var srcExpr = (SourceExpression)Expression;
+                return SourceStatement.Create(
+                    ToStatement(srcExpr.Value), srcExpr.Location);
+            }
+            else
+            {
+                return new ExpressionStatement(Expression);
+            }
 		}
 
 		public static IExpression ToExpression(IStatement Statement)
@@ -1407,14 +1430,7 @@ namespace Flame.Ecs
 			}
 			else
 			{
-				var tmp = new RegisterVariable("tmp", Variable.Type);
-				return new InitializedExpression(
-					new BlockStatement(new IStatement[] 
-					{
-						tmp.CreateSetStatement(Value),
-						Variable.CreateSetStatement(tmp.CreateGetExpression())
-					}),
-					tmp.CreateGetExpression());
+                return new AssignmentExpression(Variable, Value);
 			}
 		}
 
