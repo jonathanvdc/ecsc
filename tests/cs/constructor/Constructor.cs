@@ -62,6 +62,9 @@ public class Program
 {
     public static void Main()
     {
+        var vec = new Vector2(3, 4);
+        Console.WriteLine(vec.x);
+        Console.WriteLine(vec.y);
         var b = new Base(4);
         Console.WriteLine(new Derived().x);
         Console.WriteLine(new Derived(3).x);
