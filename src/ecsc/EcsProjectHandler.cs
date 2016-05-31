@@ -185,7 +185,7 @@ namespace ecsc
 				new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName, 
 					optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
 				new PassCondition(Flame.Front.Target.PassExtensions.EliminateDeadCodePassName,
-					optInfo => optInfo.OptimizeMinimal || optInfo.OptimizeDebug),
+                    optInfo => !optInfo.OptimizeAggressive && (optInfo.OptimizeMinimal || optInfo.OptimizeDebug)),
 				new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
 					optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
 			},
