@@ -295,8 +295,8 @@ namespace Flame.Ecs
 					new MarkupNode[] 
 					{
 						new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope.")),
-						locals[Name].Member.GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: "),
-						Member.GetSourceLocation().CreateDiagnosticsNode()
+						Member.GetSourceLocation().CreateDiagnosticsNode(),
+                        locals[Name].Member.GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: ")
 					}));
 			}
 			else if (Parent.GetVariable(Name) != null 
@@ -304,14 +304,22 @@ namespace Flame.Ecs
 			{
 				// Variable was already declared by parent scope.
 				// Log a warning.
+                var shadowedVar = Parent.GetVariable(Name) as LocalVariableBase;
+                var nodes = new List<MarkupNode>();
+                nodes.Add(Warnings.Instance.Shadow.CreateMessage(
+                    new MarkupNode("#group", 
+                        NodeHelpers.HighlightEven(
+                            "variable '", Name, 
+                            "' is defined more than once in the same scope. "))));
+                nodes.Add(Member.GetSourceLocation().CreateDiagnosticsNode());
+                if (shadowedVar != null)
+                {
+                    nodes.Add(
+                        shadowedVar.Member.GetSourceLocation()
+                        .CreateRemarkDiagnosticsNode("shadowed declaration: "));
+                }
 				Function.Global.Log.LogWarning(new LogEntry(
-					"variable shadowed",
-					new MarkupNode[] 
-					{
-						Warnings.Instance.Shadow.CreateMessage(new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope. "))),
-						locals[Name].Member.GetSourceLocation().CreateRemarkDiagnosticsNode("shadowed declaration: "),
-						Member.GetSourceLocation().CreateDiagnosticsNode()
-					}));
+                    "variable shadowed", nodes));
 			}
 
 			var localVar = new LocalVariable(Member, new UniqueTag(Name));

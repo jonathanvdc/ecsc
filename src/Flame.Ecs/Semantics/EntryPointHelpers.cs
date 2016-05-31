@@ -37,9 +37,9 @@ namespace Flame.Ecs.Semantics
                                     new MarkupNode[] 
                                     { 
                                         new MarkupNode(NodeConstants.TextNodeType, "this program has more than one entry point."),
-                                        result.GetSourceLocation().CreateRemarkDiagnosticsNode("other entry point")
-                                    },
-                                    method.GetSourceLocation()));
+                                        method.GetSourceLocation().CreateDiagnosticsNode(),
+                                        result.GetSourceLocation().CreateRemarkDiagnosticsNode("other entry point: ")
+                                    }));
                             }
                             result = method;
                         }

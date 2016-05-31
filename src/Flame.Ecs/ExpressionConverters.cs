@@ -1145,9 +1145,9 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "anonymous type member '", fieldName, 
                             "' is declared more than once.").Concat(new MarkupNode[] {
+                                loc.CreateDiagnosticsNode(),
                                 fieldDecls[fieldName].GetSourceLocation()
-                                    .CreateRemarkDiagnosticsNode("previous declaration: ") }),
-                        loc));
+                                    .CreateRemarkDiagnosticsNode("previous declaration: ") })));
                     continue;
                 }
 

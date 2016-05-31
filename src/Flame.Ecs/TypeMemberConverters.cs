@@ -6,6 +6,7 @@ using Flame.Compiler;
 using Flame.Compiler.Statements;
 using System.Collections.Generic;
 using Flame.Compiler.Variables;
+using Pixie;
 
 namespace Flame.Ecs
 {
@@ -198,6 +199,18 @@ namespace Flame.Ecs
             return new FunctionScope(Scope, thisTy, Method, Method.ReturnType, paramVarDict);
         }
 
+        private static void LogStaticVirtualMethodError(
+            IMethod Method, string VirtualAttribute, 
+            SourceLocation Location, ICompilerLog Log)
+        {
+            Log.LogError(new LogEntry(
+                "syntax error",
+                NodeHelpers.HighlightEven(
+                    "'", "static", "' method '", Method.Name.ToString(), 
+                    "' cannot be marked '", VirtualAttribute, "'."),
+                Location));
+        }
+
 		/// <summary>
 		/// Converts an '#fn' function declaration node.
 		/// </summary>
@@ -222,9 +235,125 @@ namespace Flame.Ecs
 					innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
 				}
 
-				// Attributes next.
-				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+				// Attributes next. override, abstract, virtual, sealed
+                // and new are specific to methods, so we'll handle those here.
+                LNode overrideNode = null;
+                LNode abstractNode = null;
+                LNode virtualNode = null;
+                LNode sealedNode = null;
+                LNode newNode = null;
+                UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter, node =>
+                {
+                    if (node.IsIdNamed(CodeSymbols.Override))
+                    {
+                        overrideNode = node;
+                        return true;
+                    }
+                    else if (node.IsIdNamed(CodeSymbols.Abstract))
+                    {
+                        abstractNode = node;
+                        return true;
+                    }
+                    else if (node.IsIdNamed(CodeSymbols.Virtual))
+                    {
+                        virtualNode = node;
+                        return true;
+                    }
+                    else if (node.IsIdNamed(CodeSymbols.Sealed))
+                    {
+                        sealedNode = node;
+                        return true;
+                    }
+                    else if (node.IsIdNamed(CodeSymbols.New))
+                    {
+                        newNode = node;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                });
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+
+                bool isVirtual = abstractNode != null || virtualNode != null 
+                    || (overrideNode != null && sealedNode == null);
+
+                // Verify that these attributes make sense.
+                if ((abstractNode != null || virtualNode != null) && sealedNode != null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "method '", methodDef.Name.ToString(), "' cannot be marked both '", 
+                            (abstractNode != null ? "abstract" : "virtual"), 
+                            "' and '", "sealed", "'."),
+                        NodeHelpers.ToSourceLocation(sealedNode.Range)));
+                }
+
+                if (newNode != null && overrideNode != null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "method '", methodDef.Name.ToString(), "' cannot be marked both '", 
+                            "new", "' and '", "override", "'."),
+                        NodeHelpers.ToSourceLocation(newNode.Range)));
+                }
+
+                if (overrideNode == null && sealedNode != null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "method '", methodDef.Name.ToString(), "' cannot be '", 
+                            "sealed", "' because it is not an '", 
+                            "override", "'."),
+                        NodeHelpers.ToSourceLocation(overrideNode.Range)));
+                }
+
+                if (methodDef.IsStatic)
+                {
+                    // Static methods can't be abstract, virtual or override.
+                    if (abstractNode != null)
+                        LogStaticVirtualMethodError(
+                            methodDef, "abstract", 
+                            NodeHelpers.ToSourceLocation(abstractNode.Range), 
+                            Scope.Log);
+                    if (virtualNode != null)
+                        LogStaticVirtualMethodError(
+                            methodDef, "virtual", 
+                            NodeHelpers.ToSourceLocation(virtualNode.Range), 
+                            Scope.Log);
+                    if (overrideNode != null)
+                        LogStaticVirtualMethodError(
+                            methodDef, "override", 
+                            NodeHelpers.ToSourceLocation(overrideNode.Range), 
+                            Scope.Log);
+                    if (newNode != null)
+                        LogStaticVirtualMethodError(
+                            methodDef, "new", 
+                            NodeHelpers.ToSourceLocation(newNode.Range), 
+                            Scope.Log);
+                }
+
+                if (abstractNode != null)
+                {
+                    methodDef.AddAttribute(PrimitiveAttributes.Instance.AbstractAttribute);
+                    if (!DeclaringType.GetIsAbstract())
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "method '", methodDef.Name.ToString(), "' cannot be '", 
+                                "abstract", "' because its declaring type is not '", 
+                                "abstract", "', either."),
+                            NodeHelpers.ToSourceLocation(overrideNode.Range)));
+                    }
+                }
+
+                if (isVirtual)
+                    methodDef.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
 
 				// Resolve the return type.
 				var retType = Converter.ConvertType(Node.Args[0], innerScope);
@@ -244,6 +373,125 @@ namespace Flame.Ecs
 				// Resolve the parameters
 				var funScope = AnalyzeParameters(
 					Node.Args[2].Args, methodDef, innerScope, Converter);
+
+                // Handle overrides
+                if (!methodDef.IsStatic)
+                {
+                    var parentTy = DeclaringType.GetParent();
+                    if (parentTy != null)
+                    {
+                        var baseMethods = funScope.GetInstanceMembers(parentTy, name.Item1.Name)
+                            .OfType<IMethod>()
+                            .Where(m => m.HasSameCallSignature(methodDef))
+                            .ToArray();
+                        
+                        if (baseMethods.Length == 0)
+                        {
+                            if (overrideNode != null)
+                            {
+                                Scope.Log.LogError(new LogEntry(
+                                    "no base method",
+                                    NodeHelpers.HighlightEven(
+                                        "method '", methodDef.Name.ToString(), "' is marked '", "override", 
+                                        "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                        "' does not define any (visible) methods that match its signature."),
+                                    NodeHelpers.ToSourceLocation(overrideNode.Range)));
+                            }
+                            else if (newNode != null 
+                                && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                            {
+                                Scope.Log.LogWarning(new LogEntry(
+                                    "redundant attribute",
+                                    NodeHelpers.HighlightEven(
+                                        "method '", methodDef.Name.ToString(), "' is marked '", "new", 
+                                        "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                        "' does not define any (visible) methods that match its signature. ")
+                                        .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
+                                    NodeHelpers.ToSourceLocation(overrideNode.Range)));
+                            }
+                        }
+                        else
+                        {
+                            if (overrideNode != null)
+                            {
+                                foreach (var m in baseMethods)
+                                {
+                                    if (!m.HasSameSignature(methodDef))
+                                    {
+                                        Scope.Log.LogError(new LogEntry(
+                                            "signature mismatch",
+                                            NodeHelpers.HighlightEven(
+                                                "method '", methodDef.Name.ToString(), "' is marked '", 
+                                                "override", "', but differs in return type. " +
+                                                "Expected return type: ", 
+                                                Scope.TypeNamer.Convert(m.ReturnType), "'."),
+                                            methodDef.GetSourceLocation()));
+                                    }
+                                    else if (!m.GetIsVirtual())
+                                    {
+                                        Scope.Log.LogError(new LogEntry(
+                                            "signature mismatch",
+                                            NodeHelpers.HighlightEven(
+                                                "method '", methodDef.Name.ToString(), "' is marked '", 
+                                                "override", "', but its base method was neither '", 
+                                                "abstract", "' nor '", "virtual", "'."),
+                                            methodDef.GetSourceLocation()));
+                                    }
+                                    else
+                                    {
+                                        methodDef.AddBaseMethod(m.MakeGenericMethod(methodDef.GenericParameters));
+                                    }
+                                }
+                            }
+                            else if (newNode == null 
+                                && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                            {
+                                Scope.Log.LogWarning(new LogEntry(
+                                    "member hiding",
+                                    NodeHelpers.HighlightEven(
+                                        "method '", methodDef.Name.ToString(), "' hides " + 
+                                        (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") + 
+                                        ". Consider using the '", "new", "' keyword if hiding was intentional. ")
+                                        .Concat(new MarkupNode[] 
+                                        { 
+                                            EcsWarnings.HiddenMemberWarning.CauseNode,
+                                            methodDef.GetSourceLocation().CreateDiagnosticsNode()
+                                        })
+                                        .Concat(
+                                            baseMethods
+                                            .Select(m => m.GetSourceLocation())
+                                            .Where(loc => loc != null)
+                                            .Select(loc => loc.CreateRemarkDiagnosticsNode("hidden method: ")))));
+                            }
+                        }
+                    }
+                    else if (overrideNode != null)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "method '", methodDef.Name.ToString(), "' is marked '", 
+                                "override", "' but its declaring type '", 
+                                Scope.TypeNamer.Convert(DeclaringType), 
+                                "' does not have a base type."),
+                            NodeHelpers.ToSourceLocation(overrideNode.Range)));
+                    }
+                }
+                
+                // Implement interfaces
+                // This is significantly easier than handling overrides, because
+                // no keywords are involved.
+                foreach (var inter in DeclaringType.GetInterfaces())
+                {
+                    var baseMethods = funScope.GetInstanceMembers(inter, name.Item1.Name)
+                        .OfType<IMethod>()
+                        .Where(m => m.HasSameSignature(methodDef));
+
+                    foreach (var m in baseMethods)
+                    {
+                        methodDef.AddBaseMethod(m.MakeGenericMethod(methodDef.GenericParameters));
+                    }
+                }
 
                 bool isExtern = methodDef.HasAttribute(
                     PrimitiveAttributes.Instance.ImportAttribute.AttributeType);

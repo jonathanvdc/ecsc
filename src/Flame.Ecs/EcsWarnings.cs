@@ -8,6 +8,27 @@ namespace Flame.Ecs
 	/// </summary>
 	public static class EcsWarnings
 	{
+        /// <summary>
+        /// The -Whidden-member warning, which is used to
+        /// warn the user when method/property hiding occurs.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription HiddenMemberWarning = 
+            new WarningDescription("hidden-member", Warnings.Instance.All);
+
+        /// <summary>
+        /// The -Wredundant-new-attr, which is used to
+        /// warn the user when the new attribute is used
+        /// when doing so is unnecessary. 
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription RedundantNewAttributeWarning = 
+            new WarningDescription("redundant-new-attr", Warnings.Instance.All);
+
 		/// <summary>
 		/// The -Wduplicate-access-modifier warning.
 		/// </summary>
