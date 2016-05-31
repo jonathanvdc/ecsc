@@ -318,6 +318,12 @@ namespace Flame.Ecs
 				// Attributes next.
 				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+                if (DeclaringType.GetIsValueType())
+                {
+                    // C# 'struct' constructors always perform total initialization.
+                    // The optimizer can use this to improve codegen.
+                    methodDef.AddAttribute(PrimitiveAttributes.Instance.TotalInitializationAttribute);
+                }
 
 				// Resolve the parameters
 				var funScope = AnalyzeParameters(
