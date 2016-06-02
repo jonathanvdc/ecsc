@@ -9,6 +9,8 @@ public abstract class Base
     {
         return 2;
     }
+
+    public abstract int x { get; }
 }
 
 public class Derived : Base
@@ -24,6 +26,8 @@ public class Derived : Base
     {
         return 3;
     }
+
+    public override int x { get { return 4; } }
 }
 
 public static class Program
@@ -35,5 +39,7 @@ public static class Program
         Console.WriteLine(((Base)deriv).f());
         Console.WriteLine(deriv.g());
         Console.WriteLine(((Base)deriv).g());
+        Console.WriteLine(deriv.x);
+        Console.WriteLine(((Base)deriv).x);
     }
 }
