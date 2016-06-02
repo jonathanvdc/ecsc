@@ -94,15 +94,12 @@ namespace Flame.Ecs
 
         private bool HidesAll(HashSet<ITypeMember> Members)
         {
-            if (Members.Count == 0)
-                return false;
-
             foreach (var item in Members)
             {
                 if (!(item is IMethod))
-                    return false;
+                    return true;
             }
-            return true;
+            return false;
         }
 
         /// <summary>
