@@ -22,7 +22,7 @@ public class Derived : Base
         return 3;
     }
 
-    public new int g()
+    public new virtual int g()
     {
         return 3;
     }

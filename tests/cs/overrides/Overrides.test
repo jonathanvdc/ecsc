@@ -16,12 +16,12 @@ configs
     EcscOg
     {
         compiler = $ecsc;
-        Flags = -Og -platform clr -o $(Executable) -Wno-hidden-member;
+        Flags = -Og -platform clr -o $(Executable);
     }
     EcscO3
     {
         compiler = $ecsc;
-        Flags = -O3 -platform clr -o $(Executable) -Wno-hidden-member;
+        Flags = -O3 -platform clr -o $(Executable);
     }
     ReferenceDebug
     {
