@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Flame.Collections;
 using Flame.Compiler;
 using Flame.Compiler.Statements;
-using Pixie;
 using Flame.Compiler.Variables;
+using Pixie;
 
 namespace Flame.Ecs
 {
@@ -63,6 +64,7 @@ namespace Flame.Ecs
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
+            this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
 
 			this.Global = Global;
 			this.CurrentType = CurrentType;
@@ -143,6 +145,7 @@ namespace Flame.Ecs
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache; 
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
+        private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
         private ITypeMember[] GetMembers(
             IType Type, string Name, 
@@ -212,6 +215,33 @@ namespace Flame.Ecs
                 return item.IsStatic && DeclaringType.CanAccess(item);
             });
 		}
+
+        /// <summary>
+        /// Gets all operators defined by the given type (or one of its ancestors) 
+        /// that can be accessed on the given type's name.
+        /// </summary>
+        public IEnumerable<IMethod> GetOperators(IType Type, Operator Op)
+        {
+            SmallMultiDictionary<Operator, IMethod> result;
+            if (operatorCache.TryGetValue(Type, out result))
+            {
+                return result.GetAll(Op);
+            }
+            else
+            {
+                var globalOps = Global.MemberCache.GetAllOperators(Type);
+                var localOps = new SmallMultiDictionary<Operator, IMethod>(globalOps.Count);
+                var valueEnumerator = globalOps.GetValueEnumerator();
+                while (valueEnumerator.MoveNext())
+                {
+                    var item = valueEnumerator.Current;
+                    if (DeclaringType.CanAccess(item))
+                        localOps.Add(item.GetOperator(), item);
+                }
+                operatorCache[Type] = localOps;
+                return localOps.GetAll(Op);
+            }
+        }
 	}
 
 	/// <summary>

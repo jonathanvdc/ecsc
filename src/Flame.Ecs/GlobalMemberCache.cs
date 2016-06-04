@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Flame.Collections;
 
 namespace Flame.Ecs
 {
@@ -14,11 +15,13 @@ namespace Flame.Ecs
             this.globalMemberCache = new Dictionary<IType, ITypeMember[]>();
             this.namedMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.indexerCache = new Dictionary<IType, IProperty[]>();
+            this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
         }
 
         private Dictionary<IType, ITypeMember[]> globalMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> namedMemberCache;
         private Dictionary<IType, IProperty[]> indexerCache;
+        private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
         /// <summary>
         /// Gets all members that are directly defined by the given type.
@@ -218,11 +221,63 @@ namespace Flame.Ecs
             }
         }
 
+        private SmallMultiDictionary<Operator, IMethod> LookupAllOperators(IType Type)
+        {
+            var results = new SmallMultiDictionary<Operator, IMethod>();
+
+            foreach (var m in GetMembers(Type).OfType<IMethod>())
+            {
+                var op = m.GetOperator();
+                if (op.IsDefined)
+                {
+                    results.Add(op, m);
+                }
+            }
+
+            // Then look in the base type.
+            var bType = Type.GetParent();
+            if (bType != null)
+            {
+                results.AddRange(GetAllOperators(bType));
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Gets all visible operators that are defined by
+        /// the given type or one of its base types.
+        /// </summary>
+        public SmallMultiDictionary<Operator, IMethod> GetAllOperators(IType Type)
+        {
+            SmallMultiDictionary<Operator, IMethod> result;
+            if (operatorCache.TryGetValue(Type, out result))
+            {
+                return result;
+            }
+            else
+            {
+                var dict = LookupAllOperators(Type);
+                operatorCache[Type] = dict;
+                return dict;
+            }
+        }
+
+        /// <summary>
+        /// Gets all visible operators that are defined by
+        /// the given type or one of its base types.
+        /// </summary>
+        public IEnumerable<IMethod> GetAllOperators(IType Type, Operator Op)
+        {
+            return GetAllOperators(Type).GetAll(Op);
+        }
+
         public void Dispose()
         {
             globalMemberCache = null;
             namedMemberCache = null;
             indexerCache = null;
+            operatorCache = null;
         }
     }
 }

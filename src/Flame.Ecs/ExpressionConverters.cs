@@ -1382,14 +1382,21 @@ namespace Flame.Ecs
                     globalScope.ConvertImplicit(Right, opTy, RightLocation));
 			}
 
-			// TODO: actually implement this
+			// User-defined operators.
+            // TODO: maybe also consider supporting non-static operators?
+            var candidates = 
+                Scope.Function.GetOperators(lTy, Op)
+                    .Union(Scope.Function.GetOperators(rTy, Op))
+                    .Where(m => m.IsStatic && m.Parameters.Count() == 2)
+                    .Select(m => new GetMethodExpression(m, null))
+                    .ToArray();
 
-            globalScope.Log.LogError(new LogEntry(
-				"operators not yet implemented",
-				"custom binary operator resolution has not been implemented yet. Sorry. :/",
-				LeftLocation.Concat(RightLocation)));
-
-			return VoidExpression.Instance;
+            return OverloadResolution.CreateCheckedInvocation(
+                "operator", candidates, new[]
+            {
+                Tuple.Create(Left, LeftLocation),
+                Tuple.Create(Right, RightLocation)
+            }, Scope.Global, LeftLocation.Concat(RightLocation));
 		}
 
 		/// <summary>
