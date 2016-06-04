@@ -226,6 +226,11 @@ namespace Flame.Ecs
 			return ToStatement(Converter.ConvertExpression(Node, Scope));
 		}
 
+        public static IStatement ConvertStatementBlock(this NodeConverter Converter, IEnumerable<LNode> Nodes, LocalScope Scope)
+        {
+            return new BlockStatement(Nodes.Select(n => Converter.ConvertStatement(n, Scope)).ToArray());
+        }
+
 		public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, ILocalScope Scope)
 		{
 			var childScope = new LocalScope(Scope);
@@ -1810,9 +1815,9 @@ namespace Flame.Ecs
 
             var tag = new UniqueTag("for");
 
-            var init = Converter.ConvertStatement(Node.Args[0], childScope);
+            var init = Converter.ConvertStatementBlock(Node.Args[0].Args, childScope);
             var cond = Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
-            var delta = Converter.ConvertStatement(Node.Args[2], childScope);
+            var delta = Converter.ConvertStatementBlock(Node.Args[2].Args, childScope);
             var body = Converter.ConvertScopedStatement(Node.Args[3], new FlowScope(childScope, tag));
 
             return ToExpression(new ForStatement(tag, init, cond, delta, body, childScope.Release()));

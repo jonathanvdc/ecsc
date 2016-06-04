@@ -8,7 +8,7 @@
             <summary>Parses Enhanced C# code into a sequence of Loyc trees
             (<see cref="T:Loyc.Syntax.LNode" />), one per top-level statement.</summary>
             <remarks>
-            You can use <see cref="F:Loyc.Ecs.EcsLanguageService.Value" /> with <see cref="M:Loyc.Syntax.ParsingService.Parse(Loyc.Syntax.IParsingService,Loyc.UString,Loyc.IMessageSink,Loyc.Symbol)" />
+            You can use <see cref="F:Loyc.Ecs.EcsLanguageService.Value" /> with <see cref="M:Loyc.Syntax.ParsingService.Parse(Loyc.Syntax.IParsingService,Loyc.UString,Loyc.IMessageSink,Loyc.Syntax.ParsingMode)" />
             to easily parse a text string (holding zero or more EC# statements) into a
             Loyc tree. One does not normally use this class directly.
             </remarks></member>
@@ -366,7 +366,8 @@
         <member name="P:Loyc.Ecs.EcsNodePrinter.PreferPlainCSharp">
             <summary>Prefers plain C# syntax for certain other things (not covered
             by the other options), even when the syntax tree requests a different
-            style, e.g. EC# cast operators are blocked so x(-&gt;int) becomes (int) x.</summary></member>
+            style, e.g. EC# cast operators are blocked so x(-&gt;int) becomes (int) x,
+            and @`at-identifiers` are sanitized.</summary></member>
         <member name="P:Loyc.Ecs.EcsNodePrinter.SpaceOptions">
             <summary>Controls the locations where spaces should be emitted.</summary></member>
         <member name="P:Loyc.Ecs.EcsNodePrinter.NewlineOptions">
@@ -433,6 +434,9 @@
             outer else would, upon parsing, be associated with the inner 'if'.</summary></member>
         <member name="F:Loyc.Ecs.EcsNodePrinter.Ambiguity.NoParenthesis">
             <summary>Avoids printing illegal opening paren at statement level</summary></member>
+        <member name="F:Loyc.Ecs.EcsNodePrinter.Ambiguity.ForceAttributeList">
+            <summary>Force PrintAttrs to print an empty attribute list `[]` which
+            has the effect of allowing unassigned variable declarations anywhere.</summary></member>
         <member name="T:Loyc.Ecs.ICI">
             <summary>Flags for <see cref="M:Loyc.Ecs.EcsNodePrinter.IsComplexIdentifier(Loyc.Syntax.LNode,Loyc.Ecs.ICI)" />.</summary></member>
         <member name="T:Loyc.Ecs.SpaceOpt">
