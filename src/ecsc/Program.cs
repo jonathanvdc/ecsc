@@ -25,7 +25,7 @@ namespace ecsc
             get
             {
                 return new MarkupNode(NodeConstants.TextNodeType,
-                    "EC# parser: Loyc version " + LoycVersion.ToString(3));
+                    "EC# parser: Loyc " + LoycVersion.ToString(3));
             }
         }
 
