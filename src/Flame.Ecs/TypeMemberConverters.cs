@@ -7,6 +7,7 @@ using Flame.Compiler.Statements;
 using System.Collections.Generic;
 using Flame.Compiler.Variables;
 using Pixie;
+using Flame.Ecs.Semantics;
 
 namespace Flame.Ecs
 {
@@ -354,6 +355,14 @@ namespace Flame.Ecs
             return Tuple.Create(overrideNode, newNode);
         }
 
+        private static Operator ParseOperatorName(string Name)
+        {
+            if (Name == UnaryOperatorResolution.BitwiseComplement.Name)
+                return Operator.Not;
+            else
+                return Operator.GetOperator(Name);
+        }
+
 		/// <summary>
 		/// Converts an '#fn' function declaration node.
 		/// </summary>
@@ -367,6 +376,7 @@ namespace Flame.Ecs
 
 			// Handle the function's name first.
 			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+            var op = ParseOperatorName(name.Item1.Name);
             var def = new LazyDescribedMethod(new SimpleName(name.Item1.Name), DeclaringType, methodDef =>
 			{
 				// Take care of the generic parameters next.
@@ -382,6 +392,21 @@ namespace Flame.Ecs
                 // and new are specific to methods, so we'll handle those here.
                 var attrNodePair = UpdateVirtualTypeMemberAttributes("method", Node.Attrs, methodDef, innerScope, Converter);
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+
+                if (op.IsDefined)
+                {
+                    if (!methodDef.IsStatic || methodDef.GetAccess() != AccessModifier.Public)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "user-defined operator '", name.Item1.Name, "' must be declared '", 
+                                "static", "' and '", "public", "'."),
+                            methodDef.GetSourceLocation()));
+                    }
+
+                    methodDef.AddAttribute(new OperatorAttribute(op));
+                }
 
 				// Resolve the return type.
 				var retType = Converter.ConvertType(Node.Args[0], innerScope);
@@ -401,6 +426,23 @@ namespace Flame.Ecs
 				// Resolve the parameters
 				var funScope = AnalyzeParameters(
 					Node.Args[2].Args, methodDef, innerScope, Converter);
+
+                // Operator methods must take at least one parameter of the 
+                // declaring type.
+                if (op.IsDefined)
+                {
+                    if (!methodDef.Parameters.Any(p => 
+                        p.ParameterType.Equals(funScope.DeclaringType)))
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "user-defined operator",
+                            NodeHelpers.HighlightEven(
+                                "at least one of the parameters of user-defined operator '", 
+                                name.Item1.Name,
+                                "' must be the containing type."),
+                            methodDef.GetSourceLocation()));
+                    }
+                }
 
                 // Handle overrides
                 if (!methodDef.IsStatic)
