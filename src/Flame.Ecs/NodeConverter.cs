@@ -462,7 +462,6 @@ namespace Flame.Ecs
 
                 // Attributes
                 result.AliasAttribute(CodeSymbols.Abstract, PrimitiveAttributes.Instance.AbstractAttribute);
-                result.AliasAttribute(CodeSymbols.Const, PrimitiveAttributes.Instance.ConstantAttribute);
                 result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
                 result.AliasAttribute(CodeSymbols.Virtual, PrimitiveAttributes.Instance.VirtualAttribute);
 

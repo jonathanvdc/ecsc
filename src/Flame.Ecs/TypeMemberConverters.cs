@@ -678,8 +678,20 @@ namespace Flame.Ecs
 
             // Analyze attributes lazily, but only analyze them _once_.
             // A shared lazy object does just that.
+            LNode constNode = null;
             var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() => 
-                AnalyzeTypeMemberAttributes(attrNodes, DeclaringType, Scope, Converter));
+                AnalyzeTypeMemberAttributes(attrNodes, DeclaringType, Scope, Converter, node =>
+            {
+                if (node.IsIdNamed(CodeSymbols.Const))
+                {
+                    constNode = node;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }));
 
             // Analyze the field type lazily, as well.
             var lazyFieldType = new Lazy<IType>(() => 
@@ -696,23 +708,48 @@ namespace Flame.Ecs
                 var valNode = decomp.Item2;
                 var field = new LazyDescribedField(
                     new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
-                    fieldDef =>
+                fieldDef =>
+                {
+                    // Set the field's type.
+                    fieldDef.FieldType = lazyFieldType.Value;
+
+                    // Update the attribute list.
+                    UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
+                    fieldDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(decomp.Item1.Range)));
+                    if (constNode != null)
                     {
-                        // Set the field's type.
-                        fieldDef.FieldType = lazyFieldType.Value;
-
-                        // Update the attribute list.
-                        UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
-                        fieldDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(decomp.Item1.Range)));
-
-                        if (decomp.Item2 != null)
+                        fieldDef.AddAttribute(PrimitiveAttributes.Instance.ConstantAttribute);
+                        if (fieldDef.IsStatic 
+                            && EcsWarnings.RedundantStaticAttributeWarning.UseWarning(Scope.Log.Options))
                         {
-                            fieldDef.Value = Converter.ConvertExpression(
-                            valNode, new LocalScope(
-                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
-                                fieldDef.FieldType);
+                            // Warn if a field is marked both 'const' and 'static'.
+                            var staticNode = attrNodes.FirstOrDefault(x => x.IsIdNamed(CodeSymbols.Static));
+                            if (staticNode != null)
+                            {
+                                Scope.Log.LogWarning(new LogEntry(
+                                    "redundant attribute",
+                                    NodeHelpers.HighlightEven(
+                                        "this '", "static", "' attribute is redundant, because '",
+                                        "const", "' implies '", "static", "'. ")
+                                    .Concat(new MarkupNode[] 
+                                    { 
+                                        EcsWarnings.RedundantStaticAttributeWarning.CauseNode,
+                                        NodeHelpers.ToSourceLocation(staticNode.Range).CreateDiagnosticsNode(),
+                                        NodeHelpers.ToSourceLocation(constNode.Range).CreateRemarkDiagnosticsNode("'const' attribute: ")
+                                    })));
+                            }
                         }
-                    });
+                        fieldDef.IsStatic = true;
+                    }
+
+                    if (decomp.Item2 != null)
+                    {
+                        fieldDef.Value = Converter.ConvertExpression(
+                        valNode, new LocalScope(
+                            CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                            fieldDef.FieldType);
+                    }
+                });
 
                 // Add the field to the declaring type.
                 DeclaringType.AddField(field);
