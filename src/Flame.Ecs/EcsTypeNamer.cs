@@ -53,7 +53,7 @@ namespace Flame.Ecs
 			}
 		}
 
-		protected override string ConvertPointerType(IPointerType Type)
+		protected override string ConvertPointerType(PointerType Type)
 		{
 			if (Type.PointerKind.Equals(PointerKind.ReferencePointer))
 			{

@@ -9,7 +9,7 @@ using Flame.Build;
 namespace Flame.Ecs
 {
 	/// <summary>
-	/// An interface for namespaces that support inserting 
+	/// An interface for namespaces that support inserting
 	/// additional types and nested namespaces.
 	/// </summary>
 	public interface IMutableNamespace : IMember
@@ -105,7 +105,7 @@ namespace Flame.Ecs
 		public INamespace DeclaringNamespace { get; private set; }
         private UnqualifiedName nsName;
 
-		public override IAssembly DeclaringAssembly { get { return DeclaringAssembly; } }
+		public override IAssembly DeclaringAssembly { get { return DeclaringNamespace.DeclaringAssembly; } }
 
 		public override QualifiedName FullName
 		{

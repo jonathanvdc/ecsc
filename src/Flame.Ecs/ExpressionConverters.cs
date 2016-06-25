@@ -13,6 +13,7 @@ using Loyc.Syntax;
 using Pixie;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Flame.Collections;
 
 namespace Flame.Ecs
 {

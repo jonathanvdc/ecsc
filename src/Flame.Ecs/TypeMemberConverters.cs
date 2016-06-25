@@ -358,7 +358,7 @@ namespace Flame.Ecs
         private static Operator ParseOperatorName(string Name)
         {
             if (Name == UnaryOperatorResolution.BitwiseComplement.Name)
-                return Operator.Not;
+                return UnaryOperatorResolution.BitwiseComplement;
             else
                 return Operator.GetOperator(Name);
         }

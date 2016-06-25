@@ -29,6 +29,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Flame.Build;
 using Pixie;
+using Flame.Front.Passes;
 
 namespace ecsc
 {
@@ -191,19 +192,19 @@ namespace ecsc
 			},
 			new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[] 
 			{
-				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+				new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
 					AnalysisPasses.ValueTypeDelegatePass,
 					ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
 
-				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
 					VerifyingDeadCodePass.Instance,
 					Flame.Front.Target.PassExtensions.EliminateDeadCodePassName),
 
-				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
 					AutoInitializationPass.Instance,
 					AutoInitializationPass.AutoInitializationPassName),
 
-				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
 					InfiniteRecursionPass.Instance,
 					InfiniteRecursionPass.InfiniteRecursionPassName)
 			});
