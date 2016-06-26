@@ -94,7 +94,7 @@ namespace Flame.Ecs
         /// Gets the type of a hypothetical 'this' expression:
         /// the enclosing type, optionally instantiated by
         /// its own generic parameters. Value types do not
-        /// have a pointer current type.
+        /// have a pointer declaring type.
         /// </summary>
         public IType DeclaringType { get; private set; }
 
