@@ -229,10 +229,8 @@ namespace Flame.Ecs
             {
                 var globalOps = Global.MemberCache.GetAllOperators(Type);
                 var localOps = new SmallMultiDictionary<Operator, IMethod>(globalOps.Count);
-                var valueEnumerator = globalOps.GetValueEnumerator();
-                while (valueEnumerator.MoveNext())
+                foreach (var item in globalOps.Values)
                 {
-                    var item = valueEnumerator.Current;
                     if (DeclaringType.CanAccess(item))
                         localOps.Add(item.GetOperator(), item);
                 }
