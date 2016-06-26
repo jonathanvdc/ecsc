@@ -34,7 +34,7 @@ namespace Flame.Ecs
 
             if (isStatic)
             {
-                var lazyTy = new Lazy<IType>(() => Converter.ConvertType(Node.Args[0], Scope));
+                var lazyTy = new Lazy<IType>(() => Converter.ConvertCheckedType(Node.Args[0], Scope));
                 return Scope.WithBinder(Scope.Binder.UseType(lazyTy));
             }
             else
