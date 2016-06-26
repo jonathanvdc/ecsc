@@ -24,4 +24,5 @@ tests
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
     user-defined-operators/UserDefinedOperators.test;
+    using-static/UsingStatic.test;
 }
