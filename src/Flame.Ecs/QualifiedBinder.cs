@@ -69,9 +69,17 @@ namespace Flame.Ecs
         {
             var newUsings = new Lazy<HashSet<IType>>(() =>
             {
-                var oldSet = new HashSet<IType>(typeUsings.Value);
-                oldSet.Add(Type.Value);
-                return oldSet;
+                var ty = Type.Value;
+                if (ty == null)
+                {
+                    return typeUsings.Value;
+                }
+                else
+                {
+                    var oldSet = new HashSet<IType>(typeUsings.Value);
+                    oldSet.Add(ty);
+                    return oldSet;
+                }
             });
             return new QualifiedBinder(Binder, namespaceUsings, newUsings, nameAliases, typeAliases);
         }
