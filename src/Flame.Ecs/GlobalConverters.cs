@@ -16,9 +16,32 @@ namespace Flame.Ecs
 		{
 			if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
 				return Scope;
-			
-			var qualName = NodeHelpers.ToQualifiedName(Node.Args[0]);
-			return Scope.WithBinder(Scope.Binder.UseNamespace(qualName));
+
+            bool isStatic = false;
+            NodeHelpers.ConvertAttributes(Node, Scope.Log, attr =>
+            {
+                if (attr.IsIdNamed(CodeSymbols.Static))
+                {
+                    isStatic = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+
+
+            if (isStatic)
+            {
+                var lazyTy = new Lazy<IType>(() => Converter.ConvertType(Node.Args[0], Scope));
+                return Scope.WithBinder(Scope.Binder.UseType(lazyTy));
+            }
+            else
+            {
+                var qualName = NodeHelpers.ToQualifiedName(Node.Args[0]);
+                return Scope.WithBinder(Scope.Binder.UseNamespace(qualName));
+            }
 		}
 
         /// <summary>
@@ -30,6 +53,8 @@ namespace Flame.Ecs
         {
             if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
                 return Scope;
+
+            NodeHelpers.CheckEmptyAttributes(Node, Scope.Log);
 
             var qualName = NodeHelpers.ToQualifiedName(Node.Args[0]);
 

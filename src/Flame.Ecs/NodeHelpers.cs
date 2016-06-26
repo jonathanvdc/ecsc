@@ -162,6 +162,53 @@ namespace Flame.Ecs
             }
         }
 
+        /// <summary>
+        /// Checks that the given node has an empty attribute
+        /// list.
+        /// </summary>
+        public static void CheckEmptyAttributes(
+            LNode Node, ICompilerLog Log)
+        {
+            ConvertAttributes(Node, Log, attr => false);
+        }
+
+        /// <summary>
+        /// Uses the given conversion delegate to convert
+        /// the given sequence of attributes. Unsuccessful
+        /// conversions, which are indicated by a 'false' return
+        /// value on conversion, are reported as errors. 
+        /// </summary>
+        public static void ConvertAttributes(
+            IEnumerable<LNode> Attributes, ICompilerLog Log, 
+            Func<LNode, bool> Converter)
+        {
+            foreach (var item in Attributes)
+            {
+                if (!Converter(item))
+                {
+                    Log.LogError(new LogEntry(
+                        "unexpected attribute",
+                        HighlightEven(
+                            "attribute node '", item.Name.ToString(), 
+                            "' was unexpected here."),
+                        ToSourceLocation(item.Range)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Uses the given conversion delegate to convert
+        /// all attributes belonging to the given node. Unsuccessful
+        /// conversions, which are indicated by a 'false' return
+        /// value on conversion, are reported as errors. 
+        /// </summary>
+        public static void ConvertAttributes(
+            LNode Node, ICompilerLog Log, 
+            Func<LNode, bool> Converter)
+        {
+            ConvertAttributes(Node.Attrs, Log, Converter);
+        }
+
 		public static IGenericParameter ToGenericParameter(
 			LNode Node, IGenericMember Parent, GlobalScope Scope)
 		{
