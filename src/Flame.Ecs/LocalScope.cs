@@ -215,6 +215,28 @@ namespace Flame.Ecs
 		}
 
         /// <summary>
+        /// Gets all static members with the given name that can be 
+        /// found via unqualified name lookup.
+        /// </summary>
+        public IEnumerable<ITypeMember> GetUnqualifiedStaticMembers(string Name)
+        {
+            var results = new HashSet<ITypeMember>();
+            if (DeclaringType != null)
+                results.UnionWith(GetStaticMembers(DeclaringType, Name));
+
+            foreach (var ty in Global.Binder.TypeUsings)
+            {
+                foreach (var method in GetStaticMembers(ty, Name))
+                {
+                    if (!method.GetIsExtension())
+                        results.Add(method);
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
         /// Gets all operators defined by the given type (or one of its ancestors) 
         /// that can be accessed on the given type's name.
         /// </summary>

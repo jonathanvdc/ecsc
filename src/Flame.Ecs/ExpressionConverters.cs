@@ -38,28 +38,28 @@ namespace Flame.Ecs
 				return local.CreateGetExpression();
 			}
 
-            var declType = Scope.Function.DeclaringType;
-
-            if (declType == null)
-                return null;
-
             // Create a set of potential results.
             var exprSet = new HashSet<IExpression>();
-            foreach (var item in Scope.Function.GetStaticMembers(declType, Name))
+            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name))
             {
                 var acc = AccessMember(null, item, Scope.Function.Global);
                 if (acc != null)
                     exprSet.Add(acc);
             }
 
-            var thisVar = GetThisVariable(Scope);
-            if (GetThisVariable(Scope) != null)
+            var declType = Scope.Function.DeclaringType;
+
+            if (declType != null)
             {
-                foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                var thisVar = GetThisVariable(Scope);
+                if (GetThisVariable(Scope) != null)
                 {
-                    var acc = AccessMember(thisVar.CreateGetExpression(), item, Scope.Function.Global);
-                    if (acc != null)
-                        exprSet.Add(acc);
+                    foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                    {
+                        var acc = AccessMember(thisVar.CreateGetExpression(), item, Scope.Function.Global);
+                        if (acc != null)
+                            exprSet.Add(acc);
+                    }
                 }
             }
 
@@ -106,30 +106,30 @@ namespace Flame.Ecs
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
-            var declType = Scope.Function.DeclaringType;
-
-            if (declType == null)
-                return null;
-
             IMethod method = null;
 
             // Create a set of potential results.
             var exprSet = new HashSet<IExpression>();
-            foreach (var item in Scope.Function.GetStaticMembers(declType, Name))
+            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name))
             {
                 CreateMemberAccess(
                     item, TypeArguments, null, exprSet, 
                     Scope.Function.Global, Location, ref method);
             }
 
-            var thisVar = GetThisVariable(Scope);
-            if (GetThisVariable(Scope) != null)
+            var declType = Scope.Function.DeclaringType;
+
+            if (declType != null)
             {
-                foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                var thisVar = GetThisVariable(Scope);
+                if (GetThisVariable(Scope) != null)
                 {
-                    CreateMemberAccess(
-                        item, TypeArguments, thisVar.CreateGetExpression(), exprSet, 
-                        Scope.Function.Global, Location, ref method);
+                    foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                    {
+                        CreateMemberAccess(
+                            item, TypeArguments, thisVar.CreateGetExpression(), exprSet, 
+                            Scope.Function.Global, Location, ref method);
+                    }
                 }
             }
 
