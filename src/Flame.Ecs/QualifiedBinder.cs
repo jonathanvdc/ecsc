@@ -10,19 +10,23 @@ namespace Flame.Ecs
 	public sealed class QualifiedBinder : IBinder
 	{
 		private QualifiedBinder(
-			IBinder Binder, List<QualifiedName> namespaceUsings, 
+			IBinder Binder, 
+            HashSet<QualifiedName> namespaceUsings, 
+            Lazy<HashSet<IType>> typeUsings,
             Dictionary<UnqualifiedName, QualifiedName> nameAliases,
             Dictionary<UnqualifiedName, IType> typeAliases)
 		{
 			this.Binder = Binder;
 			this.namespaceUsings = namespaceUsings;
+            this.typeUsings = typeUsings;
 			this.nameAliases = nameAliases;
 			this.typeAliases = typeAliases;
 			this.resolvedTypeCache = new ConcurrentDictionary<QualifiedName, IType>();
 		}
 		public QualifiedBinder(IBinder Binder)
 			: this(
-				Binder, new List<QualifiedName>(), 
+                Binder, new HashSet<QualifiedName>(), 
+                new Lazy<HashSet<IType>>(() => new HashSet<IType>()),
                 new Dictionary<UnqualifiedName, QualifiedName>(),
                 new Dictionary<UnqualifiedName, IType>())
 		{ }
@@ -37,20 +41,40 @@ namespace Flame.Ecs
         /// </summary>
         public IEnvironment Environment { get { return Binder.Environment; } }
 
-		private List<QualifiedName> namespaceUsings;
+        /// <summary>
+        /// Gets the set of all types that are used by this qualified binder.
+        /// </summary>
+        public IEnumerable<IType> TypeUsings { get { return typeUsings.Value; } }
+
+        private HashSet<QualifiedName> namespaceUsings;
+        private Lazy<HashSet<IType>> typeUsings;
 		private Dictionary<UnqualifiedName, QualifiedName> nameAliases;
 		private Dictionary<UnqualifiedName, IType> typeAliases;
 		private ConcurrentDictionary<QualifiedName, IType> resolvedTypeCache;
 
 		/// <summary>
-		/// Adds the given qualified name to the list of used namespaces.
+		/// Adds the given qualified name to the set of used namespaces.
 		/// </summary>
 		public QualifiedBinder UseNamespace(QualifiedName Name)
 		{
-			var newUsings = new List<QualifiedName>(namespaceUsings);
+            var newUsings = new HashSet<QualifiedName>(namespaceUsings);
 			newUsings.Add(Name);
-			return new QualifiedBinder(Binder, newUsings, nameAliases, typeAliases);
+			return new QualifiedBinder(Binder, newUsings, typeUsings, nameAliases, typeAliases);
 		}
+
+        /// <summary>
+        /// Adds the given type to the set of used types.
+        /// </summary>
+        public QualifiedBinder UseType(Lazy<IType> Type)
+        {
+            var newUsings = new Lazy<HashSet<IType>>(() =>
+            {
+                var oldSet = new HashSet<IType>(typeUsings.Value);
+                oldSet.Add(Type.Value);
+                return oldSet;
+            });
+            return new QualifiedBinder(Binder, namespaceUsings, newUsings, nameAliases, typeAliases);
+        }
 
 		/// <summary>
 		/// Creates an alias for a qualified name.
@@ -59,7 +83,7 @@ namespace Flame.Ecs
 		{
             var newAliases = new Dictionary<UnqualifiedName, QualifiedName>(nameAliases);
 			newAliases[Alias] = Name;
-			return new QualifiedBinder(Binder, namespaceUsings, newAliases, typeAliases);
+			return new QualifiedBinder(Binder, namespaceUsings, typeUsings, newAliases, typeAliases);
 		}
 
 		/// <summary>
@@ -69,7 +93,7 @@ namespace Flame.Ecs
 		{
             var tyAliases = new Dictionary<UnqualifiedName, IType>(typeAliases);
 			tyAliases[Alias] = Type;
-			return new QualifiedBinder(Binder, namespaceUsings, nameAliases, tyAliases);
+			return new QualifiedBinder(Binder, namespaceUsings, typeUsings, nameAliases, tyAliases);
 		}
 
         public IEnumerable<IType> GetTypes()
