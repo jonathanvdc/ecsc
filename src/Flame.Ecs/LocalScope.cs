@@ -196,7 +196,6 @@ namespace Flame.Ecs
 		/// </summary>
 		public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
 		{
-			// TODO: actually implement name lookup algorithm
             return GetMembers(Type, Name, instanceMemberCache, item =>
             {
                 return !item.IsStatic && DeclaringType.CanAccess(item);
@@ -209,7 +208,6 @@ namespace Flame.Ecs
 		/// </summary>
 		public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
 		{
-			// TODO: actually implement name lookup algorithm
             return GetMembers(Type, Name, staticMemberCache, item =>
             {
                 return item.IsStatic && DeclaringType.CanAccess(item);
