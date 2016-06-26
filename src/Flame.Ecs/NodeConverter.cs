@@ -143,7 +143,7 @@ namespace Flame.Ecs
                     "type resolution",
                     NodeHelpers.HighlightEven(
                         "could not resolve type '", Node.ToString(), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                    NodeHelpers.ToSourceLocation(Node.Range)));
             }
             return retType;
         }
