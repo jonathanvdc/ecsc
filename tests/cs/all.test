@@ -11,6 +11,7 @@ tests
     constructor/Constructor.test;
     field/Field.test;
     flow/Flow.test;
+    fractal/Fractal.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
     inc-dec/IncDec.test;
