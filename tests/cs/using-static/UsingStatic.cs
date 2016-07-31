@@ -1,9 +1,15 @@
-using static System.Console;
+// "Official" sample from
+// https://github.com/dotnet/roslyn/wiki/New-Language-Features-in-C%23-6
 
-public class Program
+using static System.Console;
+using static System.Math;
+using static System.DayOfWeek;
+
+class Program
 {
-    public static void Main()
+    static void Main()
     {
-        WriteLine("Hello, world!");
+        WriteLine(Sqrt(3*3 + 4*4));
+        WriteLine(Friday - Monday);
     }
 }
