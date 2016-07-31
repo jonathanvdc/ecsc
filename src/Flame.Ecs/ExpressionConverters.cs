@@ -1335,6 +1335,29 @@ namespace Flame.Ecs
                 toStringMethods[0], AsTargetObject(Value), new IExpression[0]);
         }
 
+        private static IExpression TryConvertEnumOperand(
+            IExpression Value, IType UnderlyingType,
+            GlobalScope Scope)
+        {
+            var valTy = Value.Type;
+            if (valTy.GetIsEnum() && valTy.GetParent().Equals(UnderlyingType))
+            {
+                return new StaticCastExpression(Value, UnderlyingType);
+            }
+            else
+            {
+                var implConv = Scope.ConversionRules
+                    .ClassifyConversion(Value, UnderlyingType)
+                    .Where(x => x.IsImplicit && x.IsStatic)
+                    .ToArray();
+
+                if (implConv.Length == 1)
+                    return implConv[0].Convert(Value, UnderlyingType);
+                else
+                    return null;
+            }
+        }
+
 		/// <summary>
 		/// Creates a binary operator application expression
 		/// for the given operator and operands. A scope is
@@ -1352,6 +1375,7 @@ namespace Flame.Ecs
 
             var globalScope = Scope.Global;
 
+            // Concatenation
             if (Op.Equals(Operator.Add)
                 && (PrimitiveTypes.String.Equals(lTy) || PrimitiveTypes.String.Equals(rTy)))
             {
@@ -1362,6 +1386,7 @@ namespace Flame.Ecs
                 });
             }
 
+            // Primitive operators
 			IType opTy;
 			if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
 			{
@@ -1382,6 +1407,30 @@ namespace Flame.Ecs
 					Op, 
                     globalScope.ConvertImplicit(Right, opTy, RightLocation));
 			}
+
+            // Enum operators
+            IType underlyingTy;
+            if (BinaryOperatorResolution.TryGetEnumOperatorType(
+                Op, lTy, rTy, out underlyingTy, out opTy))
+            {
+                var lConv = TryConvertEnumOperand(Left, underlyingTy, Scope.Global);
+
+                if (lConv != null)
+                {
+                    var rConv = TryConvertEnumOperand(Right, underlyingTy, Scope.Global);
+
+                    if (rConv != null)
+                    {
+                        var binOp = DirectBinaryExpression.Instance.Create(
+                            lConv, Op, rConv);
+                        
+                        if (binOp.Type.Equals(opTy))
+                            return binOp;
+                        else
+                            return new StaticCastExpression(binOp, opTy);
+                    }
+                }
+            }
 
 			// User-defined operators.
             // TODO: maybe also consider supporting non-static operators?

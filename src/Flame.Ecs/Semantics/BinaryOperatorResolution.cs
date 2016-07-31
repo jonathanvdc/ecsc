@@ -5,6 +5,14 @@ namespace Flame.Ecs.Semantics
 {
 	public static class BinaryOperatorResolution
 	{
+        // Describes operand types for enum ops
+        private enum EnumOperand
+        {
+            EnumType,
+            UnderlyingType,
+            Boolean
+        }
+
 		/// <summary>
 		/// Tries to get the type that the given operator's operands should be
 		/// cast to, for the given combination of initial operand types.
@@ -20,6 +28,84 @@ namespace Flame.Ecs.Semantics
 			return opTypes.TryGetValue(Op, out dict) 
 				&& dict.TryGetValue(Tuple.Create(Left, Right), out Result);
 		}
+
+        public static IType GetUnderlyingType(IType EnumType)
+        {
+            return EnumType.GetParent();
+        }
+
+        public static bool TryGetEnumOperatorType(
+            Operator Op, IType Left, IType Right, 
+            out IType UnderlyingType, out IType Result)
+        {
+            bool lEnum = Left.GetIsEnum();
+            bool rEnum = Right.GetIsEnum();
+
+            EnumOperand lOp;
+            EnumOperand rOp;
+
+            IType enumTy;
+            if (lEnum && rEnum)
+            {
+                if (!Left.Equals(Right))
+                {
+                    Result = null;
+                    UnderlyingType = null;
+                    return false;
+                }
+
+                // Internal enum operations
+                enumTy = Left;
+                UnderlyingType = GetUnderlyingType(Left);
+                lOp = EnumOperand.EnumType;
+                rOp = EnumOperand.EnumType;
+            }
+            else if (lEnum)
+            {
+                enumTy = Left;
+                UnderlyingType = GetUnderlyingType(Left);
+                lOp = EnumOperand.EnumType;
+                rOp = EnumOperand.UnderlyingType;
+            }
+            else if (rEnum)
+            {
+                enumTy = Right;
+                UnderlyingType = GetUnderlyingType(Right);
+                lOp = EnumOperand.UnderlyingType;
+                rOp = EnumOperand.EnumType;
+            }
+            else
+            {
+                Result = null;
+                UnderlyingType = null;
+                return false;
+            }
+
+            EnumOperand resultOp;
+            if (enumOpTypes.TryGetValue(Tuple.Create(Op, lOp, rOp), out resultOp))
+            {
+                switch (resultOp)
+                {
+                    case EnumOperand.Boolean:
+                        Result = PrimitiveTypes.Boolean;
+                        break;
+                    case EnumOperand.EnumType:
+                        Result = enumTy;
+                        break;
+                    case EnumOperand.UnderlyingType:
+                    default:
+                        Result = UnderlyingType;
+                        break;
+                }
+                return true;
+            }
+            else
+            {
+                Result = null;
+                UnderlyingType = null;
+                return false;
+            }
+        }
 
 		// Overload resolution for X * / - % < > <= >= Y
 		// null indicates an error
@@ -991,6 +1077,26 @@ namespace Flame.Ecs.Semantics
 			{ Operator.Or, logicalTypes },
 			{ Operator.Xor, logicalTypes }
 		};
+
+        private static readonly Dictionary<Tuple<Operator, EnumOperand, EnumOperand>, EnumOperand> enumOpTypes = 
+            new Dictionary<Tuple<Operator, EnumOperand, EnumOperand>, EnumOperand>()
+        {
+            { Tuple.Create(Operator.Add, EnumOperand.EnumType, EnumOperand.UnderlyingType), EnumOperand.EnumType },
+            { Tuple.Create(Operator.Add, EnumOperand.UnderlyingType, EnumOperand.EnumType), EnumOperand.EnumType },
+            { Tuple.Create(Operator.Subtract, EnumOperand.EnumType, EnumOperand.UnderlyingType), EnumOperand.EnumType },
+            { Tuple.Create(Operator.Subtract, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.UnderlyingType },
+
+            { Tuple.Create(Operator.And, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.EnumType },
+            { Tuple.Create(Operator.Or, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.EnumType },
+            { Tuple.Create(Operator.Xor, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.EnumType },
+
+            { Tuple.Create(Operator.CheckEquality, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+            { Tuple.Create(Operator.CheckInequality, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+            { Tuple.Create(Operator.CheckLessThan, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+            { Tuple.Create(Operator.CheckGreaterThan, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+            { Tuple.Create(Operator.CheckLessThanOrEqual, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+            { Tuple.Create(Operator.CheckGreaterThanOrEqual, EnumOperand.EnumType, EnumOperand.EnumType), EnumOperand.Boolean },
+        };
 	}
 }
 
