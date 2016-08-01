@@ -136,6 +136,9 @@
     <Reference Include="Flame.DSProject">
       <HintPath>..\packages\Flame.Front.0.8.1\lib\net45\Flame.DSProject.dll</HintPath>
     </Reference>
+    <Reference Include="Flame.Build.Lazy">
+      <HintPath>..\packages\Flame.Build.Lazy.0.8.1\lib\net45\Flame.Build.Lazy.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -153,10 +156,7 @@
     <Compile Include="EcsWarnings.cs" />
     <Compile Include="LocalScope.cs" />
     <Compile Include="ExpressionConverters.cs" />
-    <Compile Include="LazyDescribedType.cs" />
-    <Compile Include="LazyDescribedMethod.cs" />
     <Compile Include="TypeOrExpression.cs" />
-    <Compile Include="LazyDescribedField.cs" />
     <Compile Include="UnaryConverters.cs" />
     <Compile Include="Passes\AutoInitializationPass.cs" />
     <Compile Include="Semantics\OverloadResolution.cs" />
@@ -168,9 +168,6 @@
     <Compile Include="Semantics\EcsConversionRules.cs" />
     <Compile Include="Semantics\UnaryOperatorResolution.cs" />
     <Compile Include="Semantics\EntryPointHelpers.cs" />
-    <Compile Include="LazyDescribedProperty.cs" />
-    <Compile Include="DeferredInitializer.cs" />
-    <Compile Include="LazyDescribedAccessor.cs" />
     <Compile Include="Semantics\IndexerDelegateExpression.cs" />
     <Compile Include="GlobalMemberCache.cs" />
     <Compile Include="Semantics\AssignmentExpression.cs" />

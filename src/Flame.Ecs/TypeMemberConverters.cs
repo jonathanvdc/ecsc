@@ -2,6 +2,7 @@
 using System.Linq;
 using Loyc.Syntax;
 using Flame.Build;
+using Flame.Build.Lazy;
 using Flame.Compiler;
 using Flame.Compiler.Statements;
 using System.Collections.Generic;

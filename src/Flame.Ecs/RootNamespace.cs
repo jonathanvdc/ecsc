@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Flame.Build;
+using Flame.Build.Lazy;
 
 namespace Flame.Ecs
 {

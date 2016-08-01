@@ -149,6 +149,9 @@
     <Reference Include="Flame.DSProject">
       <HintPath>..\packages\Flame.Front.0.8.1\lib\net45\Flame.DSProject.dll</HintPath>
     </Reference>
+    <Reference Include="Flame.Build.Lazy">
+      <HintPath>..\packages\Flame.Build.Lazy.0.8.1\lib\net45\Flame.Build.Lazy.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

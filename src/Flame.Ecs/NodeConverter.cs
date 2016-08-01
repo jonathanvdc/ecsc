@@ -4,6 +4,7 @@ using System.Linq;
 using Loyc.Syntax;
 using Loyc;
 using Flame.Build;
+using Flame.Build.Lazy;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Ecs.Semantics;
