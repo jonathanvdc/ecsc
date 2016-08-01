@@ -16,5 +16,7 @@ public static class Program
         Console.WriteLine((int)Colors.Alpha);
         Console.WriteLine((int)Colors.Green);
         Console.WriteLine((int)Colors.Blue);
+        Console.WriteLine((long)Colors.Blue);
+        Console.WriteLine((double)Colors.Blue);
     }
 }
