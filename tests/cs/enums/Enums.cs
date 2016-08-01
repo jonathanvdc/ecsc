@@ -8,6 +8,14 @@ public enum Colors
     Blue
 }
 
+public enum LongColors : long
+{
+    Red = 1,
+    Alpha,
+    Green = 13,
+    Blue
+}
+
 public static class Program
 {
     public static void Main(string[] Args)
@@ -18,5 +26,12 @@ public static class Program
         Console.WriteLine((int)Colors.Blue);
         Console.WriteLine((long)Colors.Blue);
         Console.WriteLine((double)Colors.Blue);
+
+        Console.WriteLine((int)LongColors.Red);
+        Console.WriteLine((int)LongColors.Alpha);
+        Console.WriteLine((int)LongColors.Green);
+        Console.WriteLine((int)LongColors.Blue);
+        Console.WriteLine((long)LongColors.Blue);
+        Console.WriteLine((double)LongColors.Blue);
     }
 }
