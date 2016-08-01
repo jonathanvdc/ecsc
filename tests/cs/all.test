@@ -9,6 +9,7 @@ tests
     concat/Concat.test;
     const/Const.test;
     constructor/Constructor.test;
+    enums/Enums.test;
     field/Field.test;
     flow/Flow.test;
     fractal/Fractal.test;
