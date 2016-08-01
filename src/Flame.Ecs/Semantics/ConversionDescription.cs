@@ -32,6 +32,18 @@ namespace Flame.Ecs.Semantics
         ExplicitStaticCast,
 
         /// <summary>
+        /// An explicit static cast is used to perform
+        /// an enum-to-number conversion.
+        /// </summary>
+        EnumToNumberStaticCast,
+
+        /// <summary>
+        /// An explicit static cast is used to perform
+        /// an number-to-enum conversion.
+        /// </summary>
+        NumberToEnumStaticCast,
+
+        /// <summary>
         /// A dynamic cast is used to perform
         /// this conversion.
         /// </summary>
@@ -136,6 +148,8 @@ namespace Flame.Ecs.Semantics
                     case ConversionKind.DynamicCast:
                     case ConversionKind.ExplicitUserDefined:
                     case ConversionKind.ExplicitStaticCast:
+                    case ConversionKind.NumberToEnumStaticCast:
+                    case ConversionKind.EnumToNumberStaticCast:
                         return true;
                     case ConversionKind.ReinterpretCast:
                     case ConversionKind.ImplicitUserDefined:
@@ -164,6 +178,20 @@ namespace Flame.Ecs.Semantics
                 case ConversionKind.ImplicitStaticCast:
                 case ConversionKind.ExplicitStaticCast:
                     return new StaticCastExpression(Value, TargetType);
+                case ConversionKind.NumberToEnumStaticCast:
+                    // An 'enum' static cast requires two casts:
+                    // a static cast to the underlying type, 
+                    // and a reinterpret cast to or from the 'enum'
+                    // type itself.
+                    return new ReinterpretCastExpression(
+                        new StaticCastExpression(
+                            Value, TargetType.GetParent()),
+                        TargetType);
+                case ConversionKind.EnumToNumberStaticCast:
+                    return new StaticCastExpression(
+                        new ReinterpretCastExpression(
+                            Value, Value.Type.GetParent()),
+                        TargetType);
                 case ConversionKind.ReinterpretCast:
                     return new ReinterpretCastExpression(Value, TargetType);
                 case ConversionKind.ImplicitUserDefined:

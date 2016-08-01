@@ -46,7 +46,7 @@ namespace Flame.Ecs.Semantics
         /// a reference conversion.
         /// </summary>
         public bool HasReferenceConversion(IType From, IType To)
-        {            
+        {
             foreach (var conv in ClassifyConversion(From, To))
             {
                 if (conv.Kind == ConversionKind.DynamicCast)

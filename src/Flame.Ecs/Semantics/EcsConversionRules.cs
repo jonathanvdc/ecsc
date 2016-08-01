@@ -28,6 +28,28 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
+        /// Determines if the given type is a primitive number type.
+        /// </summary>
+        /// <returns><c>true</c> if the given type is a primitive number type; otherwise, <c>false</c>.</returns>
+        public static bool IsNumberPrimitive(IType Type)
+        {
+            return Type.GetIsInteger() 
+                || Type.GetIsFloatingPoint()
+                || Type.Equals(PrimitiveTypes.Char);
+        }
+
+        /// <summary>
+        /// Checks if the given type is a CLR reference type.
+        /// This excludes most primitive types.
+        /// </summary>
+        public static bool IsClrReferenceType(IType Type)
+        {
+            return Type.GetIsReferenceType()
+                && (!Type.GetIsPrimitive()
+                    || PrimitiveTypes.String.Equals(Type));
+        }
+
+        /// <summary>
         /// Classifies a conversion of the given source type to the given target type.
         /// </summary>
         public override IReadOnlyList<ConversionDescription> ClassifyConversion(
@@ -60,7 +82,23 @@ namespace Flame.Ecs.Semantics
                 }
             }
 
-            if (SourceType.Is(TargetType))
+            if (SourceType.GetIsEnum() && IsNumberPrimitive(TargetType))
+            {
+                // enum-to-integer
+                return new ConversionDescription[]
+                {
+                    new ConversionDescription(ConversionKind.EnumToNumberStaticCast)
+                };
+            }
+            else if (TargetType.GetIsEnum() && IsNumberPrimitive(SourceType))
+            {
+                // integer-to-enum
+                return new ConversionDescription[]
+                {
+                    new ConversionDescription(ConversionKind.NumberToEnumStaticCast)
+                };
+            }
+            else if (SourceType.Is(TargetType))
             {
                 // Upcast. 
                 return new ConversionDescription[]
@@ -68,7 +106,7 @@ namespace Flame.Ecs.Semantics
                     new ConversionDescription(ConversionKind.ReinterpretCast) 
                 };
             }
-            else if (TargetType.GetIsReferenceType())
+            else if (IsClrReferenceType(SourceType))
             {
                 // Downcast. 
                 return new ConversionDescription[]
