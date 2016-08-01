@@ -182,7 +182,7 @@ namespace Flame.Ecs
         /// <summary>
         /// Creates a function scope for the given method.
         /// </summary>
-        private static FunctionScope CreateFunctionScope(
+        public static FunctionScope CreateFunctionScope(
             IMethod Method, GlobalScope Scope)
         {
             var thisTy = ThisVariable.GetThisType(Method.DeclaringType);
@@ -204,7 +204,7 @@ namespace Flame.Ecs
         /// Creates a function scope for the given type member,
         /// which does not take any parameters.
         /// </summary>
-        private static FunctionScope CreateTypeMemberScope(
+        public static FunctionScope CreateTypeMemberScope(
             ITypeMember Member, IType ReturnType, GlobalScope Scope)
         {
             return new FunctionScope(

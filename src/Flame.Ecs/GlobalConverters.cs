@@ -2,6 +2,7 @@
 using Loyc.Syntax;
 using Flame.Build;
 using Flame.Compiler;
+using Flame.Compiler.Expressions;
 
 namespace Flame.Ecs
 {
@@ -238,6 +239,163 @@ namespace Flame.Ecs
 		{
 			return ConvertTypeDefinition(PrimitiveAttributes.Instance.ValueTypeAttribute, Node, Namespace, Scope, Converter);
 		}
+
+        /// <summary>
+        /// Converts an enum type definition, 
+        /// encoded as an '#enum' node.
+        /// </summary>
+        public static GlobalScope ConvertEnumDefinition(
+            LNode Node, IMutableNamespace Namespace, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+                return Scope;
+
+            // Convert the type's name.
+            var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
+            if (name.Item1.TypeParameterCount > 0)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "'", "enum", "' types can't have type parameters."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+            }
+            Namespace.DefineType(name.Item1, descTy =>
+            {
+                // Analyze the attribute list.
+                var convAttrs = Converter.ConvertAttributeListWithAccess(
+                    Node.Attrs, AccessModifier.Assembly, node => false, Scope);
+                descTy.AddAttribute(PrimitiveAttributes.Instance.EnumAttribute);
+                descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                foreach (var item in convAttrs)
+                {
+                    descTy.AddAttribute(item);
+                }
+
+                // Take care of the underlying type.
+                IType underlyingType = PrimitiveTypes.Int32;
+                if (Node.Args[1].ArgCount > 0)
+                {
+                    if (Node.Args[1].ArgCount > 1)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "at most one underlying type may be " +
+                                "specified for an '", "enum", "' type."),
+                            NodeHelpers.ToSourceLocation(Node.Args[1].Args[1].Range)));
+                    }
+
+                    var item = Node.Args[1].Args[0];
+                    var innerTy = Converter.ConvertType(item, Scope);
+                    if (innerTy == null)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "type resolution",
+                            NodeHelpers.HighlightEven(
+                                "could not resolve underlying type type '", 
+                                item.ToString(), "' for '", 
+                                name.Item1.ToString(), "'."),
+                            NodeHelpers.ToSourceLocation(item.Range)));
+                    }
+                    else
+                    {
+                        if (!innerTy.GetIsInteger())
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "invalid underlying type",
+                                NodeHelpers.HighlightEven(
+                                    "the underlying type for an '", "enum", 
+                                    "' must be a primitive integer type."),
+                                NodeHelpers.ToSourceLocation(item.Range)));
+                        }
+                        underlyingType = innerTy;
+                    }
+                }
+                descTy.AddBaseType(underlyingType);
+
+                LazyDescribedField pred = null;
+                foreach (var item in Node.Args[2].Args)
+                {
+                    // Convert the enum's fields.
+                    var field = ConvertEnumField(
+                        item, descTy, underlyingType, Scope, 
+                        Converter, pred);
+                    
+                    if (field != null)
+                    {
+                        descTy.AddField(field);
+                        pred = field;
+                    }
+                }
+            });
+
+            return Scope;
+        }
+
+        public static LazyDescribedField ConvertEnumField(
+            LNode Node, IType DeclaringType, IType UnderlyingType, 
+            GlobalScope Scope, NodeConverter Converter,
+            LazyDescribedField Predecessor)
+        {
+            var decomp = NodeHelpers.DecomposeAssignOrId(Node, Scope.Log);
+            if (decomp == null)
+                return null;
+
+            var valNode = decomp.Item2;
+            return new LazyDescribedField(
+                new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
+                fieldDef =>
+            {
+                // Set the field's type.
+                fieldDef.FieldType = DeclaringType;
+                fieldDef.IsStatic = true;
+                fieldDef.AddAttribute(PrimitiveAttributes.Instance.ConstantAttribute);
+
+                // TODO: handle attributes, if any
+
+                IExpression valExpr = null;
+                if (decomp.Item2 != null)
+                {
+                    valExpr = Converter.ConvertExpression(
+                        valNode, new LocalScope(
+                            TypeMemberConverters.CreateTypeMemberScope(
+                                fieldDef, UnderlyingType, Scope)), 
+                        UnderlyingType);
+
+                    // Try to evaluate the expression
+                    if (valExpr.Evaluate() == null)
+                    {
+                        // Don't use it if it's not a compile-time constant.
+                        Scope.Log.LogError(new LogEntry(
+                            "invalid value",
+                            NodeHelpers.HighlightEven(
+                                "this '", "enum", 
+                                "' literal value was not a compile-time constant."),
+                            NodeHelpers.ToSourceLocation(decomp.Item2.Range)));
+                        valExpr = null;
+                    }
+                }
+
+                if (valExpr != null)
+                {
+                    fieldDef.Value = valExpr;
+                }
+                else if (Predecessor != null)
+                {
+                    fieldDef.Value = new AddExpression(
+                        Predecessor.Value, 
+                        new StaticCastExpression(
+                            new Int32Expression(1), 
+                            UnderlyingType)).Optimize();
+                }
+                else
+                {
+                    fieldDef.Value = new DefaultValueExpression(UnderlyingType).Optimize();
+                }
+            });
+        }
 	}
 }
 
