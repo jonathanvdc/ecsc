@@ -31,18 +31,33 @@ public static class Program
 
         return i;
     }
-    
+
     public static int CountBreakContinue(int N)
     {
         int i = 0;
         while (true)
         {
             if (i >= N)
-            break;
+                break;
 
             i++;
             continue;
         }
+
+        return i;
+    }
+
+    public static int DoCountBreakContinue(int N)
+    {
+        int i = 0;
+        do
+        {
+            if (i >= N)
+                break;
+
+            i++;
+            continue;
+        } while (i < N);
 
         return i;
     }
@@ -63,6 +78,7 @@ public static class Program
         Console.WriteLine(If(true, 3, 4));
         Console.WriteLine(Count(17));
         Console.WriteLine(CountBreakContinue(17));
+        Console.WriteLine(DoCountBreakContinue(17));
         Console.WriteLine(Sum(17));
     }
 }
