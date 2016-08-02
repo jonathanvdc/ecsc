@@ -473,6 +473,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.For, ExpressionConverters.ConvertForExpression);
                 result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
                 result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
+                result.AddExprConverter(CodeSymbols.DoWhile, ExpressionConverters.ConvertDoWhileExpression);
 
 				// Expressions
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);

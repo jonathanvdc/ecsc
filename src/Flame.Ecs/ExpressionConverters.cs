@@ -1859,6 +1859,24 @@ namespace Flame.Ecs
 		}
 
         /// <summary>
+        /// Converts a do-while-statement node (type #doWhile),
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertDoWhileExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var tag = new UniqueTag("do-while");
+
+            var body = Converter.ConvertScopedStatement(Node.Args[0], new FlowScope(Scope, tag));
+            var cond = Converter.ConvertExpression(Node.Args[1], Scope, PrimitiveTypes.Boolean);
+            
+            return ToExpression(new DoWhileStatement(tag, body, cond));
+        }
+
+        /// <summary>
         /// Converts a for-statement node (type #for), 
         /// and wraps it in a void expression.
         /// </summary>
