@@ -746,9 +746,9 @@ namespace Flame.Ecs
                     if (decomp.Item2 != null)
                     {
                         fieldDef.Value = Converter.ConvertExpression(
-                        valNode, new LocalScope(
-                            CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
-                            fieldDef.FieldType);
+                            valNode, new LocalScope(
+                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                                fieldDef.FieldType);
                     }
                 });
 
@@ -766,7 +766,8 @@ namespace Flame.Ecs
             LNode Node, LazyDescribedType DeclaringType,
             GlobalScope Scope, NodeConverter Converter)
         {
-            if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+            if (!NodeHelpers.CheckMinArity(Node, 4, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 5, Scope.Log))
                 return Scope;
 
             bool isIndexer = Node.Args[2].ArgCount > 0;
@@ -801,6 +802,15 @@ namespace Flame.Ecs
                     fieldDef.AddAttribute(new AccessAttribute(AccessModifier.Private));
                     fieldDef.AddAttribute(PrimitiveAttributes.Instance.HiddenAttribute);
                     fieldDef.AddAttribute(locAttr);
+
+                    if (Node.ArgCount > 4)
+                    {
+                        // Optionally initialize the field
+                        fieldDef.Value = Converter.ConvertExpression(
+                            Node.Args[4], new LocalScope(
+                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                            fieldDef.FieldType);
+                    }
                 });
                 // Add the backing field to the declaring type.
                 DeclaringType.AddField(backingField);
