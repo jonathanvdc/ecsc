@@ -19,6 +19,7 @@ tests
     internal/Internal.test;
     local-decl/LocalDecl.test;
     overrides/Overrides.test;
+    prop-init/PropInit.test;
     properties/Properties.test;
     ref-out/RefOut.test;
     return/Return.test;
