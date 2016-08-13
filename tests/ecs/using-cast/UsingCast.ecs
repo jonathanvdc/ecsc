@@ -19,7 +19,6 @@ public static class Program
         B x = default(B);
         Console.WriteLine(x using A);
         Console.WriteLine(x using B);
-        Console.WriteLine(2.5 using int);
         Console.WriteLine(2 using double);
     }
 }

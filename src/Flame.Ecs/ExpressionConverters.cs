@@ -2148,11 +2148,11 @@ namespace Flame.Ecs
         public static IExpression ConvertUsingCastExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            // A using-cast is like a regular cast, except that
+            // A using-cast has the same meaning as an implicit cast.
+            // Syntax:
             // 
             //      x using T
             //
-            // will only compile if it is guaranteed to succeed.
 
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
                 return VoidExpression.Instance;
@@ -2171,7 +2171,7 @@ namespace Flame.Ecs
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
 
-            return Scope.Function.Global.ConvertStatic(
+            return Scope.Function.Global.ConvertImplicit(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
         }
 	}
