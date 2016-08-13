@@ -1,7 +1,7 @@
 language: csharp
 solution: src/ecsc.sln
 install:
-  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.0/compare-test.zip > compare-test.zip
+  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.1/compare-test.zip > compare-test.zip
   - mkdir -p bin/compare-test
   - unzip compare-test.zip -d bin/compare-test
   - nuget restore src/ecsc.sln
@@ -9,4 +9,4 @@ script:
   # Build ecsc
   - xbuild /p:Configuration=Release src/ecsc.sln
   # Run the tests
-  - mono bin/compare-test/compare-test.exe all-tests-mono.test
+  - mono bin/compare-test/compare-test.exe all-tests-mono.test -j

@@ -1,5 +1,5 @@
 install:
-  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.0/compare-test.zip > compare-test.zip
+  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.1/compare-test.zip > compare-test.zip
   - mkdir bin
   - 7z x compare-test.zip -obin\compare-test
   - nuget restore src\ecsc.sln
@@ -19,4 +19,4 @@ artifacts:
 
 test_script:
   # Run the tests
-  - bin\compare-test\compare-test.exe all-tests-windows.test
+  - bin\compare-test\compare-test.exe all-tests-windows.test -j
