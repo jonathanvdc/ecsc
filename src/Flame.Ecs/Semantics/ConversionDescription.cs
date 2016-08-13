@@ -77,6 +77,7 @@ namespace Flame.Ecs.Semantics
             : this(Kind, null)
         {
         }
+
         public ConversionDescription(ConversionKind Kind, IMethod ConversionMethod)
         {
             this.Kind = Kind;
@@ -128,10 +129,10 @@ namespace Flame.Ecs.Semantics
         /// <value><c>true</c> if this instance is reference; otherwise, <c>false</c>.</value>
         public bool IsReference
         {
-            get 
+            get
             { 
-                return Kind == ConversionKind.DynamicCast 
-                    || Kind == ConversionKind.ReinterpretCast; 
+                return Kind == ConversionKind.DynamicCast
+                || Kind == ConversionKind.ReinterpretCast; 
             }
         }
 

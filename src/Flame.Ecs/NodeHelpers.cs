@@ -10,52 +10,52 @@ using Flame.Build;
 
 namespace Flame.Ecs
 {
-	public static class NodeHelpers
-	{
-		/// <summary>
-		/// Converts the given Loyc `SourceRange` to a Flame `SourceLocation`.
-		/// </summary>
-		public static SourceLocation ToSourceLocation(SourceRange Range)
-		{
-			var doc = new LoycSourceDocument(Range.Source);
-			return new SourceLocation(doc, Range.StartIndex, Range.Length);
-		}
+    public static class NodeHelpers
+    {
+        /// <summary>
+        /// Converts the given Loyc `SourceRange` to a Flame `SourceLocation`.
+        /// </summary>
+        public static SourceLocation ToSourceLocation(SourceRange Range)
+        {
+            var doc = new LoycSourceDocument(Range.Source);
+            return new SourceLocation(doc, Range.StartIndex, Range.Length);
+        }
 
-		/// <summary>
-		/// Converts the given node to a qualified name.
-		/// </summary>
-		public static QualifiedName ToQualifiedName(LNode Node)
-		{
-			var name = Node.Name;
-			if (Node.IsCall && (name == CodeSymbols.Dot || name == CodeSymbols.ColonColon))
+        /// <summary>
+        /// Converts the given node to a qualified name.
+        /// </summary>
+        public static QualifiedName ToQualifiedName(LNode Node)
+        {
+            var name = Node.Name;
+            if (Node.IsCall && (name == CodeSymbols.Dot || name == CodeSymbols.ColonColon))
             {
-				var left = ToQualifiedName(Node.Args[0]);
-				var right = ToQualifiedName(Node.Args[1]);
+                var left = ToQualifiedName(Node.Args[0]);
+                var right = ToQualifiedName(Node.Args[1]);
                 return left.IsEmpty || right.IsEmpty 
                     ? default(QualifiedName) 
                     : right.Qualify(left);
-			}
-			else if (Node.IsId)
-				return new QualifiedName(name.Name);
-			else
+            }
+            else if (Node.IsId)
+                return new QualifiedName(name.Name);
+            else
                 return default(QualifiedName);
-		}
+        }
 
-		/// <summary>
-		/// Produces an array of markup nodes, where the 
-		/// even arguments are highlighted.
-		/// </summary>
-		public static MarkupNode[] HighlightEven(params string[] Text)
-		{
-			var results = new MarkupNode[Text.Length];
-			for (int i = 0; i < Text.Length; i++)
-			{
-				results[i] = new MarkupNode(
-					i % 2 == 0 ? NodeConstants.TextNodeType : NodeConstants.BrightNodeType,
-					Text[i]);
-			}
-			return results;
-		}
+        /// <summary>
+        /// Produces an array of markup nodes, where the 
+        /// even arguments are highlighted.
+        /// </summary>
+        public static MarkupNode[] HighlightEven(params string[] Text)
+        {
+            var results = new MarkupNode[Text.Length];
+            for (int i = 0; i < Text.Length; i++)
+            {
+                results[i] = new MarkupNode(
+                    i % 2 == 0 ? NodeConstants.TextNodeType : NodeConstants.BrightNodeType,
+                    Text[i]);
+            }
+            return results;
+        }
 
         /// <summary>
         /// Checks that the given node is an id node.
@@ -99,47 +99,47 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Checks the given node's arity.
-		/// </summary>
-		public static bool CheckArity(LNode Node, int Arity, ICompilerLog Log)
-		{
-			if (Node.ArgCount != Arity)
-			{
-				Log.LogError(new LogEntry(
-					"unexpected node arity", 
-					HighlightEven(
-						"syntax node '", Node.Name.Name, "' had an argument count of '", 
-						Node.ArgCount.ToString(), "', expected: '", Arity.ToString(), "'."),
-					ToSourceLocation(Node.Range)));
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
+        /// <summary>
+        /// Checks the given node's arity.
+        /// </summary>
+        public static bool CheckArity(LNode Node, int Arity, ICompilerLog Log)
+        {
+            if (Node.ArgCount != Arity)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node arity", 
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        Node.ArgCount.ToString(), "', expected: '", Arity.ToString(), "'."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 
-		/// <summary>
-		/// Checks the given node's minimal arity.
-		/// </summary>
-		public static bool CheckMinArity(LNode Node, int MinArity, ICompilerLog Log)
-		{
-			if (Node.ArgCount < MinArity)
-			{
-				Log.LogError(new LogEntry(
-					"unexpected node arity", 
-					HighlightEven(
-						"syntax node '", Node.Name.Name, "' had an argument count of '", 
-						Node.ArgCount.ToString(), "'. Expected: at least '", MinArity.ToString(), "'."),
-					ToSourceLocation(Node.Range)));
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
+        /// <summary>
+        /// Checks the given node's minimal arity.
+        /// </summary>
+        public static bool CheckMinArity(LNode Node, int MinArity, ICompilerLog Log)
+        {
+            if (Node.ArgCount < MinArity)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node arity", 
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        Node.ArgCount.ToString(), "'. Expected: at least '", MinArity.ToString(), "'."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 
         /// <summary>
         /// Checks the given node's maximal arity.
@@ -209,26 +209,26 @@ namespace Flame.Ecs
             ConvertAttributes(Node.Attrs, Log, Converter);
         }
 
-		public static IGenericParameter ToGenericParameter(
-			LNode Node, IGenericMember Parent, GlobalScope Scope)
-		{
-			if (!Node.IsId)
-			{
-				Scope.Log.LogError(new LogEntry(
-					"syntax error",
-					"generic parameters must defined by a simple identifier.",
-					ToSourceLocation(Node.Range)));
-				return null;
-			}
+        public static IGenericParameter ToGenericParameter(
+            LNode Node, IGenericMember Parent, GlobalScope Scope)
+        {
+            if (!Node.IsId)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "generic parameters must defined by a simple identifier.",
+                    ToSourceLocation(Node.Range)));
+                return null;
+            }
 
-			var name = Node.Name.Name;
-			return new DescribedGenericParameter(name, Parent);
-		}
+            var name = Node.Name.Name;
+            return new DescribedGenericParameter(name, Parent);
+        }
 
-		public static Tuple<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>> ToUnqualifiedName(
-			LNode Node, GlobalScope Scope)
-		{
-			var name = Node.Name;
+        public static Tuple<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>> ToUnqualifiedName(
+            LNode Node, GlobalScope Scope)
+        {
+            var name = Node.Name;
             if (name == CodeSymbols.Of)
             {
                 var innerResults = ToUnqualifiedName(Node.Args[0], Scope);
@@ -260,7 +260,7 @@ namespace Flame.Ecs
             }
             return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
                 new SimpleName(name.Name), _ => Enumerable.Empty<IGenericParameter>());
-		}
+        }
 
         public static SimpleName ToSimpleName(LNode Node, GlobalScope Scope)
         {
@@ -314,7 +314,7 @@ namespace Flame.Ecs
         {
             if (AssignOrId.Calls(CodeSymbols.Assign))
             {
-                if (!NodeHelpers.CheckArity(AssignOrId, 2, Log) 
+                if (!NodeHelpers.CheckArity(AssignOrId, 2, Log)
                     || !CheckValidIdentifier(AssignOrId.Args[0], Log))
                     return null;
                 else
@@ -337,62 +337,62 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Partition the specified sequence based on 
-		/// the given predicate.
-		/// </summary>
-		public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(
-			IEnumerable<T> Sequence, Func<T, bool> Predicate)
-		{
-			var first = new List<T>();
-			var second = new List<T>();
-			foreach (var item in Sequence)
-			{
-				if (Predicate(item))
-					first.Add(item);
-				else
-					second.Add(item);
-			}
-			return Tuple.Create<IEnumerable<T>, IEnumerable<T>>(first, second);
-		}
+        /// <summary>
+        /// Partition the specified sequence based on 
+        /// the given predicate.
+        /// </summary>
+        public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(
+            IEnumerable<T> Sequence, Func<T, bool> Predicate)
+        {
+            var first = new List<T>();
+            var second = new List<T>();
+            foreach (var item in Sequence)
+            {
+                if (Predicate(item))
+                    first.Add(item);
+                else
+                    second.Add(item);
+            }
+            return Tuple.Create<IEnumerable<T>, IEnumerable<T>>(first, second);
+        }
 
-		/// <summary>
-		/// Determines if the given symbol is an access modifier attribute.
-		/// </summary>
-		public static bool IsAccessModifier(Symbol S)
-		{
-			return accessModifiers.Contains(S);
-		}
+        /// <summary>
+        /// Determines if the given symbol is an access modifier attribute.
+        /// </summary>
+        public static bool IsAccessModifier(Symbol S)
+        {
+            return accessModifiers.Contains(S);
+        }
 
-		/// <summary>
-		/// Tries to find an access modifier that matches the given
-		/// set of access modifier symbols.
-		/// </summary>
-		public static AccessModifier? ToAccessModifier(HashSet<Symbol> Symbols)
-		{
-			AccessModifier result;
-			if (accModMap.TryGetValue(Symbols, out result))
-				return result;
-			else
-				return null;
-		}
+        /// <summary>
+        /// Tries to find an access modifier that matches the given
+        /// set of access modifier symbols.
+        /// </summary>
+        public static AccessModifier? ToAccessModifier(HashSet<Symbol> Symbols)
+        {
+            AccessModifier result;
+            if (accModMap.TryGetValue(Symbols, out result))
+                return result;
+            else
+                return null;
+        }
 
-		private static readonly HashSet<Symbol> accessModifiers = new HashSet<Symbol>()
-		{
-			CodeSymbols.Private, CodeSymbols.Protected,
-			CodeSymbols.Internal, CodeSymbols.Public,
-			CodeSymbols.ProtectedIn, CodeSymbols.ProtectedIn,
-			CodeSymbols.FilePrivate
-		};
+        private static readonly HashSet<Symbol> accessModifiers = new HashSet<Symbol>()
+        {
+            CodeSymbols.Private, CodeSymbols.Protected,
+            CodeSymbols.Internal, CodeSymbols.Public,
+            CodeSymbols.ProtectedIn, CodeSymbols.ProtectedIn,
+            CodeSymbols.FilePrivate
+        };
 
-		private static readonly IReadOnlyDictionary<HashSet<Symbol>, AccessModifier> accModMap = new Dictionary<HashSet<Symbol>, AccessModifier>(HashSet<Symbol>.CreateSetComparer())
-		{
-			{ new HashSet<Symbol>() { CodeSymbols.Private }, AccessModifier.Private },
-			{ new HashSet<Symbol>() { CodeSymbols.Protected }, AccessModifier.Protected },
-			{ new HashSet<Symbol>() { CodeSymbols.Internal }, AccessModifier.Assembly },
-			{ new HashSet<Symbol>() { CodeSymbols.Public }, AccessModifier.Public },
-			{ new HashSet<Symbol>() { CodeSymbols.Protected, CodeSymbols.Internal }, AccessModifier.ProtectedOrAssembly },
-		};
-	}
+        private static readonly IReadOnlyDictionary<HashSet<Symbol>, AccessModifier> accModMap = new Dictionary<HashSet<Symbol>, AccessModifier>(HashSet<Symbol>.CreateSetComparer())
+        {
+            { new HashSet<Symbol>() { CodeSymbols.Private }, AccessModifier.Private },
+            { new HashSet<Symbol>() { CodeSymbols.Protected }, AccessModifier.Protected },
+            { new HashSet<Symbol>() { CodeSymbols.Internal }, AccessModifier.Assembly },
+            { new HashSet<Symbol>() { CodeSymbols.Public }, AccessModifier.Public },
+            { new HashSet<Symbol>() { CodeSymbols.Protected, CodeSymbols.Internal }, AccessModifier.ProtectedOrAssembly },
+        };
+    }
 }
 

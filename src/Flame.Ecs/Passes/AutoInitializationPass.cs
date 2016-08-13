@@ -20,7 +20,9 @@ namespace Flame.Ecs.Passes
     /// </summary>
     public class AutoInitializationPass : IPass<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>
     {
-        private AutoInitializationPass() { }
+        private AutoInitializationPass()
+        {
+        }
 
         public static readonly AutoInitializationPass Instance = new AutoInitializationPass();
 
@@ -37,12 +39,12 @@ namespace Flame.Ecs.Passes
                 if (StructAutoInitializationWarning.UseWarning(Log.Options) && DeclaringType.GetIsValueType())
                 {
                     var entry = new LogEntry(
-                        "Value type auto-initialization",
-                        StructAutoInitializationWarning.CreateMessage(
-                            "A value type's constructed instance ('this') was auto-initialized, because the constructor did not manually initialize it" +
-                            (Visitor.CurrentFlow.Max.Value == 0 ? ". " : " in every control flow path. ") +
-                            "Consider rewriting the constructor to initialize the constructed instance with a 'this = default(...);' statement. "),
-                        DeclaringMethod.GetSourceLocation());
+                                    "Value type auto-initialization",
+                                    StructAutoInitializationWarning.CreateMessage(
+                                        "A value type's constructed instance ('this') was auto-initialized, because the constructor did not manually initialize it" +
+                                        (Visitor.CurrentFlow.Max.Value == 0 ? ". " : " in every control flow path. ") +
+                                        "Consider rewriting the constructor to initialize the constructed instance with a 'this = default(...);' statement. "),
+                                    DeclaringMethod.GetSourceLocation());
                     Log.LogWarning(entry);
                 }
 
@@ -55,12 +57,12 @@ namespace Flame.Ecs.Passes
                 if (parameterlessCtor == null)
                 {
                     var entry = new LogEntry(
-                        "missing parameterless constructor",
-                        (Visitor.CurrentFlow.Max == 0 ? 
+                                    "missing parameterless constructor",
+                                    (Visitor.CurrentFlow.Max == 0 ? 
                             "a constructor that did not manually initialize the constructed instance " : 
                             "A constructor that contains some control flow paths that may not manually initialize the constructed instance ") +
-                        "could not auto-initialize said instance, because the base type does not have a parameterless constructor.",
-                        DeclaringMethod.GetSourceLocation());
+                                    "could not auto-initialize said instance, because the base type does not have a parameterless constructor.",
+                                    DeclaringMethod.GetSourceLocation());
                     entry = new LogEntry(entry.Name, RedefinitionHelpers.Instance.AppendDiagnosticsRemark(entry.Contents, "Base type: ", baseType.GetSourceLocation()));
                     Log.LogError(InitializationCountPass.AppendInitializationLocations(entry, Visitor));
                     return EmptyStatement.Instance;
@@ -94,11 +96,11 @@ namespace Flame.Ecs.Passes
                 if (Visitor.CurrentFlow.Max > 0 && InitializationCountPass.MaybeMultipleInitializationWarning.UseWarning(Log.Options))
                 {
                     var msg = new LogEntry(
-                        "instance possibly initialized more than once",
-                        InitializationCountPass.MaybeMultipleInitializationWarning.CreateMessage(
-                            "the constructed instance may be initialized more than once in some control flow paths, " +
-                            "because an auto-initialization statement was inserted. "),
-                        Target.GetSourceLocation());
+                                  "instance possibly initialized more than once",
+                                  InitializationCountPass.MaybeMultipleInitializationWarning.CreateMessage(
+                                      "the constructed instance may be initialized more than once in some control flow paths, " +
+                                      "because an auto-initialization statement was inserted. "),
+                                  Target.GetSourceLocation());
                     Log.LogWarning(InitializationCountPass.AppendInitializationLocations(msg, Visitor));
                 }
 
@@ -115,7 +117,7 @@ namespace Flame.Ecs.Passes
         public IStatement Apply(Tuple<IStatement, IMethod, ICompilerLog> Value)
         {
             var method = Value.Item2;
-            if (method.IsConstructor && !method.IsStatic 
+            if (method.IsConstructor && !method.IsStatic
                 && (method.DeclaringType.GetIsValueType() || method.DeclaringType.GetParent() != null))
             {
                 var visitor = InitializationCountHelpers.CreateVisitor();

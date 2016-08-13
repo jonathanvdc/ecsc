@@ -17,8 +17,8 @@ using Flame.Collections;
 
 namespace Flame.Ecs
 {
-	public static class ExpressionConverters
-	{
+    public static class ExpressionConverters
+    {
         /// <summary>
         /// Retrieves the 'this' variable from the given 
         /// local scope. 
@@ -28,15 +28,15 @@ namespace Flame.Ecs
             return Scope.GetVariable(CodeSymbols.This.Name);
         }
 
-		private static IExpression LookupUnqualifiedNameExpression(
+        private static IExpression LookupUnqualifiedNameExpression(
             string Name, ILocalScope Scope)
-		{
+        {
             // Early-out for local variables.
-			var local = Scope.GetVariable(Name);
-			if (local != null)
-			{
-				return local.CreateGetExpression();
-			}
+            var local = Scope.GetVariable(Name);
+            if (local != null)
+            {
+                return local.CreateGetExpression();
+            }
 
             // Create a set of potential results.
             var exprSet = new HashSet<IExpression>();
@@ -66,7 +66,7 @@ namespace Flame.Ecs
             return exprSet.Count > 0 
                 ? IntersectionExpression.Create(exprSet)
                 : null;
-		}
+        }
 
         /// <summary>
         /// Creates a member-access expression for the given
@@ -146,14 +146,14 @@ namespace Flame.Ecs
                 : null;
         }
 
-		private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
-		{
-			var ty = Scope.Function.Global.Binder.BindType(Name);
-			if (ty == null)
-				return Enumerable.Empty<IType>();
-			else
-				return new IType[] { ty };
-		}
+        private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
+        {
+            var ty = Scope.Function.Global.Binder.BindType(Name);
+            if (ty == null)
+                return Enumerable.Empty<IType>();
+            else
+                return new IType[] { ty };
+        }
 
         private static IEnumerable<IType> LookupUnqualifiedNameTypeInstances(
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
@@ -170,14 +170,14 @@ namespace Flame.Ecs
             return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
         }
 
-		public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
-		{
-			var qualName = new QualifiedName(Name);
-			return new TypeOrExpression(
-				LookupUnqualifiedNameExpression(Name, Scope),
-				LookupUnqualifiedNameTypes(qualName, Scope),
-				qualName);
-		}
+        public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+        {
+            var qualName = new QualifiedName(Name);
+            return new TypeOrExpression(
+                LookupUnqualifiedNameExpression(Name, Scope),
+                LookupUnqualifiedNameTypes(qualName, Scope),
+                qualName);
+        }
 
         public static TypeOrExpression LookupUnqualifiedNameInstance(
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
@@ -189,8 +189,8 @@ namespace Flame.Ecs
                 default(QualifiedName));
         }
 
-		public static IStatement ToStatement(IExpression Expression)
-		{
+        public static IStatement ToStatement(IExpression Expression)
+        {
             if (Expression is AssignmentExpression)
             {
                 return ((AssignmentExpression)Expression).ToStatement();
@@ -215,132 +215,132 @@ namespace Flame.Ecs
             {
                 return new ExpressionStatement(Expression);
             }
-		}
+        }
 
-		public static IExpression ToExpression(IStatement Statement)
-		{
-			return new InitializedExpression(Statement, VoidExpression.Instance);
-		}
+        public static IExpression ToExpression(IStatement Statement)
+        {
+            return new InitializedExpression(Statement, VoidExpression.Instance);
+        }
 
-		public static IStatement ConvertStatement(this NodeConverter Converter, LNode Node, LocalScope Scope)
-		{
-			return ToStatement(Converter.ConvertExpression(Node, Scope));
-		}
+        public static IStatement ConvertStatement(this NodeConverter Converter, LNode Node, LocalScope Scope)
+        {
+            return ToStatement(Converter.ConvertExpression(Node, Scope));
+        }
 
         public static IStatement ConvertStatementBlock(this NodeConverter Converter, IEnumerable<LNode> Nodes, LocalScope Scope)
         {
             return new BlockStatement(Nodes.Select(n => Converter.ConvertStatement(n, Scope)).ToArray());
         }
 
-		public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, ILocalScope Scope)
-		{
-			var childScope = new LocalScope(Scope);
+        public static IStatement ConvertScopedStatement(this NodeConverter Converter, LNode Node, ILocalScope Scope)
+        {
+            var childScope = new LocalScope(Scope);
             var stmt = Converter.ConvertStatement(Node, childScope);
-			return new BlockStatement(new IStatement[] { stmt, childScope.Release() });
-		}
+            return new BlockStatement(new IStatement[] { stmt, childScope.Release() });
+        }
 
-		public static IExpression ConvertScopedExpression(this NodeConverter Converter, LNode Node, ILocalScope Scope)
-		{
-			var childScope = new LocalScope(Scope);
+        public static IExpression ConvertScopedExpression(this NodeConverter Converter, LNode Node, ILocalScope Scope)
+        {
+            var childScope = new LocalScope(Scope);
             var expr = Converter.ConvertExpression(Node, childScope);
-			return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
-		}
+            return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
+        }
 
-		public static IExpression ConvertExpression(
-			this NodeConverter Converter, LNode Node, LocalScope Scope,
-			IType Type)
-		{
-			return Scope.Function.Global.ConvertImplicit(
-				Converter.ConvertExpression(Node, Scope), 
-				Type, NodeHelpers.ToSourceLocation(Node.Range));
-		}
+        public static IExpression ConvertExpression(
+            this NodeConverter Converter, LNode Node, LocalScope Scope,
+            IType Type)
+        {
+            return Scope.Function.Global.ConvertImplicit(
+                Converter.ConvertExpression(Node, Scope), 
+                Type, NodeHelpers.ToSourceLocation(Node.Range));
+        }
 
-		/// <summary>
-		/// Returns the variable whose address is loaded by the
-		/// given expression, if the expression is a get-variable
-		/// expression. Otherwise, null.
-		/// </summary>
-		public static IVariable AsVariable(IExpression Expression)
-		{
+        /// <summary>
+        /// Returns the variable whose address is loaded by the
+        /// given expression, if the expression is a get-variable
+        /// expression. Otherwise, null.
+        /// </summary>
+        public static IVariable AsVariable(IExpression Expression)
+        {
             if (Expression == null)
                 return null;
 
-			var innerExpr = Expression.GetEssentialExpression();
-			if (innerExpr is IVariableNode)
-			{
-				var varNode = (IVariableNode)innerExpr;
-				if (varNode.Action == VariableNodeAction.Get)
-				{
-					return varNode.GetVariable();
-				}
-			}
-			return null;
-		}
+            var innerExpr = Expression.GetEssentialExpression();
+            if (innerExpr is IVariableNode)
+            {
+                var varNode = (IVariableNode)innerExpr;
+                if (varNode.Action == VariableNodeAction.Get)
+                {
+                    return varNode.GetVariable();
+                }
+            }
+            return null;
+        }
 
-		/// <summary>
-		/// Creates an expression that represents an address to 
-		/// a storage location that contains the given expression.
-		/// If this expression is a variable, then an address to said
-		/// variable is returned. Otherwise, a temporary is created,
-		/// and said temporary's address is returned.
-		/// </summary>
-		public static IExpression ToValueAddress(IExpression Expression)
-		{
-			var variable = AsVariable(Expression);
-			if (variable is IUnmanagedVariable)
-			{
-				return ((IUnmanagedVariable)variable).CreateAddressOfExpression();
-			}
-			var temp = new LocalVariable("tmp", Expression.Type);
-			return new InitializedExpression(
-				temp.CreateSetStatement(Expression), 
-				temp.CreateAddressOfExpression());
-		}
+        /// <summary>
+        /// Creates an expression that represents an address to 
+        /// a storage location that contains the given expression.
+        /// If this expression is a variable, then an address to said
+        /// variable is returned. Otherwise, a temporary is created,
+        /// and said temporary's address is returned.
+        /// </summary>
+        public static IExpression ToValueAddress(IExpression Expression)
+        {
+            var variable = AsVariable(Expression);
+            if (variable is IUnmanagedVariable)
+            {
+                return ((IUnmanagedVariable)variable).CreateAddressOfExpression();
+            }
+            var temp = new LocalVariable("tmp", Expression.Type);
+            return new InitializedExpression(
+                temp.CreateSetStatement(Expression), 
+                temp.CreateAddressOfExpression());
+        }
 
-		/// <summary>
-		/// Appends a `return(void);` statement to the given function 
-		/// body expression, provided the return type is either `null` 
-		/// or `void`. Otherwise, the body expression's value is returned,
-		/// provided that its return value is not 'void'. 
-		/// </summary>
-		public static IStatement AutoReturn(IType ReturnType, IExpression Body, SourceLocation Location, GlobalScope Scope)
-		{
-			if (ReturnType == null || ReturnType.Equals(PrimitiveTypes.Void))
-				return new BlockStatement(new[] { ToStatement(Body), new ReturnStatement() });
-			else if (!Body.Type.Equals(PrimitiveTypes.Void))
-				return new ReturnStatement(Scope.ConvertImplicit(Body, ReturnType, Location));
-			else
-				return ToStatement(Body);
-		}
+        /// <summary>
+        /// Appends a `return(void);` statement to the given function 
+        /// body expression, provided the return type is either `null` 
+        /// or `void`. Otherwise, the body expression's value is returned,
+        /// provided that its return value is not 'void'. 
+        /// </summary>
+        public static IStatement AutoReturn(IType ReturnType, IExpression Body, SourceLocation Location, GlobalScope Scope)
+        {
+            if (ReturnType == null || ReturnType.Equals(PrimitiveTypes.Void))
+                return new BlockStatement(new[] { ToStatement(Body), new ReturnStatement() });
+            else if (!Body.Type.Equals(PrimitiveTypes.Void))
+                return new ReturnStatement(Scope.ConvertImplicit(Body, ReturnType, Location));
+            else
+                return ToStatement(Body);
+        }
 
-		/// <summary>
-		/// Creates an expression that can be used
-		/// as target object for a member-access expression.
-		/// </summary>
-		public static IExpression AsTargetObject(IExpression Expr)
-		{
-			if (Expr == null)
-				return null;
-			else if (Expr.Type.GetIsReferenceType())
-				return Expr;
-			else
-				return ToValueAddress(Expr);
-		}
+        /// <summary>
+        /// Creates an expression that can be used
+        /// as target object for a member-access expression.
+        /// </summary>
+        public static IExpression AsTargetObject(IExpression Expr)
+        {
+            if (Expr == null)
+                return null;
+            else if (Expr.Type.GetIsReferenceType())
+                return Expr;
+            else
+                return ToValueAddress(Expr);
+        }
 
-		/// <summary>
-		/// Accesses the given type member on the given target
-		/// expression.
-		/// </summary>
-		public static IExpression AccessMember(
-			IExpression Target, ITypeMember Member, GlobalScope Scope)
-		{
-			if (Member is IField)
-			{
-				return new FieldVariable(
-					(IField)Member, AsTargetObject(Target)).CreateGetExpression();
-			}
-			else if (Member is IProperty)
-			{
+        /// <summary>
+        /// Accesses the given type member on the given target
+        /// expression.
+        /// </summary>
+        public static IExpression AccessMember(
+            IExpression Target, ITypeMember Member, GlobalScope Scope)
+        {
+            if (Member is IField)
+            {
+                return new FieldVariable(
+                    (IField)Member, AsTargetObject(Target)).CreateGetExpression();
+            }
+            else if (Member is IProperty)
+            {
                 // Indexers are special, and shouldn't be handled 
                 // here.
                 var prop = (IProperty)Member;
@@ -348,113 +348,113 @@ namespace Flame.Ecs
                     return null;
                 
                 var result = new PropertyVariable(
-                    prop, AsTargetObject(Target)).CreateGetExpression();
+                                 prop, AsTargetObject(Target)).CreateGetExpression();
                 return result;
-			}
-			else if (Member is IMethod)
-			{
-				var method = (IMethod)Member;
-				if (Member.GetIsExtension() && Target != null)
-				{
-					return new GetExtensionMethodExpression(
-						method, AsTargetObject(Target));
-				}
-				else
-				{
-					return new GetMethodExpression(
-						method, AsTargetObject(Target));
-				}
-			}
-			else
-			{
-				// We have no idea what to do with this.
-				// Maybe pretending it doesn't exist
-				// is an acceptable solution here.
-				return null;
-			}
-		}
+            }
+            else if (Member is IMethod)
+            {
+                var method = (IMethod)Member;
+                if (Member.GetIsExtension() && Target != null)
+                {
+                    return new GetExtensionMethodExpression(
+                        method, AsTargetObject(Target));
+                }
+                else
+                {
+                    return new GetMethodExpression(
+                        method, AsTargetObject(Target));
+                }
+            }
+            else
+            {
+                // We have no idea what to do with this.
+                // Maybe pretending it doesn't exist
+                // is an acceptable solution here.
+                return null;
+            }
+        }
 
-		/// <summary>
-		/// Converts a block-expression (type @`{}`).
-		/// </summary>
-		public static IExpression ConvertBlock(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			var innerScope = new LocalScope(Scope);
+        /// <summary>
+        /// Converts a block-expression (type @`{}`).
+        /// </summary>
+        public static IExpression ConvertBlock(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            var innerScope = new LocalScope(Scope);
 
-			var preStmts = new List<IStatement>();
-			IExpression retExpr = null;
-			var postStmts = new List<IStatement>();
-			int i = 0;
-			while (i < Node.ArgCount)
-			{
-				var item = Node.Args[i];
-				i++;
-				if (item.Calls(CodeSymbols.Result))
-				{
-					NodeHelpers.CheckArity(item, 1, Scope.Log);
+            var preStmts = new List<IStatement>();
+            IExpression retExpr = null;
+            var postStmts = new List<IStatement>();
+            int i = 0;
+            while (i < Node.ArgCount)
+            {
+                var item = Node.Args[i];
+                i++;
+                if (item.Calls(CodeSymbols.Result))
+                {
+                    NodeHelpers.CheckArity(item, 1, Scope.Log);
 
-					retExpr = Converter.ConvertExpression(item.Args[0], innerScope);
-					break;
-				}
-				else
-				{
-					preStmts.Add(ToStatement(Converter.ConvertExpression(item, innerScope)));
-				}
-			}
-			while (i < Node.ArgCount)
-			{
-				postStmts.Add(ToStatement(Converter.ConvertExpression(Node.Args[i], innerScope)));
-				i++;
-			}
-			postStmts.Add(innerScope.Release());
-			if (retExpr == null)
-			{
-				preStmts.AddRange(postStmts);
-				return new InitializedExpression(
-					new BlockStatement(preStmts).Simplify(), 
-					VoidExpression.Instance);
-			}
-			else
-			{
-				return new InitializedExpression(
-					new BlockStatement(preStmts).Simplify(), retExpr, 
-					new BlockStatement(postStmts).Simplify()).Simplify();
-			}
-		}
+                    retExpr = Converter.ConvertExpression(item.Args[0], innerScope);
+                    break;
+                }
+                else
+                {
+                    preStmts.Add(ToStatement(Converter.ConvertExpression(item, innerScope)));
+                }
+            }
+            while (i < Node.ArgCount)
+            {
+                postStmts.Add(ToStatement(Converter.ConvertExpression(Node.Args[i], innerScope)));
+                i++;
+            }
+            postStmts.Add(innerScope.Release());
+            if (retExpr == null)
+            {
+                preStmts.AddRange(postStmts);
+                return new InitializedExpression(
+                    new BlockStatement(preStmts).Simplify(), 
+                    VoidExpression.Instance);
+            }
+            else
+            {
+                return new InitializedExpression(
+                    new BlockStatement(preStmts).Simplify(), retExpr, 
+                    new BlockStatement(postStmts).Simplify()).Simplify();
+            }
+        }
 
-		/// <summary>
-		/// Converts a return-expression (type #return).
-		/// </summary>
-		public static IExpression ConvertReturn(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (Node.ArgCount == 0)
-			{
-				if (Scope.ReturnType.IsEquivalent(PrimitiveTypes.Void)) 
-				{
-					return ToExpression(new ReturnStatement());
-				} 
-				else 
-				{
-					Scope.Log.LogError(new LogEntry(
-						"return statement",
-						NodeHelpers.HighlightEven(
-							"an object of a type convertible to '",
-							Scope.Function.Global.TypeNamer.Convert(Scope.ReturnType),
-							"' is required for the return statement."),
-						NodeHelpers.ToSourceLocation(Node.Range)));
-					return ToExpression(new ReturnStatement(new UnknownExpression(Scope.ReturnType)));
-				}
-			}
-			else
-			{
-				NodeHelpers.CheckArity(Node, 1, Scope.Log);
+        /// <summary>
+        /// Converts a return-expression (type #return).
+        /// </summary>
+        public static IExpression ConvertReturn(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (Node.ArgCount == 0)
+            {
+                if (Scope.ReturnType.IsEquivalent(PrimitiveTypes.Void))
+                {
+                    return ToExpression(new ReturnStatement());
+                }
+                else
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "return statement",
+                        NodeHelpers.HighlightEven(
+                            "an object of a type convertible to '",
+                            Scope.Function.Global.TypeNamer.Convert(Scope.ReturnType),
+                            "' is required for the return statement."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
+                    return ToExpression(new ReturnStatement(new UnknownExpression(Scope.ReturnType)));
+                }
+            }
+            else
+            {
+                NodeHelpers.CheckArity(Node, 1, Scope.Log);
 
-				return ToExpression(new ReturnStatement(
-					Scope.Function.Global.ConvertImplicit(
-						Converter.ConvertExpression(Node.Args[0], Scope), 
-						Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
-			}
-		}
+                return ToExpression(new ReturnStatement(
+                    Scope.Function.Global.ConvertImplicit(
+                        Converter.ConvertExpression(Node.Args[0], Scope), 
+                        Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
+            }
+        }
 
         private static void LogGenericArityMismatch(
             IGenericMember Declaration, int ArgumentCount,
@@ -524,7 +524,7 @@ namespace Flame.Ecs
             IEnumerable<IType> Types, IReadOnlyList<IType> TypeArguments,
             GlobalScope Scope, SourceLocation Location)
         {
-            return Types.Select(item => 
+            return Types.Select(item =>
             {
                 if (CheckGenericConstraints(item, TypeArguments, Scope, Location))
                 {
@@ -616,11 +616,11 @@ namespace Flame.Ecs
             {
                 if (ty is INamespace)
                 {
-                    typeSet.UnionWith(((INamespace)ty).Types.Where(item => 
+                    typeSet.UnionWith(((INamespace)ty).Types.Where(item =>
                     {
                         var itemName = item.Name as SimpleName;
-                        return itemName.Name == MemberName 
-                            && itemName.TypeParameterCount == TypeArguments.Count;
+                        return itemName.Name == MemberName
+                        && itemName.TypeParameterCount == TypeArguments.Count;
                     }));
                 }
             }
@@ -638,31 +638,31 @@ namespace Flame.Ecs
                 nsName);
         }
 
-		/// <summary>
-		/// Converts the given member access node (type @.).
-		/// </summary>
-		public static TypeOrExpression ConvertMemberAccess(
-		    LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-				return TypeOrExpression.Empty;
+        /// <summary>
+        /// Converts the given member access node (type @.).
+        /// </summary>
+        public static TypeOrExpression ConvertMemberAccess(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return TypeOrExpression.Empty;
 
-			var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
+            var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
             var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
 
-			if (!Node.Args[1].IsId)
-			{
-				Scope.Log.LogError(new LogEntry(
-					"syntax error",
-					"expected an identifier on the right-hand side of a member access expression.",
+            if (!Node.Args[1].IsId)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "expected an identifier on the right-hand side of a member access expression.",
                     srcLoc));
-				return TypeOrExpression.Empty;
-			}
+                return TypeOrExpression.Empty;
+            }
 
-			var ident = Node.Args[1].Name.Name;
+            var ident = Node.Args[1].Name.Name;
 
             return ConvertMemberAccess(target, ident, new IType[] { }, Scope, srcLoc);
-		}
+        }
 
         public static TypeOrExpression ConvertInstantiation(
             LNode Node, LocalScope Scope, NodeConverter Converter)
@@ -738,19 +738,19 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Converts a call-expression.
-		/// </summary>
-		public static IExpression ConvertCall(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
-			var delegates = IntersectionExpression.GetIntersectedExpressions(target);
+        /// <summary>
+        /// Converts a call-expression.
+        /// </summary>
+        public static IExpression ConvertCall(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            var target = Converter.ConvertExpression(Node.Target, Scope).GetEssentialExpression();
+            var delegates = IntersectionExpression.GetIntersectedExpressions(target);
             var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
 
             return OverloadResolution.CreateCheckedInvocation(
                 "method", delegates, args, Scope.Function.Global, 
                 NodeHelpers.ToSourceLocation(Node.Range));
-		}
+        }
 
         /// <summary>
         /// Converts a new-expression. (type #new)
@@ -810,7 +810,7 @@ namespace Flame.Ecs
                     return new InitializedArrayExpression(
                         elemType, elems.Select(expr => 
                             globalScope.ConvertImplicit(
-                                expr.Item1, elemType, expr.Item2)).ToArray());
+                        expr.Item1, elemType, expr.Item2)).ToArray());
                 }
             }
 
@@ -826,14 +826,14 @@ namespace Flame.Ecs
                 var initializerExprs = initializerList
                     .Select(n => 
                         globalScope.ConvertImplicit(
-                            Converter.ConvertExpression(n, Scope),
-                            arrTy.ElementType,
-                            loc))
+                                           Converter.ConvertExpression(n, Scope),
+                                           arrTy.ElementType,
+                                           loc))
                     .ToArray();
                 var arrDims = ctorArgs
                     .Select(item => 
                         Scope.Function.Global.ConvertImplicit(
-                            item.Item1, PrimitiveTypes.Int32, item.Item2))
+                                  item.Item1, PrimitiveTypes.Int32, item.Item2))
                     .ToArray();
 
                 if (arrDims.Length == 0)
@@ -946,8 +946,8 @@ namespace Flame.Ecs
             else
             {
                 var newInstExpr = OverloadResolution.CreateCheckedNewObject(
-                    ctorType.GetConstructors().Where(item => !item.IsStatic), 
-                    ctorArgs, Scope.Function.Global, loc);
+                                      ctorType.GetConstructors().Where(item => !item.IsStatic), 
+                                      ctorArgs, Scope.Function.Global, loc);
 
                 if (initializerList.Count == 0)
                     // Empty initializer list. Easy.
@@ -970,9 +970,9 @@ namespace Flame.Ecs
                     tmp.CreateSetStatement(newInstExpr),
                 }.Concat(initializerList.Select(n => 
                     ConvertInitializerNode(
-                        constructedObjExpr, constructedObjTy,
-                        addDelegates, n, Scope, Converter, 
-                        initMembers)));
+                               constructedObjExpr, constructedObjTy,
+                               addDelegates, n, Scope, Converter, 
+                               initMembers)));
 
                 return new InitializedExpression(
                     new BlockStatement(init.ToArray()),
@@ -1017,9 +1017,9 @@ namespace Flame.Ecs
 
             // Create a new type to instantiate.
             var anonTy = new DescribedType(
-                new SimpleName(
-                    "__anonymous_type$" + tyIndex, genericParams.Length), 
-                (INamespace)declTy);
+                             new SimpleName(
+                                 "__anonymous_type$" + tyIndex, genericParams.Length), 
+                             (INamespace)declTy);
             foreach (var tParam in GenericExtensions.CloneGenericParameters(genericParams, anonTy))
             {
                 anonTy.AddGenericParameter(tParam);
@@ -1075,7 +1075,7 @@ namespace Flame.Ecs
                     // Call the root type's parameterless constructor in the 
                     // anonymous type's (parameterless) constructor.
                     var anonThisExpr = new ThisVariable(anonGenericTyInst).CreateGetExpression();
-                    ctor.Body = new BlockStatement(new IStatement[] 
+                    ctor.Body = new BlockStatement(new IStatement[]
                     {
                         new ExpressionStatement(new InvocationExpression(
                             baseCtor, anonThisExpr, 
@@ -1133,7 +1133,7 @@ namespace Flame.Ecs
 
                     fieldName = node.Args[1].Name.Name;
                 }
-                else 
+                else
                 {
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
@@ -1150,16 +1150,18 @@ namespace Flame.Ecs
                         "member redefinition",
                         NodeHelpers.HighlightEven(
                             "anonymous type member '", fieldName, 
-                            "' is declared more than once.").Concat(new MarkupNode[] {
-                                loc.CreateDiagnosticsNode(),
-                                fieldDecls[fieldName].GetSourceLocation()
-                                    .CreateRemarkDiagnosticsNode("previous declaration: ") })));
+                            "' is declared more than once.").Concat(new MarkupNode[]
+                        {
+                            loc.CreateDiagnosticsNode(),
+                            fieldDecls[fieldName].GetSourceLocation()
+                                    .CreateRemarkDiagnosticsNode("previous declaration: ")
+                        })));
                     continue;
                 }
 
                 var field = new DescribedField(
-                    new SimpleName(fieldName), anonTy, 
-                    genericParamConv.Convert(val.Type));
+                                new SimpleName(fieldName), anonTy, 
+                                genericParamConv.Convert(val.Type));
                 field.IsStatic = false;
                 field.AddAttribute(new AccessAttribute(AccessModifier.Public));
                 anonTy.AddField(field);
@@ -1245,7 +1247,7 @@ namespace Flame.Ecs
                     // went wrong. We don't want to pollute the log
                     // with warnings when we have actual errors to worry
                     // about.
-                    if (!InitializedMembers.Add(fieldName) 
+                    if (!InitializedMembers.Add(fieldName)
                         && EcsWarnings.DuplicateInitializationWarning.UseWarning(Scope.Log.Options))
                     {
                         Scope.Log.LogWarning(new LogEntry(
@@ -1266,11 +1268,11 @@ namespace Flame.Ecs
                 // Collection initializer.
                 var args = Node.Calls(CodeSymbols.Braces)
                     ? OverloadResolution.ConvertArguments(Node.Args, Scope, Converter)
-                    : new Tuple<IExpression, SourceLocation>[] 
-                    { 
-                        Tuple.Create(
-                            Converter.ConvertExpression(Node, Scope), loc) 
-                    };
+                    : new Tuple<IExpression, SourceLocation>[]
+                { 
+                    Tuple.Create(
+                        Converter.ConvertExpression(Node, Scope), loc) 
+                };
 
                 return new ExpressionStatement(
                     OverloadResolution.CreateCheckedInvocation(
@@ -1294,9 +1296,9 @@ namespace Flame.Ecs
                 Scope.GetInstanceMembers(Value.Type, "ToString")
                     .OfType<IMethod>()
                     .Where(item => 
-                        !item.Parameters.Any() 
-                        && !item.GenericParameters.Any()
-                        && PrimitiveTypes.String.Equals(item.ReturnType))
+                        !item.Parameters.Any()
+                && !item.GenericParameters.Any()
+                && PrimitiveTypes.String.Equals(item.ReturnType))
                     .ToArray();
 
             // The existence of a 'ToString' method is dependent on
@@ -1358,20 +1360,20 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Creates a binary operator application expression
-		/// for the given operator and operands. A scope is
-		/// used to perform conversions and log error messages,
-		/// and two source locations are used to highlight potential
-		/// issues.
-		/// </summary>
-		public static IExpression CreateBinary(
-			Operator Op, IExpression Left, IExpression Right, 
-			FunctionScope Scope,
-			SourceLocation LeftLocation, SourceLocation RightLocation)
-		{
-			var lTy = Left.Type;
-			var rTy = Right.Type;
+        /// <summary>
+        /// Creates a binary operator application expression
+        /// for the given operator and operands. A scope is
+        /// used to perform conversions and log error messages,
+        /// and two source locations are used to highlight potential
+        /// issues.
+        /// </summary>
+        public static IExpression CreateBinary(
+            Operator Op, IExpression Left, IExpression Right, 
+            FunctionScope Scope,
+            SourceLocation LeftLocation, SourceLocation RightLocation)
+        {
+            var lTy = Left.Type;
+            var rTy = Right.Type;
 
             var globalScope = Scope.Global;
 
@@ -1379,7 +1381,7 @@ namespace Flame.Ecs
             if (Op.Equals(Operator.Add)
                 && (PrimitiveTypes.String.Equals(lTy) || PrimitiveTypes.String.Equals(rTy)))
             {
-                return new ConcatExpression(new IExpression[] 
+                return new ConcatExpression(new IExpression[]
                 {
                     ValueToString(Left, Scope, LeftLocation), 
                     ValueToString(Right, Scope, RightLocation) 
@@ -1387,31 +1389,31 @@ namespace Flame.Ecs
             }
 
             // Primitive operators
-			IType opTy;
-			if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
-			{
-				if (opTy == null)
-				{
+            IType opTy;
+            if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, lTy, rTy, out opTy))
+            {
+                if (opTy == null)
+                {
                     globalScope.Log.LogError(new LogEntry(
-						"operator application",
-						NodeHelpers.HighlightEven(
-							"operator '", Op.Name, "' cannot be applied to operands of type '", 
+                        "operator application",
+                        NodeHelpers.HighlightEven(
+                            "operator '", Op.Name, "' cannot be applied to operands of type '", 
                             globalScope.TypeNamer.Convert(lTy), "' and '",
                             globalScope.TypeNamer.Convert(rTy), "'."),
-						LeftLocation.Concat(RightLocation)));
-					return new UnknownExpression(lTy);
-				}
+                        LeftLocation.Concat(RightLocation)));
+                    return new UnknownExpression(lTy);
+                }
 
-				return DirectBinaryExpression.Instance.Create(
+                return DirectBinaryExpression.Instance.Create(
                     globalScope.ConvertImplicit(Left, opTy, LeftLocation), 
-					Op, 
+                    Op, 
                     globalScope.ConvertImplicit(Right, opTy, RightLocation));
-			}
+            }
 
             // Enum operators
             IType underlyingTy;
             if (BinaryOperatorResolution.TryGetEnumOperatorType(
-                Op, lTy, rTy, out underlyingTy, out opTy))
+                    Op, lTy, rTy, out underlyingTy, out opTy))
             {
                 var lConv = TryConvertEnumOperand(Left, underlyingTy, Scope.Global);
 
@@ -1422,7 +1424,7 @@ namespace Flame.Ecs
                     if (rConv != null)
                     {
                         var binOp = DirectBinaryExpression.Instance.Create(
-                            lConv, Op, rConv);
+                                        lConv, Op, rConv);
                         
                         if (binOp.Type.Equals(opTy))
                             return binOp;
@@ -1432,7 +1434,7 @@ namespace Flame.Ecs
                 }
             }
 
-			// User-defined operators.
+            // User-defined operators.
             // TODO: maybe also consider supporting non-static operators?
             var candidates = 
                 Scope.Function.GetOperators(lTy, Op)
@@ -1447,27 +1449,27 @@ namespace Flame.Ecs
                 Tuple.Create(Left, LeftLocation),
                 Tuple.Create(Right, RightLocation)
             }, Scope.Global, LeftLocation.Concat(RightLocation));
-		}
+        }
 
-		/// <summary>
-		/// Creates a converter that analyzes binary operator nodes.
-		/// </summary>
-		public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateBinaryOpConverter(Operator Op)
-		{
-			return (node, scope, conv) =>
-			{
-				if (!NodeHelpers.CheckArity(node, 2, scope.Log))
-					return VoidExpression.Instance;
+        /// <summary>
+        /// Creates a converter that analyzes binary operator nodes.
+        /// </summary>
+        public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateBinaryOpConverter(Operator Op)
+        {
+            return (node, scope, conv) =>
+            {
+                if (!NodeHelpers.CheckArity(node, 2, scope.Log))
+                    return VoidExpression.Instance;
 
-				return CreateBinary(
-					Op, 
-					conv.ConvertExpression(node.Args[0], scope), 
-					conv.ConvertExpression(node.Args[1], scope), 
-					scope.Function,
-					NodeHelpers.ToSourceLocation(node.Args[0].Range),
-					NodeHelpers.ToSourceLocation(node.Args[1].Range));
-			};
-		}
+                return CreateBinary(
+                    Op, 
+                    conv.ConvertExpression(node.Args[0], scope), 
+                    conv.ConvertExpression(node.Args[1], scope), 
+                    scope.Function,
+                    NodeHelpers.ToSourceLocation(node.Args[0].Range),
+                    NodeHelpers.ToSourceLocation(node.Args[1].Range));
+            };
+        }
 
         /// <summary>
         /// Determines if the given variable is a local variable.
@@ -1477,24 +1479,24 @@ namespace Flame.Ecs
         public static bool IsLocalVariable(IVariable Variable)
         {
             return Variable is LocalVariableBase
-                || Variable is ArgumentVariable
-                || Variable is ThisVariable;
+            || Variable is ArgumentVariable
+            || Variable is ThisVariable;
         }
 
-		public static IExpression CreateUncheckedAssignment(
-			IVariable Variable, IExpression Value)
-		{
+        public static IExpression CreateUncheckedAssignment(
+            IVariable Variable, IExpression Value)
+        {
             if (IsLocalVariable(Variable))
-			{
-				return new InitializedExpression(
-					Variable.CreateSetStatement(Value),
-					Variable.CreateGetExpression());
-			}
-			else
-			{
+            {
+                return new InitializedExpression(
+                    Variable.CreateSetStatement(Value),
+                    Variable.CreateGetExpression());
+            }
+            else
+            {
                 return new AssignmentExpression(Variable, Value);
-			}
-		}
+            }
+        }
 
         public static IExpression CreateCheckedAssignment(
             IVariable Variable, IExpression Value, 
@@ -1502,147 +1504,147 @@ namespace Flame.Ecs
         {
             return CreateUncheckedAssignment(
                 Variable, Scope.ConvertImplicit(
-                    Value, Variable.Type, Location));
+                Value, Variable.Type, Location));
         }
 
-		/// <summary>
-		/// Converts an assignment node (type @=).
-		/// </summary>
-		public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-				return VoidExpression.Instance;
+        /// <summary>
+        /// Converts an assignment node (type @=).
+        /// </summary>
+        public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
 
-			var lhs = Converter.ConvertExpression(Node.Args[0], Scope);
-			var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
+            var lhs = Converter.ConvertExpression(Node.Args[0], Scope);
+            var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
 
-			var lhsVar = AsVariable(lhs);
+            var lhsVar = AsVariable(lhs);
 
-			if (lhsVar == null)
-			{
-				Scope.Log.LogError(new LogEntry(
-					"malformed assignment",
-					"the left-hand side of an assignment must be a variable, a property or an indexer.",
-					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-				return rhs;
-			}
+            if (lhsVar == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "malformed assignment",
+                    "the left-hand side of an assignment must be a variable, a property or an indexer.",
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                return rhs;
+            }
 
             return CreateCheckedAssignment(
                 lhsVar, rhs, Scope.Function.Global, 
                 NodeHelpers.ToSourceLocation(Node.Args[1].Range));
-		}
+        }
 
-		/// <summary>
-		/// Creates a converter that analyzes compound assignment nodes.
-		/// </summary>
-		public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateCompoundAssignmentConverter(Operator Op)
-		{
-			return (node, scope, conv) =>
-			{
-				if (!NodeHelpers.CheckArity(node, 2, scope.Log))
-					return VoidExpression.Instance;
+        /// <summary>
+        /// Creates a converter that analyzes compound assignment nodes.
+        /// </summary>
+        public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateCompoundAssignmentConverter(Operator Op)
+        {
+            return (node, scope, conv) =>
+            {
+                if (!NodeHelpers.CheckArity(node, 2, scope.Log))
+                    return VoidExpression.Instance;
 
-				var lhs = conv.ConvertExpression(node.Args[0], scope);
-				var rhs = conv.ConvertExpression(node.Args[1], scope);
+                var lhs = conv.ConvertExpression(node.Args[0], scope);
+                var rhs = conv.ConvertExpression(node.Args[1], scope);
 
-				var lhsVar = AsVariable(lhs);
+                var lhsVar = AsVariable(lhs);
 
-				var leftLoc = NodeHelpers.ToSourceLocation(node.Args[0].Range);
-				var rightLoc = NodeHelpers.ToSourceLocation(node.Args[1].Range);
+                var leftLoc = NodeHelpers.ToSourceLocation(node.Args[0].Range);
+                var rightLoc = NodeHelpers.ToSourceLocation(node.Args[1].Range);
 
-				if (lhsVar == null)
-				{
-					scope.Log.LogError(new LogEntry(
-						"malformed assignment",
-						"the left-hand side of an assignment must be a variable, a property or an indexer.",
-						leftLoc));
-					return rhs;
-				}
+                if (lhsVar == null)
+                {
+                    scope.Log.LogError(new LogEntry(
+                        "malformed assignment",
+                        "the left-hand side of an assignment must be a variable, a property or an indexer.",
+                        leftLoc));
+                    return rhs;
+                }
 
-				var result = CreateBinary(
-					Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
+                var result = CreateBinary(
+                                 Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
 
-				return CreateUncheckedAssignment(
-					lhsVar, scope.Function.Global.ConvertImplicit(
-						result, lhsVar.Type, rightLoc));
-			};
-		}
+                return CreateUncheckedAssignment(
+                    lhsVar, scope.Function.Global.ConvertImplicit(
+                    result, lhsVar.Type, rightLoc));
+            };
+        }
 
-		/// <summary>
-		/// Converts a variable declaration node (type #var).
-		/// </summary>
-		public static IExpression ConvertVariableDeclaration(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
-				return VoidExpression.Instance;
+        /// <summary>
+        /// Converts a variable declaration node (type #var).
+        /// </summary>
+        public static IExpression ConvertVariableDeclaration(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
 
-			var varTyNode = Node.Args[0];
-			bool isVar = varTyNode.IsIdNamed(CodeSymbols.Missing);
-			IType varTy = null;
+            var varTyNode = Node.Args[0];
+            bool isVar = varTyNode.IsIdNamed(CodeSymbols.Missing);
+            IType varTy = null;
 
-			if (!isVar)
-			{
-				varTy = Converter.ConvertType(varTyNode, Scope.Function.Global);
-				if (varTy == null)
-				{
-					Scope.Log.LogError(
-						new LogEntry(
-							"type resolution",
-							NodeHelpers.HighlightEven("could not resolve variable type '", Node.ToString(), "'."),
-							NodeHelpers.ToSourceLocation(varTyNode.Range)));
-					return VoidExpression.Instance;
-				}
-			}
+            if (!isVar)
+            {
+                varTy = Converter.ConvertType(varTyNode, Scope.Function.Global);
+                if (varTy == null)
+                {
+                    Scope.Log.LogError(
+                        new LogEntry(
+                            "type resolution",
+                            NodeHelpers.HighlightEven("could not resolve variable type '", Node.ToString(), "'."),
+                            NodeHelpers.ToSourceLocation(varTyNode.Range)));
+                    return VoidExpression.Instance;
+                }
+            }
 
-			var stmts = new List<IStatement>();
-			IExpression expr = null;
-			foreach (var item in Node.Args.Slice(1))
-			{
+            var stmts = new List<IStatement>();
+            IExpression expr = null;
+            foreach (var item in Node.Args.Slice(1))
+            {
                 var decompNodes = NodeHelpers.DecomposeAssignOrId(item, Scope.Log);
                 if (decompNodes == null)
                     continue;
 
-				var nameNode = decompNodes.Item1;
+                var nameNode = decompNodes.Item1;
                 var val = decompNodes.Item2 == null 
                     ? null 
                     : Converter.ConvertExpression(decompNodes.Item2, Scope);
 
-				var srcLoc = NodeHelpers.ToSourceLocation(nameNode.Range);
+                var srcLoc = NodeHelpers.ToSourceLocation(nameNode.Range);
 
-				if (isVar && val == null)
-				{
-					Scope.Log.LogError(
-						new LogEntry(
-							"syntax error",
-							"an implicitly typed local variable declarator " +
-							"must include an initializer.",
-							srcLoc));
-					continue;
-				}
+                if (isVar && val == null)
+                {
+                    Scope.Log.LogError(
+                        new LogEntry(
+                            "syntax error",
+                            "an implicitly typed local variable declarator " +
+                            "must include an initializer.",
+                            srcLoc));
+                    continue;
+                }
 
-				string localName = nameNode.Name.Name;
-				var varMember = new DescribedVariableMember(
-					localName, isVar ? val.Type : varTy);
-				varMember.AddAttribute(new SourceLocationAttribute(srcLoc));
-				var local = Scope.DeclareLocal(localName, varMember);
-				if (val != null)
-				{
-					stmts.Add(local.CreateSetStatement(
-						Scope.Function.Global.ConvertImplicit(
+                string localName = nameNode.Name.Name;
+                var varMember = new DescribedVariableMember(
+                                    localName, isVar ? val.Type : varTy);
+                varMember.AddAttribute(new SourceLocationAttribute(srcLoc));
+                var local = Scope.DeclareLocal(localName, varMember);
+                if (val != null)
+                {
+                    stmts.Add(local.CreateSetStatement(
+                        Scope.Function.Global.ConvertImplicit(
                             val, varMember.VariableType, 
                             NodeHelpers.ToSourceLocation(decompNodes.Item2.Range))));
-				}
-				expr = local.CreateGetExpression();
-			}
-			return new InitializedExpression(
-				new BlockStatement(stmts), expr);
-		}
+                }
+                expr = local.CreateGetExpression();
+            }
+            return new InitializedExpression(
+                new BlockStatement(stmts), expr);
+        }
 
-		/// <summary>
-		/// Converts a 'this'-expression node (type #this).
-		/// </summary>
-		public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
+        /// <summary>
+        /// Converts a 'this'-expression node (type #this).
+        /// </summary>
+        public static IExpression ConvertThisExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
             var thisVar = GetThisVariable(Scope);
             if (thisVar == null)
             {
@@ -1675,7 +1677,7 @@ namespace Flame.Ecs
                     "constructor", candidates, args, Scope.Function.Global, 
                     NodeHelpers.ToSourceLocation(Node.Range));
             }
-		}
+        }
 
         /// <summary>
         /// Converts a 'base'-expression node (type #base).
@@ -1709,8 +1711,8 @@ namespace Flame.Ecs
             }
             
             var baseExpr = new ReinterpretCastExpression(
-                thisVar.CreateGetExpression(),
-                ThisVariable.GetThisType(baseType));
+                               thisVar.CreateGetExpression(),
+                               ThisVariable.GetThisType(baseType));
 
             if (Node.IsId)
             {
@@ -1735,56 +1737,56 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Converts an if-statement node (type #if),
-		/// and wraps it in a void expression.
-		/// </summary>
-		public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
+        /// <summary>
+        /// Converts an if-statement node (type #if),
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
                 || !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
-				return VoidExpression.Instance;
+                return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
-			var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
+            var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
             var elseExpr = Node.ArgCount == 3 
                 ? Converter.ConvertScopedStatement(Node.Args[2], Scope)
                 : EmptyStatement.Instance;
 
-			return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
-		}
+            return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
+        }
 
-		/// <summary>
-		/// Converts a selection-expression. (a ternary
-		/// conditional operator application)
-		/// </summary>
-		public static IExpression ConvertSelectExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
-				return VoidExpression.Instance;
+        /// <summary>
+        /// Converts a selection-expression. (a ternary
+        /// conditional operator application)
+        /// </summary>
+        public static IExpression ConvertSelectExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
+                return VoidExpression.Instance;
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
-			var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
-			var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
+            var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
+            var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
 
-			var globalScope = Scope.Function.Global;
+            var globalScope = Scope.Function.Global;
 
-			var ifType = ifExpr.Type;
-			var elseType = elseExpr.Type;
+            var ifType = ifExpr.Type;
+            var elseType = elseExpr.Type;
 
-			if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
-			{
-				ifExpr = globalScope.ConvertImplicit(
-					ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
-			}
-			else
-			{
-				elseExpr = globalScope.ConvertImplicit(
-					elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
-			}
+            if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
+            {
+                ifExpr = globalScope.ConvertImplicit(
+                    ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+            }
+            else
+            {
+                elseExpr = globalScope.ConvertImplicit(
+                    elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
+            }
 
-			return new SelectExpression(cond, ifExpr, elseExpr);
-		}
+            return new SelectExpression(cond, ifExpr, elseExpr);
+        }
 
         /// <summary>
         /// Converts a break-statement (type #break), and
@@ -1840,23 +1842,23 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Converts a while-statement node (type #while),
-		/// and wraps it in a void expression.
-		/// </summary>
-		public static IExpression ConvertWhileExpression(
+        /// <summary>
+        /// Converts a while-statement node (type #while),
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertWhileExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-				return VoidExpression.Instance;
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
 
             var tag = new UniqueTag("while");
 
-			var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var body = Converter.ConvertScopedStatement(Node.Args[1], new FlowScope(Scope, tag));
 
-			return ToExpression(new WhileStatement(tag, cond, body));
-		}
+            return ToExpression(new WhileStatement(tag, cond, body));
+        }
 
         /// <summary>
         /// Converts a do-while-statement node (type #doWhile),
@@ -2030,9 +2032,9 @@ namespace Flame.Ecs
                         Scope.Log.LogWarning(new LogEntry(
                             "always null",
                             EcsWarnings.AlwaysNullWarning.CreateMessage(new MarkupNode("#group", 
-                                    NodeHelpers.HighlightEven(
-                                        "'", "as", "' operator always evaluates to '", 
-                                        "null", "' here. "))),
+                                NodeHelpers.HighlightEven(
+                                    "'", "as", "' operator always evaluates to '", 
+                                    "null", "' here. "))),
                             NodeHelpers.ToSourceLocation(Node.Range)));
                     }
                 }
@@ -2043,7 +2045,7 @@ namespace Flame.Ecs
                         EcsWarnings.RedundantAsWarning.CreateMessage(new MarkupNode("#group", 
                             NodeHelpers.HighlightEven(
                                 "this '", "as", "' is redundant, " +
-                                "and can be replaced by a cast. "))),
+                            "and can be replaced by a cast. "))),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
@@ -2118,7 +2120,7 @@ namespace Flame.Ecs
                         warn.CreateMessage(new MarkupNode("#group", 
                             NodeHelpers.HighlightEven(
                                 "the '", "is", "' operator is equivalent to a null check here. " +
-                                "Replacing '", "is", "' by an explicit null check may be clearer. "))),
+                            "Replacing '", "is", "' by an explicit null check may be clearer. "))),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
@@ -2174,6 +2176,6 @@ namespace Flame.Ecs
             return Scope.Function.Global.ConvertImplicit(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
         }
-	}
+    }
 }
 

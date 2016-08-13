@@ -2,9 +2,9 @@
 
 namespace Flame.Ecs
 {
-	public static class AttributeConverters
-	{
+    public static class AttributeConverters
+    {
 		
-	}
+    }
 }
 

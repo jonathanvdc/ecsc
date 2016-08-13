@@ -12,55 +12,55 @@ using Flame.Ecs.Semantics;
 
 namespace Flame.Ecs
 {
-	public static class TypeMemberConverters
-	{
-		/// <summary>
-		/// Converts a parameter declaration node.
-		/// </summary>
-		public static IParameter ConvertParameter(LNode Node, GlobalScope Scope, NodeConverter Converter)
-		{
-			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
-			var paramTy = Converter.ConvertType(Node.Args[0], Scope);
-			if (paramTy == null)
-			{
-				Scope.Log.LogError(new LogEntry(
-					"type resolution",
-					NodeHelpers.HighlightEven(
+    public static class TypeMemberConverters
+    {
+        /// <summary>
+        /// Converts a parameter declaration node.
+        /// </summary>
+        public static IParameter ConvertParameter(LNode Node, GlobalScope Scope, NodeConverter Converter)
+        {
+            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+            var paramTy = Converter.ConvertType(Node.Args[0], Scope);
+            if (paramTy == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "type resolution",
+                    NodeHelpers.HighlightEven(
                         "could not resolve parameter type '", Node.Args[0].ToString(), 
                         "' for parameter '", name.Item1.ToString(), "'."),
-					NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-				paramTy = PrimitiveTypes.Void;
-			}
-			bool isOut = false;
-			var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
-			{
-				if (node.IsIdNamed(CodeSymbols.Ref))
-				{
-					paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
-					return true;
-				}
-				else if (node.IsIdNamed(CodeSymbols.Out))
-				{
-					paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
-					isOut = true;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}, Scope).ToArray();
-			var descParam = new DescribedParameter(name.Item1, paramTy);
-			foreach (var item in attrs)
-			{
-				descParam.AddAttribute(item);
-			}
-			if (isOut)
-			{
-				descParam.AddAttribute(PrimitiveAttributes.Instance.OutAttribute);
-			}
-			return descParam;
-		}
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                paramTy = PrimitiveTypes.Void;
+            }
+            bool isOut = false;
+            var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
+            {
+                if (node.IsIdNamed(CodeSymbols.Ref))
+                {
+                    paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
+                    return true;
+                }
+                else if (node.IsIdNamed(CodeSymbols.Out))
+                {
+                    paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
+                    isOut = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }, Scope).ToArray();
+            var descParam = new DescribedParameter(name.Item1, paramTy);
+            foreach (var item in attrs)
+            {
+                descParam.AddAttribute(item);
+            }
+            if (isOut)
+            {
+                descParam.AddAttribute(PrimitiveAttributes.Instance.OutAttribute);
+            }
+            return descParam;
+        }
 
         /// <summary>
         /// Analyzes an attribute list that belongs to a type 
@@ -74,8 +74,8 @@ namespace Flame.Ecs
         {
             bool isStatic = false;
             var attrs = Converter.ConvertAttributeListWithAccess(
-                Attributes, DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
-                node =>
+                            Attributes, DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
+                            node =>
                 {
                     if (node.IsIdNamed(CodeSymbols.Static))
                     {
@@ -118,21 +118,21 @@ namespace Flame.Ecs
             Target.AddAttributes(Attributes.Item1);
         }
 
-		/// <summary>
-		/// Analyzes the given type member's attribute list,
+        /// <summary>
+        /// Analyzes the given type member's attribute list,
         /// and updates said list right away.
-		/// </summary>
-		private static void UpdateTypeMemberAttributes(
-			IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
-			GlobalScope Scope, NodeConverter Converter,
+        /// </summary>
+        private static void UpdateTypeMemberAttributes(
+            IEnumerable<LNode> Attributes, LazyDescribedTypeMember Target,
+            GlobalScope Scope, NodeConverter Converter,
             Func<LNode, bool> HandleSpecial)
-		{
+        {
             UpdateTypeMemberAttributes(
                 AnalyzeTypeMemberAttributes(
                     Attributes, Target.DeclaringType, 
                     Scope, Converter, HandleSpecial),
                 Target);
-		}
+        }
 
         /// <summary>
         /// Analyzes the given type member's attribute list,
@@ -165,20 +165,20 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Analyzes the given parameter list for the
-		/// given described method.
-		/// </summary>
-		private static FunctionScope AnalyzeParameters(
-			IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
-			GlobalScope Scope, NodeConverter Converter)
-		{
-			foreach (var item in Parameters)
-			{
+        /// <summary>
+        /// Analyzes the given parameter list for the
+        /// given described method.
+        /// </summary>
+        private static FunctionScope AnalyzeParameters(
+            IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            foreach (var item in Parameters)
+            {
                 Target.AddParameter(ConvertParameter(item, Scope, Converter));
-			}
+            }
             return CreateFunctionScope(Target, Scope);
-		}
+        }
 
         /// <summary>
         /// Creates a function scope for the given method.
@@ -274,8 +274,8 @@ namespace Flame.Ecs
                 }
             });
 
-            bool isVirtual = abstractNode != null || virtualNode != null 
-                || (overrideNode != null && sealedNode == null);
+            bool isVirtual = abstractNode != null || virtualNode != null
+                             || (overrideNode != null && sealedNode == null);
 
             // Verify that these attributes make sense.
             if ((abstractNode != null || virtualNode != null) && sealedNode != null)
@@ -364,32 +364,32 @@ namespace Flame.Ecs
                 return Operator.GetOperator(Name);
         }
 
-		/// <summary>
-		/// Converts an '#fn' function declaration node.
-		/// </summary>
-		public static GlobalScope ConvertFunction(
-			LNode Node, LazyDescribedType DeclaringType, 
-			GlobalScope Scope, NodeConverter Converter)
-		{
-            if (!NodeHelpers.CheckMinArity(Node, 3, Scope.Log) 
+        /// <summary>
+        /// Converts an '#fn' function declaration node.
+        /// </summary>
+        public static GlobalScope ConvertFunction(
+            LNode Node, LazyDescribedType DeclaringType, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 3, Scope.Log)
                 || !NodeHelpers.CheckMaxArity(Node, 4, Scope.Log))
-				return Scope;
+                return Scope;
 
-			// Handle the function's name first.
-			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+            // Handle the function's name first.
+            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
             var op = ParseOperatorName(name.Item1.Name);
             var def = new LazyDescribedMethod(new SimpleName(name.Item1.Name), DeclaringType, methodDef =>
-			{
-				// Take care of the generic parameters next.
-				var innerScope = Scope;
-				foreach (var item in name.Item2(methodDef))
-				{
-					// Create generic parameters.
-					methodDef.AddGenericParameter(item);
-					innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-				}
+            {
+                // Take care of the generic parameters next.
+                var innerScope = Scope;
+                foreach (var item in name.Item2(methodDef))
+                {
+                    // Create generic parameters.
+                    methodDef.AddGenericParameter(item);
+                    innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+                }
 
-				// Attributes next. override, abstract, virtual, sealed
+                // Attributes next. override, abstract, virtual, sealed
                 // and new are specific to methods, so we'll handle those here.
                 var attrNodePair = UpdateVirtualTypeMemberAttributes("method", Node.Attrs, methodDef, innerScope, Converter);
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
@@ -409,24 +409,24 @@ namespace Flame.Ecs
                     methodDef.AddAttribute(new OperatorAttribute(op));
                 }
 
-				// Resolve the return type.
-				var retType = Converter.ConvertType(Node.Args[0], innerScope);
-				if (retType == null)
-				{
-					Scope.Log.LogError(new LogEntry(
-						"type resolution",
-						NodeHelpers.HighlightEven(
-							"could not resolve return type '", 
+                // Resolve the return type.
+                var retType = Converter.ConvertType(Node.Args[0], innerScope);
+                if (retType == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type resolution",
+                        NodeHelpers.HighlightEven(
+                            "could not resolve return type '", 
                             Node.Args[0].ToString(), "' for method '", 
                             name.Item1.ToString(), "'."),
-						NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-					retType = PrimitiveTypes.Void;
-				}
-				methodDef.ReturnType = retType;
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                    retType = PrimitiveTypes.Void;
+                }
+                methodDef.ReturnType = retType;
 
-				// Resolve the parameters
-				var funScope = AnalyzeParameters(
-					Node.Args[2].Args, methodDef, innerScope, Converter);
+                // Resolve the parameters
+                var funScope = AnalyzeParameters(
+                       Node.Args[2].Args, methodDef, innerScope, Converter);
 
                 // Operator methods must take at least one parameter of the 
                 // declaring type.
@@ -471,8 +471,8 @@ namespace Flame.Ecs
                                         "' does not define any (visible) methods that match its signature."),
                                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
                             }
-                            else if (newNode != null 
-                                && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                            else if (newNode != null
+                                     && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "redundant attribute",
@@ -497,7 +497,7 @@ namespace Flame.Ecs
                                             NodeHelpers.HighlightEven(
                                                 "method '", methodDef.Name.ToString(), "' is marked '", 
                                                 "override", "', but differs in return type. " +
-                                                "Expected return type: ", 
+                                            "Expected return type: ", 
                                                 Scope.TypeNamer.Convert(m.ReturnType), "'."),
                                             methodDef.GetSourceLocation()));
                                     }
@@ -517,22 +517,22 @@ namespace Flame.Ecs
                                     }
                                 }
                             }
-                            else if (newNode == null 
-                                && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                            else if (newNode == null
+                                     && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "member hiding",
                                     NodeHelpers.HighlightEven(
-                                        "method '", methodDef.Name.ToString(), "' hides " + 
-                                        (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") + 
-                                        ". Consider using the '", "new", "' keyword if hiding was intentional. ")
-                                        .Concat(new MarkupNode[] 
-                                        { 
-                                            EcsWarnings.HiddenMemberWarning.CauseNode,
-                                            methodDef.GetSourceLocation().CreateDiagnosticsNode()
-                                        })
+                                        "method '", methodDef.Name.ToString(), "' hides " +
+                                    (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") +
+                                    ". Consider using the '", "new", "' keyword if hiding was intentional. ")
+                                        .Concat(new MarkupNode[]
+                                    { 
+                                        EcsWarnings.HiddenMemberWarning.CauseNode,
+                                        methodDef.GetSourceLocation().CreateDiagnosticsNode()
+                                    })
                                         .Concat(
-                                            baseMethods
+                                        baseMethods
                                             .Select(m => m.GetSourceLocation())
                                             .Where(loc => loc != null)
                                             .Select(loc => loc.CreateRemarkDiagnosticsNode("hidden method: ")))));
@@ -568,7 +568,7 @@ namespace Flame.Ecs
                 }
 
                 bool isExtern = methodDef.HasAttribute(
-                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+                                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
                 bool isAbstractOrExtern = methodDef.GetIsAbstract() || isExtern;
 
                 if (Node.ArgCount > 3)
@@ -603,42 +603,42 @@ namespace Flame.Ecs
                     }
                     methodDef.Body = EmptyStatement.Instance;
                 }
-			});
+            });
 
-			// Finally, add the function to the declaring type.
-			DeclaringType.AddMethod(def);
+            // Finally, add the function to the declaring type.
+            DeclaringType.AddMethod(def);
 
-			return Scope;
-		}
+            return Scope;
+        }
 
-		/// <summary>
-		/// Converts a '#cons' constructor declaration node.
-		/// </summary>
-		public static GlobalScope ConvertConstructor(
-			LNode Node, LazyDescribedType DeclaringType, 
-			GlobalScope Scope, NodeConverter Converter)
-		{
-			if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
-				return Scope;
+        /// <summary>
+        /// Converts a '#cons' constructor declaration node.
+        /// </summary>
+        public static GlobalScope ConvertConstructor(
+            LNode Node, LazyDescribedType DeclaringType, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+                return Scope;
 
-			// Handle the constructor's name first.
-			var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
-			var def = new LazyDescribedMethod(name.Item1, DeclaringType, methodDef =>
-			{
-				methodDef.IsConstructor = true;
-				methodDef.ReturnType = PrimitiveTypes.Void;
+            // Handle the constructor's name first.
+            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+            var def = new LazyDescribedMethod(name.Item1, DeclaringType, methodDef =>
+            {
+                methodDef.IsConstructor = true;
+                methodDef.ReturnType = PrimitiveTypes.Void;
 
-				// Take care of the generic parameters next.
-				var innerScope = Scope;
-				foreach (var item in name.Item2(methodDef))
-				{
-					// Create generic parameters.
-					methodDef.AddGenericParameter(item);
-					innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-				}
+                // Take care of the generic parameters next.
+                var innerScope = Scope;
+                foreach (var item in name.Item2(methodDef))
+                {
+                    // Create generic parameters.
+                    methodDef.AddGenericParameter(item);
+                    innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+                }
 
-				// Attributes next.
-				UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
+                // Attributes next.
+                UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
                 if (DeclaringType.GetIsValueType())
                 {
@@ -647,30 +647,30 @@ namespace Flame.Ecs
                     methodDef.AddAttribute(PrimitiveAttributes.Instance.TotalInitializationAttribute);
                 }
 
-				// Resolve the parameters
-				var funScope = AnalyzeParameters(
-					Node.Args[2].Args, methodDef, innerScope, Converter);
+                // Resolve the parameters
+                var funScope = AnalyzeParameters(
+                       Node.Args[2].Args, methodDef, innerScope, Converter);
 
-				// Analyze the function body.
-				var localScope = new LocalScope(funScope);
-				methodDef.Body = ExpressionConverters.AutoReturn(
-					methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-					NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
-			});
+                // Analyze the function body.
+                var localScope = new LocalScope(funScope);
+                methodDef.Body = ExpressionConverters.AutoReturn(
+                    methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
+                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
+            });
 
-			// Finally, add the function to the declaring type.
-			DeclaringType.AddMethod(def);
+            // Finally, add the function to the declaring type.
+            DeclaringType.AddMethod(def);
 
-			return Scope;
-		}
+            return Scope;
+        }
 
         /// <summary>
         /// Converts a '#var' field declaration node.
         /// </summary>
-		public static GlobalScope ConvertField(
-			LNode Node, LazyDescribedType DeclaringType,
-			GlobalScope Scope, NodeConverter Converter)
-		{
+        public static GlobalScope ConvertField(
+            LNode Node, LazyDescribedType DeclaringType,
+            GlobalScope Scope, NodeConverter Converter)
+        {
             if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
                 return Scope;
 
@@ -708,56 +708,56 @@ namespace Flame.Ecs
 
                 var valNode = decomp.Item2;
                 var field = new LazyDescribedField(
-                    new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
-                fieldDef =>
-                {
-                    // Set the field's type.
-                    fieldDef.FieldType = lazyFieldType.Value;
-
-                    // Update the attribute list.
-                    UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
-                    fieldDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(decomp.Item1.Range)));
-                    if (constNode != null)
+                                new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
+                                fieldDef =>
                     {
-                        fieldDef.AddAttribute(PrimitiveAttributes.Instance.ConstantAttribute);
-                        if (fieldDef.IsStatic 
-                            && EcsWarnings.RedundantStaticAttributeWarning.UseWarning(Scope.Log.Options))
+                        // Set the field's type.
+                        fieldDef.FieldType = lazyFieldType.Value;
+
+                        // Update the attribute list.
+                        UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);
+                        fieldDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(decomp.Item1.Range)));
+                        if (constNode != null)
                         {
-                            // Warn if a field is marked both 'const' and 'static'.
-                            var staticNode = attrNodes.FirstOrDefault(x => x.IsIdNamed(CodeSymbols.Static));
-                            if (staticNode != null)
+                            fieldDef.AddAttribute(PrimitiveAttributes.Instance.ConstantAttribute);
+                            if (fieldDef.IsStatic
+                            && EcsWarnings.RedundantStaticAttributeWarning.UseWarning(Scope.Log.Options))
                             {
-                                Scope.Log.LogWarning(new LogEntry(
-                                    "redundant attribute",
-                                    NodeHelpers.HighlightEven(
-                                        "this '", "static", "' attribute is redundant, because '",
-                                        "const", "' implies '", "static", "'. ")
-                                    .Concat(new MarkupNode[] 
-                                    { 
-                                        EcsWarnings.RedundantStaticAttributeWarning.CauseNode,
-                                        NodeHelpers.ToSourceLocation(staticNode.Range).CreateDiagnosticsNode(),
-                                        NodeHelpers.ToSourceLocation(constNode.Range).CreateRemarkDiagnosticsNode("'const' attribute: ")
-                                    })));
+                                // Warn if a field is marked both 'const' and 'static'.
+                                var staticNode = attrNodes.FirstOrDefault(x => x.IsIdNamed(CodeSymbols.Static));
+                                if (staticNode != null)
+                                {
+                                    Scope.Log.LogWarning(new LogEntry(
+                                        "redundant attribute",
+                                        NodeHelpers.HighlightEven(
+                                            "this '", "static", "' attribute is redundant, because '",
+                                            "const", "' implies '", "static", "'. ")
+                                    .Concat(new MarkupNode[]
+                                        { 
+                                            EcsWarnings.RedundantStaticAttributeWarning.CauseNode,
+                                            NodeHelpers.ToSourceLocation(staticNode.Range).CreateDiagnosticsNode(),
+                                            NodeHelpers.ToSourceLocation(constNode.Range).CreateRemarkDiagnosticsNode("'const' attribute: ")
+                                        })));
+                                }
                             }
+                            fieldDef.IsStatic = true;
                         }
-                        fieldDef.IsStatic = true;
-                    }
 
-                    if (decomp.Item2 != null)
-                    {
-                        fieldDef.Value = Converter.ConvertExpression(
-                            valNode, new LocalScope(
+                        if (decomp.Item2 != null)
+                        {
+                            fieldDef.Value = Converter.ConvertExpression(
+                                valNode, new LocalScope(
                                 CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
                                 fieldDef.FieldType);
-                    }
-                });
+                        }
+                    });
 
                 // Add the field to the declaring type.
                 DeclaringType.AddField(field);
             }
 
             return Scope;
-		}
+        }
 
         /// <summary>
         /// Converts a '#property' property declaration node.
@@ -782,13 +782,13 @@ namespace Flame.Ecs
             // We'll also share the location attribute, which need
             // not be resolved lazily.
             var locAttr = new SourceLocationAttribute(
-                NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+                              NodeHelpers.ToSourceLocation(Node.Args[1].Range));
 
             // Detect auto-properties early. If we bump into one,
             // then we'll recognize that by creating a backing field,
             // which can be used when analyzing the property.
             IField backingField = null;
-            if (Node.Args[3].Calls(CodeSymbols.Braces) 
+            if (Node.Args[3].Calls(CodeSymbols.Braces)
                 && Node.Args[3].Args.Any(item => item.IsId))
             {
                 backingField = new LazyDescribedField(
@@ -808,7 +808,7 @@ namespace Flame.Ecs
                         // Optionally initialize the field
                         fieldDef.Value = Converter.ConvertExpression(
                             Node.Args[4], new LocalScope(
-                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                            CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
                             fieldDef.FieldType);
                     }
                 });
@@ -819,8 +819,8 @@ namespace Flame.Ecs
             // Create the property/indexer.
             // Note that all indexers are actually called 'Item'.
             var def = new LazyDescribedProperty(
-                isIndexer ? new SimpleName("Item") : name, 
-                DeclaringType, propDef =>
+                          isIndexer ? new SimpleName("Item") : name, 
+                          DeclaringType, propDef =>
             {
                 if (lazyRetType.Value == null)
                 {
@@ -861,8 +861,8 @@ namespace Flame.Ecs
 
                 // Resolve base properties.
                 var basePropSpec = FindBaseProperties(
-                    propDef, name, virtAttrNodes.Item1, 
-                    virtAttrNodes.Item2, Scope);
+                                       propDef, name, virtAttrNodes.Item1, 
+                                       virtAttrNodes.Item2, Scope);
 
                 if (Node.Args[3].Calls(CodeSymbols.Braces))
                 {
@@ -908,7 +908,7 @@ namespace Flame.Ecs
                             // first, and because 'get' and 'set' accessors have
                             // these in common.
                             var accAttrs = ConvertAccessorAttributes(
-                                accNode.Attrs, propDef, Scope, Converter);
+                                               accNode.Attrs, propDef, Scope, Converter);
 
                             // Now try to find out what kind of attribute we're 
                             // dealing with.
@@ -916,9 +916,9 @@ namespace Flame.Ecs
                             {
                                 // Synthesize a 'get' accessor.
                                 var getAcc = SynthesizeAccessor(
-                                    AccessorType.GetAccessor, propDef, 
-                                    propDef.PropertyType, basePropSpec,
-                                    Scope, accAttrs);
+                                                 AccessorType.GetAccessor, propDef, 
+                                                 propDef.PropertyType, basePropSpec,
+                                                 Scope, accAttrs);
 
                                 getAcc.Body = new ReturnStatement(
                                     backingFieldVar.CreateGetExpression());
@@ -929,9 +929,9 @@ namespace Flame.Ecs
                             {
                                 // Synthesize a 'set' accessor.
                                 var setAcc = SynthesizeAccessor(
-                                    AccessorType.SetAccessor, propDef, 
-                                    PrimitiveTypes.Void, basePropSpec,
-                                    Scope,  accAttrs);
+                                                 AccessorType.SetAccessor, propDef, 
+                                                 PrimitiveTypes.Void, basePropSpec,
+                                                 Scope, accAttrs);
 
                                 var valParam = new DescribedParameter("value", propDef.PropertyType);
                                 setAcc.AddParameter(valParam);
@@ -992,9 +992,9 @@ namespace Flame.Ecs
                     // We will synthesize a 'get' accessor,
                     // and set its body to the expression body.
                     var getAcc = SynthesizeAccessor(
-                        AccessorType.GetAccessor, propDef,
-                        propDef.PropertyType, basePropSpec,
-                        Scope);
+                                     AccessorType.GetAccessor, propDef,
+                                     propDef.PropertyType, basePropSpec,
+                                     Scope);
 
                     propDef.AddAccessor(getAcc);
 
@@ -1042,8 +1042,8 @@ namespace Flame.Ecs
             var genericThisTy = thisTy as GenericTypeBase;
             var genField = genericThisTy != null
                 ? new GenericInstanceField(
-                    Field, genericThisTy.Resolver, 
-                    genericThisTy)
+                               Field, genericThisTy.Resolver, 
+                               genericThisTy)
                 : Field;
 
             return new FieldVariable(
@@ -1076,7 +1076,7 @@ namespace Flame.Ecs
             GlobalScope Scope, IEnumerable<IAttribute> Attributes)
         {
             var getAcc = new DescribedBodyAccessor(
-                Kind, DeclaringProperty, ReturnType);
+                             Kind, DeclaringProperty, ReturnType);
 
             getAcc.IsConstructor = false;
             getAcc.IsStatic = DeclaringProperty.IsStatic;
@@ -1119,7 +1119,7 @@ namespace Flame.Ecs
             if (!Accessor.HasAttribute(SourceLocationAttribute.AccessAttributeType))
             {
                 var locAttr = DeclaringProperty.GetAttribute(
-                    SourceLocationAttribute.AccessAttributeType);
+                                  SourceLocationAttribute.AccessAttributeType);
                 if (locAttr != null)
                     results.Add(locAttr);
             }
@@ -1160,7 +1160,7 @@ namespace Flame.Ecs
                 ? AccessorType.GetAccessor 
                 : AccessorType.SetAccessor;
             var def = new LazyDescribedAccessor(
-                accKind, DeclaringProperty, accDef =>
+                          accKind, DeclaringProperty, accDef =>
             {
                 // Analyze the attributes first.
                 accDef.AddAttributes(ConvertAccessorAttributes(
@@ -1189,7 +1189,7 @@ namespace Flame.Ecs
                         "value", DeclaringProperty.PropertyType));
                 
                 var localScope = new LocalScope(
-                    CreateFunctionScope(accDef, Scope));
+                                     CreateFunctionScope(accDef, Scope));
 
                 // Analyze the body.
                 accDef.Body = ExpressionConverters.AutoReturn(
@@ -1221,9 +1221,11 @@ namespace Flame.Ecs
             }
 
             public IReadOnlyList<IProperty> BaseProperties { get; private set; }
+
             public IReadOnlyList<IProperty> InterfaceProperties { get; private set; }
 
             public LNode OverrideNode { get; private set; }
+
             public LNode NewNode { get; private set; }
         }
 
@@ -1244,7 +1246,7 @@ namespace Flame.Ecs
                 var declTy = Property.DeclaringType;
 
                 var funScope = CreateTypeMemberScope(
-                    Property, Property.PropertyType, Scope);
+                                   Property, Property.PropertyType, Scope);
 
                 var parentTy = declTy.GetParent();
                 if (parentTy != null)
@@ -1266,8 +1268,8 @@ namespace Flame.Ecs
                                     "' does not define any (visible) properties that match its signature."),
                                 NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                         }
-                        else if (NewNode != null 
-                            && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                        else if (NewNode != null
+                                 && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
                         {
                             Scope.Log.LogWarning(new LogEntry(
                                 "redundant attribute",
@@ -1292,7 +1294,7 @@ namespace Flame.Ecs
                                         NodeHelpers.HighlightEven(
                                             "property '", Name.ToString(), "' is marked '", 
                                             "override", "', but differs in property type. " +
-                                            "Expected property type: ", 
+                                        "Expected property type: ", 
                                             Scope.TypeNamer.Convert(m.PropertyType), "'."),
                                         Property.GetSourceLocation()));
                                 }
@@ -1302,16 +1304,16 @@ namespace Flame.Ecs
                                 }
                             }
                         }
-                        else if (NewNode == null 
-                            && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                        else if (NewNode == null
+                                 && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
                         {
                             Scope.Log.LogWarning(new LogEntry(
                                 "member hiding",
                                 NodeHelpers.HighlightEven(
-                                    "property '", Name.ToString(), "' hides " + 
-                                    (baseProperties.Length == 1 ? "a base property" : baseProperties.Length + " base properties") + 
-                                    ". Consider using the '", "new", "' keyword if hiding was intentional. ")
-                                .Concat(new MarkupNode[] 
+                                    "property '", Name.ToString(), "' hides " +
+                                (baseProperties.Length == 1 ? "a base property" : baseProperties.Length + " base properties") +
+                                ". Consider using the '", "new", "' keyword if hiding was intentional. ")
+                                .Concat(new MarkupNode[]
                                 { 
                                     EcsWarnings.HiddenMemberWarning.CauseNode,
                                     Property.GetSourceLocation().CreateDiagnosticsNode()
@@ -1438,6 +1440,6 @@ namespace Flame.Ecs
         
             return results;
         }
-	}
+    }
 }
 

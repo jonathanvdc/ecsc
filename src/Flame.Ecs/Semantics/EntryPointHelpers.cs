@@ -34,7 +34,7 @@ namespace Flame.Ecs.Semantics
                             {
                                 Log.LogError(new LogEntry(
                                     "multiple entry points",
-                                    new MarkupNode[] 
+                                    new MarkupNode[]
                                     { 
                                         new MarkupNode(NodeConstants.TextNodeType, "this program has more than one entry point."),
                                         method.GetSourceLocation().CreateDiagnosticsNode(),

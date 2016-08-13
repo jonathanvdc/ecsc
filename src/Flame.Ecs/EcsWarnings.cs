@@ -3,11 +3,11 @@ using Flame.Compiler;
 
 namespace Flame.Ecs
 {
-	/// <summary>
-	/// Lists a number of EC#-specific warnings.
-	/// </summary>
-	public static class EcsWarnings
-	{
+    /// <summary>
+    /// Lists a number of EC#-specific warnings.
+    /// </summary>
+    public static class EcsWarnings
+    {
         /// <summary>
         /// The -Whidden-member warning, which is used to
         /// warn the user when method/property hiding occurs.
@@ -40,14 +40,14 @@ namespace Flame.Ecs
         public static readonly WarningDescription RedundantStaticAttributeWarning = 
             new WarningDescription("redundant-static-attr", Warnings.Instance.All);
 
-		/// <summary>
-		/// The -Wduplicate-access-modifier warning.
-		/// </summary>
-		/// <remarks>
-		/// This is a -Wall warning.
-		/// </remarks>
-		public static readonly WarningDescription DuplicateAccessModifierWarning = 
-			new WarningDescription("duplicate-access-modifier", Warnings.Instance.All);
+        /// <summary>
+        /// The -Wduplicate-access-modifier warning.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription DuplicateAccessModifierWarning = 
+            new WarningDescription("duplicate-access-modifier", Warnings.Instance.All);
 
         /// <summary>
         /// The -Winvalid-main-sig warning.
@@ -140,6 +140,6 @@ namespace Flame.Ecs
         /// </remarks>
         public static readonly WarningDescription EcsExtensionUsingCastWarning = 
             new WarningDescription("ecs-using-cast", EcsExtensionWarningGroup);
-	}
+    }
 }
 

@@ -9,15 +9,15 @@ using Pixie;
 
 namespace Flame.Ecs
 {
-	/// <summary>
-	/// Defines a common interface for local scope data structures.
-	/// </summary>
-	public interface ILocalScope
-	{
-		/// <summary>
-		/// Gets this local scope's function scope.
-		/// </summary>
-		FunctionScope Function { get; }
+    /// <summary>
+    /// Defines a common interface for local scope data structures.
+    /// </summary>
+    public interface ILocalScope
+    {
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        FunctionScope Function { get; }
 
         /// <summary>
         /// Gets the enclosing control-flow node's
@@ -30,65 +30,65 @@ namespace Flame.Ecs
         /// </remarks>
         UniqueTag FlowTag { get; }
 
-		/// <summary>
-		/// Gets this local scope's return type.
-		/// </summary>
-		/// <value>The type of the return value.</value>
-		IType ReturnType { get; }
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        IType ReturnType { get; }
 
-		/// <summary>
-		/// Gets the set of all local variable identifiers
-		/// that are defined in this scope.
-		/// </summary>
-		IEnumerable<string> VariableNames { get; }
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        IEnumerable<string> VariableNames { get; }
 
-		/// <summary>
-		/// Gets the variable with the given name.
-		/// </summary>
-		IVariable GetVariable(string Name);
-	}
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        IVariable GetVariable(string Name);
+    }
 
-	/// <summary>
-	/// A data structure that represents the top-level scope
-	/// of a function-like member. An enclosing type and
-	/// a sequence of parameter variables are stored, but
-	/// no local variables can be declared in this type of scope. 
-	/// </summary>
-	public sealed class FunctionScope : ILocalScope
-	{
-		public FunctionScope(
-			GlobalScope Global, IType CurrentType, 
+    /// <summary>
+    /// A data structure that represents the top-level scope
+    /// of a function-like member. An enclosing type and
+    /// a sequence of parameter variables are stored, but
+    /// no local variables can be declared in this type of scope. 
+    /// </summary>
+    public sealed class FunctionScope : ILocalScope
+    {
+        public FunctionScope(
+            GlobalScope Global, IType CurrentType, 
             IMethod CurrentMethod, IType ReturnType,
-			IReadOnlyDictionary<string, IVariable> ParameterVariables)
-		{
+            IReadOnlyDictionary<string, IVariable> ParameterVariables)
+        {
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
 
-			this.Global = Global;
-			this.CurrentType = CurrentType;
+            this.Global = Global;
+            this.CurrentType = CurrentType;
             this.DeclaringType = CurrentType != null && CurrentType.GetIsPointer() 
                 ? CurrentType.AsPointerType().ElementType
                 : CurrentType;
             this.CurrentMethod = CurrentMethod;
-			this.ReturnType = ReturnType;
-			this.ParameterVariables = ParameterVariables;
-		}
+            this.ReturnType = ReturnType;
+            this.ParameterVariables = ParameterVariables;
+        }
 
-		/// <summary>
-		/// Gets this function scope's enclosing global scope.
-		/// </summary>
-		/// <value>The global scope.</value>
-		public GlobalScope Global { get; private set; }
+        /// <summary>
+        /// Gets this function scope's enclosing global scope.
+        /// </summary>
+        /// <value>The global scope.</value>
+        public GlobalScope Global { get; private set; }
 
-		/// <summary>
-		/// Gets the type of a hypothetical 'this' pointer:
-		/// the enclosing type, optionally instantiated by
-		/// its own generic parameters. Additionally, 
+        /// <summary>
+        /// Gets the type of a hypothetical 'this' pointer:
+        /// the enclosing type, optionally instantiated by
+        /// its own generic parameters. Additionally, 
         /// value types have a pointer current type.
-		/// </summary>
-		public IType CurrentType { get; private set; }
+        /// </summary>
+        public IType CurrentType { get; private set; }
 
         /// <summary>
         /// Gets the type of a hypothetical 'this' expression:
@@ -104,46 +104,46 @@ namespace Flame.Ecs
         /// </summary>
         public IMethod CurrentMethod { get; private set; }
 
-		/// <summary>
-		/// Gets the return type of this scope.
-		/// </summary>
-		public IType ReturnType { get; private set; }
+        /// <summary>
+        /// Gets the return type of this scope.
+        /// </summary>
+        public IType ReturnType { get; private set; }
 
-		/// <summary>
-		/// Gets a read-only dictionary that maps identifiers
-		/// to parameter variables.
-		/// </summary>
-		/// <value>The parameter variables dictionary.</value>
-		public IReadOnlyDictionary<string, IVariable> ParameterVariables { get; private set; }
+        /// <summary>
+        /// Gets a read-only dictionary that maps identifiers
+        /// to parameter variables.
+        /// </summary>
+        /// <value>The parameter variables dictionary.</value>
+        public IReadOnlyDictionary<string, IVariable> ParameterVariables { get; private set; }
 
-		/// <summary>
-		/// Gets this local scope's function scope.
-		/// </summary>
-		public FunctionScope Function { get { return this; } }
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get { return this; } }
 
         /// <inheritdoc/>
         public UniqueTag FlowTag { get { return null; } }
 
-		/// <summary>
-		/// Gets the set of all local variable identifiers
-		/// that are defined in this scope.
-		/// </summary>
-		public IEnumerable<string> VariableNames { get { return ParameterVariables.Keys; } }
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<string> VariableNames { get { return ParameterVariables.Keys; } }
 
-		/// <summary>
-		/// Gets the variable with the given name.
-		/// </summary>
-		public IVariable GetVariable(string Name)
-		{
-			IVariable result;
-			if (ParameterVariables.TryGetValue(Name, out result))
-				return result;
-			else
-				return null;
-		}
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(string Name)
+        {
+            IVariable result;
+            if (ParameterVariables.TryGetValue(Name, out result))
+                return result;
+            else
+                return null;
+        }
 
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
-        private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache; 
+        private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache;
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
         private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
@@ -190,29 +190,29 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Gets all members with the given name that can be accessed
-		/// on an instance of the given type. 
-		/// </summary>
-		public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
-		{
+        /// <summary>
+        /// Gets all members with the given name that can be accessed
+        /// on an instance of the given type. 
+        /// </summary>
+        public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
+        {
             return GetMembers(Type, Name, instanceMemberCache, item =>
             {
                 return !item.IsStatic && DeclaringType.CanAccess(item);
             });
-		}
+        }
 
-		/// <summary>
-		/// Gets all members with the given name that can be accessed
-		/// on the given type's name.
-		/// </summary>
-		public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
-		{
+        /// <summary>
+        /// Gets all members with the given name that can be accessed
+        /// on the given type's name.
+        /// </summary>
+        public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
+        {
             return GetMembers(Type, Name, staticMemberCache, item =>
             {
                 return item.IsStatic && DeclaringType.CanAccess(item);
             });
-		}
+        }
 
         /// <summary>
         /// Gets all static members with the given name that can be 
@@ -260,38 +260,39 @@ namespace Flame.Ecs
                 return localOps.GetAll(Op);
             }
         }
-	}
+    }
 
-	/// <summary>
-	/// A data structure that represents a simple local scope.
-	/// </summary>
-	public sealed class LocalScope : ILocalScope
-	{
-		public LocalScope(ILocalScope Parent)
-			: this(Parent, new List<LocalVariable>(), new Dictionary<string, LocalVariable>())
-		{ }
+    /// <summary>
+    /// A data structure that represents a simple local scope.
+    /// </summary>
+    public sealed class LocalScope : ILocalScope
+    {
+        public LocalScope(ILocalScope Parent)
+            : this(Parent, new List<LocalVariable>(), new Dictionary<string, LocalVariable>())
+        {
+        }
 
-		private LocalScope(
-			ILocalScope Parent, List<LocalVariable> OrderedVars,
-			Dictionary<string, LocalVariable> Locals)
-		{
-			this.Parent = Parent;
-			this.orderedVars = OrderedVars;
-			this.locals = Locals;
-		}
+        private LocalScope(
+            ILocalScope Parent, List<LocalVariable> OrderedVars,
+            Dictionary<string, LocalVariable> Locals)
+        {
+            this.Parent = Parent;
+            this.orderedVars = OrderedVars;
+            this.locals = Locals;
+        }
 
-		private List<LocalVariable> orderedVars;
-		private Dictionary<string, LocalVariable> locals;
+        private List<LocalVariable> orderedVars;
+        private Dictionary<string, LocalVariable> locals;
 
-		/// <summary>
-		/// Gets this local scope's parent scope.
-		/// </summary>
-		public ILocalScope Parent { get; private set; }
+        /// <summary>
+        /// Gets this local scope's parent scope.
+        /// </summary>
+        public ILocalScope Parent { get; private set; }
 
-		/// <summary>
-		/// Gets this local scope's function scope.
-		/// </summary>
-		public FunctionScope Function { get { return Parent.Function; } }
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get { return Parent.Function; } }
 
         /// <summary>
         /// Gets the log object for this scope.
@@ -301,57 +302,57 @@ namespace Flame.Ecs
         /// <inheritdoc/>
         public UniqueTag FlowTag { get { return Parent.FlowTag; } }
 
-		/// <summary>
-		/// Gets this local scope's return type.
-		/// </summary>
-		/// <value>The type of the return value.</value>
-		public IType ReturnType
-		{
-			get { return Parent.ReturnType; }
-		}
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        public IType ReturnType
+        {
+            get { return Parent.ReturnType; }
+        }
 
-		/// <summary>
-		/// Gets the set of all local variable identifiers
-		/// that are defined in this scope.
-		/// </summary>
-		public IEnumerable<string> VariableNames { get { return locals.Keys.Union(Parent.VariableNames); } }
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<string> VariableNames { get { return locals.Keys.Union(Parent.VariableNames); } }
 
-		/// <summary>
-		/// Creates a statement that releases 
-		/// resources consumed by this local scope.
-		/// </summary>
-		public IStatement Release()
-		{
-			var cleanup = new List<IStatement>();
-			foreach (var item in orderedVars)
-				cleanup.Add(item.CreateReleaseStatement());
-			return new BlockStatement(cleanup);
-		}
+        /// <summary>
+        /// Creates a statement that releases 
+        /// resources consumed by this local scope.
+        /// </summary>
+        public IStatement Release()
+        {
+            var cleanup = new List<IStatement>();
+            foreach (var item in orderedVars)
+                cleanup.Add(item.CreateReleaseStatement());
+            return new BlockStatement(cleanup);
+        }
 
-		/// <summary>
-		/// Declares a local variable with the given
-		/// name and signature.
-		/// </summary>
-		public IVariable DeclareLocal(string Name, IVariableMember Member)
-		{
-			if (locals.ContainsKey(Name))
-			{
-				// Variable was already declared in this scope.
-				// Log an error.
-				Function.Global.Log.LogError(new LogEntry(
-					"variable redefinition",
-					new MarkupNode[] 
-					{
-						new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope.")),
-						Member.GetSourceLocation().CreateDiagnosticsNode(),
+        /// <summary>
+        /// Declares a local variable with the given
+        /// name and signature.
+        /// </summary>
+        public IVariable DeclareLocal(string Name, IVariableMember Member)
+        {
+            if (locals.ContainsKey(Name))
+            {
+                // Variable was already declared in this scope.
+                // Log an error.
+                Function.Global.Log.LogError(new LogEntry(
+                    "variable redefinition",
+                    new MarkupNode[]
+                    {
+                        new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope.")),
+                        Member.GetSourceLocation().CreateDiagnosticsNode(),
                         locals[Name].Member.GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: ")
-					}));
-			}
-			else if (Parent.GetVariable(Name) != null 
-				&& Warnings.Instance.Shadow.UseWarning(Function.Global.Log.Options))
-			{
-				// Variable was already declared by parent scope.
-				// Log a warning.
+                    }));
+            }
+            else if (Parent.GetVariable(Name) != null
+            && Warnings.Instance.Shadow.UseWarning(Function.Global.Log.Options))
+            {
+                // Variable was already declared by parent scope.
+                // Log a warning.
                 var shadowedVar = Parent.GetVariable(Name) as LocalVariableBase;
                 var nodes = new List<MarkupNode>();
                 nodes.Add(Warnings.Instance.Shadow.CreateMessage(
@@ -366,28 +367,28 @@ namespace Flame.Ecs
                         shadowedVar.Member.GetSourceLocation()
                         .CreateRemarkDiagnosticsNode("shadowed declaration: "));
                 }
-				Function.Global.Log.LogWarning(new LogEntry(
+                Function.Global.Log.LogWarning(new LogEntry(
                     "variable shadowed", nodes));
-			}
+            }
 
-			var localVar = new LocalVariable(Member, new UniqueTag(Name));
-			orderedVars.Add(localVar);
-			locals[Name] = localVar;
-			return localVar;
-		}
+            var localVar = new LocalVariable(Member, new UniqueTag(Name));
+            orderedVars.Add(localVar);
+            locals[Name] = localVar;
+            return localVar;
+        }
 
-		/// <summary>
-		/// Gets the variable with the given name.
-		/// </summary>
-		public IVariable GetVariable(string Name)
-		{
-			LocalVariable result;
-			if (locals.TryGetValue(Name, out result))
-				return result;
-			else
-				return Parent.GetVariable(Name);
-		}
-	}
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(string Name)
+        {
+            LocalVariable result;
+            if (locals.TryGetValue(Name, out result))
+                return result;
+            else
+                return Parent.GetVariable(Name);
+        }
+    }
 
     /// <summary>
     /// A data structure that represents a local scope for a 

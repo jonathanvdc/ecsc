@@ -30,7 +30,7 @@ namespace Flame.Ecs
         /// </summary>
         public IExpression Target { get; private set; }
 
-        public IEnumerable<IType> ParameterTypes 
+        public IEnumerable<IType> ParameterTypes
         { 
             get { return Property.IndexerParameters.GetTypes(); } 
         }
@@ -47,7 +47,7 @@ namespace Flame.Ecs
 
         public IType Type
         {
-            get 
+            get
             {
                 // TODO: Maybe get this right, even when there's no
                 // get-accessor?

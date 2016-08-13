@@ -22,7 +22,7 @@ namespace Flame.Ecs
         /// </summary>
         public IMethod Constructor { get; private set; }
 
-        public IEnumerable<IType> ParameterTypes 
+        public IEnumerable<IType> ParameterTypes
         { 
             get { return Constructor.Parameters.GetTypes(); } 
         }
@@ -39,7 +39,7 @@ namespace Flame.Ecs
 
         public IType Type
         {
-            get 
+            get
             {
                 // Note: perhaps we should create a method type
                 // with a return value to match this delegate's

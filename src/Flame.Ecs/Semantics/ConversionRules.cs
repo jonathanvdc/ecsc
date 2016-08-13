@@ -5,12 +5,12 @@ using Flame.Compiler.Expressions;
 
 namespace Flame.Ecs.Semantics
 {
-	/// <summary>
-	/// An interface that specifies a system of explicit and implicit
-	/// conversion rules.
-	/// </summary>
+    /// <summary>
+    /// An interface that specifies a system of explicit and implicit
+    /// conversion rules.
+    /// </summary>
     public abstract class ConversionRules
-	{
+    {
         /// <summary>
         /// Classifies a conversion of the given expression to the given type.
         /// </summary>
@@ -26,11 +26,11 @@ namespace Flame.Ecs.Semantics
         public abstract IReadOnlyList<ConversionDescription> ClassifyConversion(
             IType SourceType, IType TargetType);
 
-		/// <summary>
-		/// Finds out whether a value of the given source type
-		/// can be converted implicitly to the given target type.
-		/// </summary>
-		public bool HasImplicitConversion(IType From, IType To)
+        /// <summary>
+        /// Finds out whether a value of the given source type
+        /// can be converted implicitly to the given target type.
+        /// </summary>
+        public bool HasImplicitConversion(IType From, IType To)
         {
             foreach (var conv in ClassifyConversion(From, To))
             {
@@ -54,6 +54,6 @@ namespace Flame.Ecs.Semantics
             }
             return false;
         }
-	}
+    }
 }
 

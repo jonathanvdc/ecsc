@@ -38,7 +38,7 @@ namespace Flame.Ecs
         public static IReadOnlyList<Tuple<IExpression, SourceLocation>> ConvertArguments(
             IEnumerable<LNode> ArgumentNodes, LocalScope Scope, NodeConverter Converter)
         {
-            return ArgumentNodes.Select(item => 
+            return ArgumentNodes.Select(item =>
             {
                 var argExpr = Converter.ConvertExpression(item, Scope);
                 foreach (var attr in item.Attrs)
@@ -188,18 +188,18 @@ namespace Flame.Ecs
             innerStmts.Add(new ExpressionStatement(target));
             innerStmts.AddRange(Arguments.Select(arg => new ExpressionStatement(arg.Item1)));
             var innerExpr = new InitializedExpression(
-                new BlockStatement(innerStmts), new UnknownExpression(retType));
+                                new BlockStatement(innerStmts), new UnknownExpression(retType));
 
             var log = Scope.Log;
             if (matches.Any())
             {
                 var failedMatchesList = matches.Select(
-                    m => CreateSignatureDiff(namer, ArgumentTypes, m));
+                                            m => CreateSignatureDiff(namer, ArgumentTypes, m));
 
                 var explanationNodes = NodeHelpers.HighlightEven(
-                    FunctionType + " call could not be resolved. " +
-                    "Expected signature compatible with '", expectedSig,
-                    "'. Incompatible or ambiguous matches:");
+                                           FunctionType + " call could not be resolved. " +
+                                           "Expected signature compatible with '", expectedSig,
+                                           "'. Incompatible or ambiguous matches:");
 
                 var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
                 log.LogError(new LogEntry(

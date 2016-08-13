@@ -9,24 +9,28 @@ using Flame.Ecs.Semantics;
 
 namespace Flame.Ecs
 {
-	/// <summary>
-	/// A global scope: a scope that is not associated 
-	/// with any particular function.
-	/// </summary>
-	public sealed class GlobalScope
-	{
-		public GlobalScope(
-			IBinder Binder, ConversionRules ConversionRules, 
-			ICompilerLog Log, TypeConverterBase<string> TypeNamer)
-			: this(new QualifiedBinder(Binder), ConversionRules, Log, TypeNamer)
-		{ }
-		public GlobalScope(
-			QualifiedBinder Binder, ConversionRules ConversionRules, 
-			ICompilerLog Log, TypeConverterBase<string> TypeNamer)
+    /// <summary>
+    /// A global scope: a scope that is not associated 
+    /// with any particular function.
+    /// </summary>
+    public sealed class GlobalScope
+    {
+        public GlobalScope(
+            IBinder Binder, ConversionRules ConversionRules, 
+            ICompilerLog Log, TypeConverterBase<string> TypeNamer)
+            : this(new QualifiedBinder(Binder), ConversionRules, Log, TypeNamer)
+        {
+        }
+
+        public GlobalScope(
+            QualifiedBinder Binder, ConversionRules ConversionRules, 
+            ICompilerLog Log, TypeConverterBase<string> TypeNamer)
             : this(
                 Binder, ConversionRules, Log, TypeNamer, 
                 new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()))
-		{ }
+        {
+        }
+
         private GlobalScope(
             QualifiedBinder Binder, ConversionRules ConversionRules, 
             ICompilerLog Log, TypeConverterBase<string> TypeNamer,
@@ -39,23 +43,27 @@ namespace Flame.Ecs
             this.memCache = MemberCache;
         }
 
-		public QualifiedBinder Binder { get; private set; }
+        public QualifiedBinder Binder { get; private set; }
+
         public ConversionRules ConversionRules { get; private set; }
-		public ICompilerLog Log { get; private set; }
-		public TypeConverterBase<string> TypeNamer { get; private set; }
+
+        public ICompilerLog Log { get; private set; }
+
+        public TypeConverterBase<string> TypeNamer { get; private set; }
 
         private ThreadLocal<GlobalMemberCache> memCache;
-        public GlobalMemberCache MemberCache 
+
+        public GlobalMemberCache MemberCache
         { 
             get { return memCache.Value; }
         }
 
-		public IEnvironment Environment { get { return Binder.Binder.Environment; } }
+        public IEnvironment Environment { get { return Binder.Binder.Environment; } }
 
-		public GlobalScope WithBinder(QualifiedBinder NewBinder)
-		{
+        public GlobalScope WithBinder(QualifiedBinder NewBinder)
+        {
             return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer, memCache);
-		}
+        }
 
         private IExpression ApplyAnyConversion(
             IExpression From, IType To, 
@@ -67,14 +75,14 @@ namespace Flame.Ecs
                 return new UnknownExpression(To);
         }
 
-		/// <summary>
-		/// Implicitly converts the given expression to the given type.
-		/// A diagnostic is issued if this is not a legal operation,
-		/// but the resulting expression is always of the given target type,
-		/// and is never null.
-		/// </summary>
-		public IExpression ConvertImplicit(IExpression From, IType To, SourceLocation Location)
-		{
+        /// <summary>
+        /// Implicitly converts the given expression to the given type.
+        /// A diagnostic is issued if this is not a legal operation,
+        /// but the resulting expression is always of the given target type,
+        /// and is never null.
+        /// </summary>
+        public IExpression ConvertImplicit(IExpression From, IType To, SourceLocation Location)
+        {
             var convs = ConversionRules.ClassifyConversion(From, To);
 
             IExpression result = null;
@@ -106,7 +114,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "cannot implicitly convert type '", TypeNamer.Convert(From.Type), 
                         "' to '", TypeNamer.Convert(To), "'." +
-                        (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
+                    (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
                     Location));
 
                 return ApplyAnyConversion(From, To, convs);
@@ -115,7 +123,7 @@ namespace Flame.Ecs
             {
                 return result;
             }
-		}
+        }
 
         /// <summary>
         /// Statically converts the given expression to the given type.
@@ -155,8 +163,8 @@ namespace Flame.Ecs
                     "no static conversion", 
                     NodeHelpers.HighlightEven(
                         "cannot guarantee at compile-time that type '", TypeNamer.Convert(From.Type), 
-                        "' can safely be converted to '", TypeNamer.Convert(To), "'." + 
-                        (convs.Count > 0 ? " An explicit conversion exists." : "")),
+                        "' can safely be converted to '", TypeNamer.Convert(To), "'." +
+                    (convs.Count > 0 ? " An explicit conversion exists." : "")),
                     Location));
 
                 return ApplyAnyConversion(From, To, convs);
@@ -167,14 +175,14 @@ namespace Flame.Ecs
             }
         }
 
-		/// <summary>
-		/// Explicitly converts the given expression to the given type.
-		/// A diagnostic is issued if this is not a legal operation,
-		/// but the resulting expression is always of the given target type,
-		/// and is never null.
-		/// </summary>
-		public IExpression ConvertExplicit(IExpression From, IType To, SourceLocation Location)
-		{
+        /// <summary>
+        /// Explicitly converts the given expression to the given type.
+        /// A diagnostic is issued if this is not a legal operation,
+        /// but the resulting expression is always of the given target type,
+        /// and is never null.
+        /// </summary>
+        public IExpression ConvertExplicit(IExpression From, IType To, SourceLocation Location)
+        {
             var convs = ConversionRules.ClassifyConversion(From, To);
 
             if (convs.Count == 1)
@@ -223,12 +231,12 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "the explicit conversion of type '", TypeNamer.Convert(From.Type), 
                         "' to '", TypeNamer.Convert(To), "' is ambiguous, because " +
-                        "there no true explicit conversion was applicable, and the implicit " +
-                        "conversion was ambiguous."),
+                    "there no true explicit conversion was applicable, and the implicit " +
+                    "conversion was ambiguous."),
                     Location));
                 return ApplyAnyConversion(From, To, convs);
             }
-		}
-	}
+        }
+    }
 }
 

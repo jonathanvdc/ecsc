@@ -14,7 +14,7 @@ namespace Flame.Ecs
     {
         #region Increment/Decrement
 
-        // Describes all primitive types that can be used in 
+        // Describes all primitive types that can be used in
         // the decrement/increment operators.
         private static readonly HashSet<IType> primitiveIncDecTypes = new HashSet<IType>()
         {
