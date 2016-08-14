@@ -65,32 +65,49 @@ namespace Flame.Ecs
             return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer, memCache);
         }
 
-        private IExpression ApplyAnyConversion(
-            IExpression From, IType To, 
+        private ConversionDescription PickAnyConversion(
             IReadOnlyList<ConversionDescription> Conversions)
         {
             if (Conversions.Count > 0)
-                return Conversions[0].Convert(From, To);
+                return Conversions[0];
+            else
+                return ConversionDescription.None;
+        }
+
+        private IExpression ApplyOrUnknown(
+            IExpression From, IType To, 
+            ConversionDescription Conversion)
+        {
+            if (Conversion.Kind != ConversionKind.None)
+                return Conversion.Convert(From, To);
             else
                 return new UnknownExpression(To);
         }
 
+        private IExpression ApplyAnyConversion(
+            IExpression From, IType To, 
+            IReadOnlyList<ConversionDescription> Conversions)
+        {
+            return ApplyOrUnknown(From, To, PickAnyConversion(Conversions));
+        }
+
         /// <summary>
-        /// Implicitly converts the given expression to the given type.
+        /// Gets an implicit conversion of the given expression to the given type.
         /// A diagnostic is issued if this is not a legal operation,
         /// but the resulting expression is always of the given target type,
         /// and is never null.
         /// </summary>
-        public IExpression ConvertImplicit(IExpression From, IType To, SourceLocation Location)
+        public ConversionDescription GetImplicitConversion(
+            IExpression From, IType To, SourceLocation Location)
         {
             var convs = ConversionRules.ClassifyConversion(From, To);
 
-            IExpression result = null;
+            var result = ConversionDescription.None;
             foreach (var item in convs)
             {
                 if (item.IsImplicit)
                 {
-                    if (result != null)
+                    if (result.Kind != ConversionKind.None)
                     {
                         Log.LogError(new LogEntry(
                             "ambiguous implicit conversion", 
@@ -102,27 +119,38 @@ namespace Flame.Ecs
                     }
                     else
                     {
-                        result = item.Convert(From, To);
+                        result = item;
                     }
                 }
             }
 
-            if (result == null)
+            if (result.Kind == ConversionKind.None)
             {
                 Log.LogError(new LogEntry(
                     "no implicit conversion", 
                     NodeHelpers.HighlightEven(
                         "cannot implicitly convert type '", TypeNamer.Convert(From.Type), 
                         "' to '", TypeNamer.Convert(To), "'." +
-                    (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
+                        (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
                     Location));
 
-                return ApplyAnyConversion(From, To, convs);
+                return PickAnyConversion(convs);
             }
             else
             {
                 return result;
             }
+        }
+
+        /// <summary>
+        /// Implicitly converts the given expression to the given type.
+        /// A diagnostic is issued if this is not a legal operation,
+        /// but the resulting expression is always of the given target type,
+        /// and is never null.
+        /// </summary>
+        public IExpression ConvertImplicit(IExpression From, IType To, SourceLocation Location)
+        {
+            return ApplyOrUnknown(From, To, GetImplicitConversion(From, To, Location));
         }
 
         /// <summary>

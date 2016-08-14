@@ -124,7 +124,7 @@ namespace Flame.Ecs.Semantics
                 // Boxing conversion. Flame handles that as a static cast.
                 return new ConversionDescription[]
                 { 
-                    new ConversionDescription(ConversionKind.ImplicitStaticCast) 
+                    new ConversionDescription(ConversionKind.BoxingConversion) 
                 };
             }
 

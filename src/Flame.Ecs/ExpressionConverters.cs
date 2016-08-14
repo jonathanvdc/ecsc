@@ -2173,8 +2173,16 @@ namespace Flame.Ecs
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
 
-            return Scope.Function.Global.ConvertImplicit(
+            var implConv = Scope.Function.Global.GetImplicitConversion(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
+
+            if (implConv.Kind == ConversionKind.BoxingConversion)
+                // Create a special using-box expression node here,
+                // which we can recognize when analyzing 
+                // method groups.
+                return new UsingBoxExpression(op, ty);
+            else
+                return implConv.Convert(op, ty);
         }
     }
 }

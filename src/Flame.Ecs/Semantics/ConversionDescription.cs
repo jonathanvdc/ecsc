@@ -32,6 +32,11 @@ namespace Flame.Ecs.Semantics
         ExplicitStaticCast,
 
         /// <summary>
+        /// A boxing conversion is applicable.
+        /// </summary>
+        BoxingConversion,
+
+        /// <summary>
         /// An explicit static cast is used to perform
         /// an enum-to-number conversion.
         /// </summary>
@@ -178,6 +183,7 @@ namespace Flame.Ecs.Semantics
                     return new DynamicCastExpression(Value, TargetType);
                 case ConversionKind.ImplicitStaticCast:
                 case ConversionKind.ExplicitStaticCast:
+                case ConversionKind.BoxingConversion:
                     return new StaticCastExpression(Value, TargetType);
                 case ConversionKind.NumberToEnumStaticCast:
                     // An 'enum' static cast requires two casts:
@@ -211,6 +217,14 @@ namespace Flame.Ecs.Semantics
                     throw new InvalidOperationException();
             }
         }
+
+        /// <summary>
+        /// Gets a conversion description for a non-existant conversion.
+        /// </summary>
+        public static ConversionDescription None 
+        { 
+            get { return new ConversionDescription(ConversionKind.None); } 
+        } 
     }
 }
 

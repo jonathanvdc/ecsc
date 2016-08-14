@@ -577,6 +577,20 @@ namespace Flame.Ecs
                 return result;
             }
         }
+
+        /// <summary>
+        /// Adds environment-specific converters to the
+        /// given node converter.
+        /// </summary>
+        /// <param name="Converter">The node converter to update.</param>
+        /// <param name="Environment">The environment.</param>
+        public static void AddEnvironmentConverters(
+            NodeConverter Converter, IEnvironment Environment)
+        {
+            var rootTy = Environment.RootType;
+            if (rootTy != null)
+                Converter.AliasType(CodeSymbols.Object, rootTy);
+        }
     }
 }
 

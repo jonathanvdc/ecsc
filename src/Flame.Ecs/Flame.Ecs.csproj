@@ -171,6 +171,7 @@
     <Compile Include="Semantics\IndexerDelegateExpression.cs" />
     <Compile Include="GlobalMemberCache.cs" />
     <Compile Include="Semantics\AssignmentExpression.cs" />
+    <Compile Include="Semantics\UsingBoxExpression.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
