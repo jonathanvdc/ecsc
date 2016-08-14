@@ -21,7 +21,7 @@ namespace Flame.Ecs.Semantics
         /// <summary>
         /// Gets the value that is boxed by this expression.
         /// </summary>
-        /// <value>The value.</value>
+        /// <value>The value to box.</value>
         public IExpression Value { get; private set; }
 
         private IType ty;
@@ -41,6 +41,11 @@ namespace Flame.Ecs.Semantics
         protected override IExpression Lower()
         {
             return new StaticCastExpression(Value, ty);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("using-box({0}, {1})", Value, Type);
         }
     }
 }

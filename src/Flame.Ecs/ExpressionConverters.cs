@@ -361,6 +361,10 @@ namespace Flame.Ecs
                 }
                 else
                 {
+                    var usingBoxExpr = Target.GetEssentialExpression() as UsingBoxExpression;
+                    if (usingBoxExpr != null)
+                        Target = usingBoxExpr.Value;
+                    
                     return new GetMethodExpression(
                         method, AsTargetObject(Target));
                 }
@@ -2174,7 +2178,7 @@ namespace Flame.Ecs
             var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
 
             var implConv = Scope.Function.Global.GetImplicitConversion(
-                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
+                               op, ty, NodeHelpers.ToSourceLocation(Node.Range));
 
             if (implConv.Kind == ConversionKind.BoxingConversion)
                 // Create a special using-box expression node here,
