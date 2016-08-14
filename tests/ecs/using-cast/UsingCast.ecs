@@ -4,12 +4,22 @@ public class A
 {
     public A()
     { }
+
+    public override string ToString()
+    {
+        return "A";
+    }
 }
 
 public class B : A
 {
     public B()
     { }
+
+    public override string ToString()
+    {
+        return "B";
+    }
 }
 
 public struct Foo : ICloneable
@@ -17,18 +27,22 @@ public struct Foo : ICloneable
     public int CloneCount { get; private set; }
 
     public object Clone() { CloneCount++; return this; }
+
+    public override string ToString()
+    {
+        return CloneCount.ToString();
+    }
 }
 
 public static class Program
 {
     public static void Main()
     {
-        B x = default(B);
+        B x = new B();
         Console.WriteLine(x using A);
         Console.WriteLine(x using B);
         Console.WriteLine(2 using double);
         var foo = default(Foo);
         Console.WriteLine((foo using ICloneable).Clone());
-        Console.WriteLine(foo.CloneCount);
     }
 }

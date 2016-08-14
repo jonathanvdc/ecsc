@@ -16,11 +16,11 @@ configs
 {
     Og
     {
-        Flags = -Og -platform clr -o $(Executable);
+        Flags = -Og -platform clr -fno-whole-program -o $(Executable);
     }
     O3
     {
-        Flags = -O3 -platform clr -o $(Executable);
+        Flags = -O3 -platform clr -fno-whole-program -o $(Executable);
     }
 }
 
@@ -30,4 +30,5 @@ init
     Filename = UsingCast;
     Executable = bin/$(Filename).exe;
     Args = ;
+    return = @($echo B)@($echo B)@($echo 2)@($echo 1);
 }
