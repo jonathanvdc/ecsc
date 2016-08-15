@@ -5,6 +5,7 @@ tests
     arithmetic/Arithmetic.test;
     arrays/Arrays.test;
     assign/Assign.test;
+    boxing/Boxing.test;
     cast/Cast.test;
     concat/Concat.test;
     const/Const.test;
