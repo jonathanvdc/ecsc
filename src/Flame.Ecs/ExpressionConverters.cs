@@ -374,7 +374,7 @@ namespace Flame.Ecs
                                 usingCastWarn.CreateMessage(
                                     new MarkupNode("#group", NodeHelpers.HighlightEven(
                                         "this usage of '", "using", "' cannot be translated " +
-                                        "faithfully to C#, because a cast requires boxing but '",
+                                    "faithfully to C#, because a cast requires boxing but '",
                                         "using", "' does not. "))),
                                 Target.GetSourceLocation()));
                         }
@@ -2199,6 +2199,143 @@ namespace Flame.Ecs
                 return new UsingBoxExpression(op, ty);
             else
                 return implConv.Convert(op, ty);
+        }
+
+        /// <summary>
+        /// Converts a lock-statement, and wraps it in an expression. (type #lock).
+        /// </summary>
+        /// <returns>The lock-statement, as an expression.</returns>
+        public static IExpression ConvertLockExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var lockee = Converter.ConvertExpression(Node.Args[0], Scope);
+            var lockeeTy = lockee.Type;
+            var lockBody = ConvertScopedStatement(Converter, Node.Args[1], Scope);
+
+            // Resolve System.Threading.Monitor
+            var monitor = Scope.Function.Global.Binder.BindType(
+                              new QualifiedName("Monitor").Qualify(
+                                  new QualifiedName("Threading").Qualify(
+                                      "System")));
+
+            if (monitor == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "binding error",
+                    NodeHelpers.HighlightEven(
+                        "cannot resolve type '", "System.Threading.Monitor", 
+                        "', without which '", "lock", "' statements cannot be " +
+                    "compiled successfully."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return ToExpression(new BlockStatement(
+                    new IStatement[] { ToStatement(lockee), lockBody }));
+            }
+
+            var rootTy = Scope.Function.Global.Environment.RootType;
+            if (rootTy == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "binding error",
+                    NodeHelpers.HighlightEven(
+                        "the environment does not have a root type, without which '", 
+                        "lock", "' statements cannot be compiled successfully."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return ToExpression(new BlockStatement(
+                    new IStatement[] { ToStatement(lockee), lockBody }));
+            }
+
+            // Find the Enter(object, out bool) method
+            var enterMethod = monitor.GetMethod(
+                                  new SimpleName("Enter"), true, PrimitiveTypes.Void, 
+                                  new IType[] { rootTy, PrimitiveTypes.Boolean.MakePointerType(PointerKind.ReferencePointer) });
+                
+            if (enterMethod == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "binding error",
+                    NodeHelpers.HighlightEven(
+                        "cannot resolve method '", "System.Threading.Monitor.Enter(object, out bool)", 
+                        "', without which '", "lock", "' statements cannot be " +
+                    "compiled successfully."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return ToExpression(new BlockStatement(
+                    new IStatement[] { ToStatement(lockee), lockBody }));
+            }
+
+            // Find the Exit(object) method
+            var exitMethod = monitor.GetMethod(
+                                 new SimpleName("Exit"), true, PrimitiveTypes.Void, 
+                                 new IType[] { rootTy });
+
+            if (exitMethod == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "binding error",
+                    NodeHelpers.HighlightEven(
+                        "cannot resolve method '", "System.Threading.Monitor.Exit(object)", 
+                        "', without which '", "lock", "' statements cannot be " +
+                    "compiled successfully."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return ToExpression(new BlockStatement(
+                    new IStatement[] { ToStatement(lockee), lockBody }));
+            }
+
+            if (lockeeTy.GetIsValueType())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "type error",
+                    NodeHelpers.HighlightEven(
+                        "'", "lock", "' statements can only be applied to reference types."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                return ToExpression(new BlockStatement(
+                    new IStatement[] { ToStatement(lockee), lockBody }));
+            }
+
+            // Now, build an IR tree that looks like this:
+            //
+            //
+            // var lockeeVar = lockee;
+            // bool hasEntered = false;
+            // try
+            // {
+            //     System.Threading.Monitor.Enter((object)lockeeVar, out hasEntered);
+            //     lockBody;
+            // }
+            // finally
+            // {
+            //     if (hasEntered) 
+            //         System.Threading.Monitor.Exit((object)lockeeVar);
+            // }
+
+            var stmts = new List<IStatement>();
+            var lockeeVar = new RegisterVariable("lockee", lockeeTy);
+            stmts.Add(lockeeVar.CreateSetStatement(lockee));
+            var hasEnteredFlag = new LocalVariable("hasEntered", PrimitiveTypes.Boolean);
+            stmts.Add(hasEnteredFlag.CreateSetStatement(new BooleanExpression(false)));
+            var lockeeObj = new ReinterpretCastExpression(
+                                lockeeVar.CreateGetExpression(), rootTy);
+            stmts.Add(new TryStatement(
+                new BlockStatement(new IStatement[]
+                {
+                    new ExpressionStatement(new InvocationExpression(
+                        enterMethod, null,
+                        new IExpression[]
+                        { 
+                            lockeeObj,
+                            hasEnteredFlag.CreateAddressOfExpression() 
+                        })),
+                    lockBody
+                }),
+                new IfElseStatement(
+                    hasEnteredFlag.CreateGetExpression(), 
+                    new ExpressionStatement(new InvocationExpression(
+                        exitMethod, null,
+                        new IExpression[] { lockeeObj })))));
+
+            return ToExpression(new BlockStatement(stmts));
         }
     }
 }
