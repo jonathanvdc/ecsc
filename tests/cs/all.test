@@ -19,6 +19,7 @@ tests
     inc-dec/IncDec.test;
     internal/Internal.test;
     local-decl/LocalDecl.test;
+    lock/Lock.test;
     overrides/Overrides.test;
     prop-init/PropInit.test;
     properties/Properties.test;
