@@ -1,0 +1,45 @@
+// A compare-test test description.
+// This test compares ecsc to the reference implementation (csc or mcs).
+
+build
+{
+    $(compiler) $(Filename).cs $(Flags);
+}
+
+run
+{
+    return = @($(net-runtime) $(Executable) $(Args));
+}
+
+configs
+{
+    EcscOg
+    {
+        // TODO: remove the -fno-dead-code-elimination flag when
+        // -fdead-code-elimination is no longer a default pass.
+        compiler = $ecsc;
+        Flags = -Og -platform clr -fno-dead-code-elimination -o $(Executable);
+    }
+    EcscO3
+    {
+        compiler = $ecsc;
+        Flags = -O3 -platform clr -o $(Executable);
+    }
+    ReferenceDebug
+    {
+        compiler = $csc;
+        Flags = /debug+ /out:$(Executable);
+    }
+    ReferenceRelease
+    {
+        compiler = $csc;
+        Flags = /optimize+ /out:$(Executable);
+    }
+}
+
+init
+{
+    Filename = ExceptionHandling;
+    Executable = bin/$(Filename).exe;
+    Args = ;
+}

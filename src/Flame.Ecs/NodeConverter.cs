@@ -476,10 +476,12 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
                 result.AddExprConverter(CodeSymbols.DoWhile, ExpressionConverters.ConvertDoWhileExpression);
                 result.AddExprConverter(CodeSymbols.Lock, ExpressionConverters.ConvertLockExpression);
+                result.AddExprConverter(CodeSymbols.Try, ExpressionConverters.ConvertTryExpression);
 
                 // Expressions
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
                 result.AddExprConverter(CodeSymbols.Return, ExpressionConverters.ConvertReturn);
+                result.AddExprConverter(CodeSymbols.Throw, ExpressionConverters.ConvertThrowExpression);
                 result.AddTypeOrExprConverter(CodeSymbols.Dot, ExpressionConverters.ConvertMemberAccess);
                 result.AddTypeOrExprConverter(CodeSymbols.Of, ExpressionConverters.ConvertInstantiation);
 

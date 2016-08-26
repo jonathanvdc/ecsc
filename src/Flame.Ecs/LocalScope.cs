@@ -268,21 +268,27 @@ namespace Flame.Ecs
     public sealed class LocalScope : ILocalScope
     {
         public LocalScope(ILocalScope Parent)
-            : this(Parent, new List<LocalVariable>(), new Dictionary<string, LocalVariable>())
+            : this(
+                Parent, new List<IVariable>(), 
+                new Dictionary<string, IVariable>(),
+                new Dictionary<string, IVariableMember>())
         {
         }
 
         private LocalScope(
-            ILocalScope Parent, List<LocalVariable> OrderedVars,
-            Dictionary<string, LocalVariable> Locals)
+            ILocalScope Parent, List<IVariable> OrderedVars,
+            Dictionary<string, IVariable> Locals,
+            Dictionary<string, IVariableMember> LocalMembers)
         {
             this.Parent = Parent;
             this.orderedVars = OrderedVars;
             this.locals = Locals;
+            this.localMembers = LocalMembers;
         }
 
-        private List<LocalVariable> orderedVars;
-        private Dictionary<string, LocalVariable> locals;
+        private List<IVariable> orderedVars;
+        private Dictionary<string, IVariable> locals;
+        private Dictionary<string, IVariableMember> localMembers;
 
         /// <summary>
         /// Gets this local scope's parent scope.
@@ -335,6 +341,15 @@ namespace Flame.Ecs
         /// </summary>
         public IVariable DeclareLocal(string Name, IVariableMember Member)
         {
+            return DeclareLocal(Name, Member, new LocalVariable(Member, new UniqueTag(Name)));
+        }
+
+        /// <summary>
+        /// Declares a local variable with the given
+        /// name and signature.
+        /// </summary>
+        public IVariable DeclareLocal(string Name, IVariableMember Member, IVariable Variable)
+        {
             if (locals.ContainsKey(Name))
             {
                 // Variable was already declared in this scope.
@@ -345,7 +360,7 @@ namespace Flame.Ecs
                     {
                         new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope.")),
                         Member.GetSourceLocation().CreateDiagnosticsNode(),
-                        locals[Name].Member.GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: ")
+                        localMembers[Name].GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: ")
                     }));
             }
             else if (Parent.GetVariable(Name) != null
@@ -371,10 +386,10 @@ namespace Flame.Ecs
                     "variable shadowed", nodes));
             }
 
-            var localVar = new LocalVariable(Member, new UniqueTag(Name));
-            orderedVars.Add(localVar);
-            locals[Name] = localVar;
-            return localVar;
+            orderedVars.Add(Variable);
+            locals[Name] = Variable;
+            localMembers[Name] = Member;
+            return Variable;
         }
 
         /// <summary>
@@ -382,7 +397,7 @@ namespace Flame.Ecs
         /// </summary>
         public IVariable GetVariable(string Name)
         {
-            LocalVariable result;
+            IVariable result;
             if (locals.TryGetValue(Name, out result))
                 return result;
             else

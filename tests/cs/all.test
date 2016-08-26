@@ -11,6 +11,7 @@ tests
     const/Const.test;
     constructor/Constructor.test;
     enums/Enums.test;
+    exception-handling/ExceptionHandling.test;
     field/Field.test;
     flow/Flow.test;
     fractal/Fractal.test;

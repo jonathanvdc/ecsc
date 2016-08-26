@@ -2337,5 +2337,108 @@ namespace Flame.Ecs
 
             return ToExpression(new BlockStatement(stmts));
         }
+
+        /// <summary>
+        /// Converts a throw-expression (type #throw).
+        /// </summary>
+        public static IExpression ConvertThrowExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            NodeHelpers.CheckArity(Node, 1, Scope.Log);
+
+            return ToExpression(new ThrowStatement(Converter.ConvertExpression(Node.Args[0], Scope)));
+        }
+
+        /// <summary>
+        /// Converts a try-statement node (type #try),
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertTryExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return VoidExpression.Instance;
+
+            var tryClauses = new List<IStatement>();
+            var catchClauses = new List<CatchClause>();
+            var finallyClauses = new List<IStatement>();
+
+            foreach (var clause in Node.Args)
+            {
+                if (clause.Calls(CodeSymbols.Catch))
+                {
+                    // 'catch' clause
+                    if (!NodeHelpers.CheckArity(clause, 3, Scope.Log))
+                        continue;
+
+                    if (!clause.Args[1].IsIdNamed(GSymbol.Empty))
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "unsupported feature",
+                            NodeHelpers.HighlightEven(
+                                "sorry, '", "when", "' has not been implemented yet."),
+                            NodeHelpers.ToSourceLocation(clause.Args[1].Range)));
+                    }
+
+                    CatchClause resultClause;
+                    LocalScope clauseScope;
+
+                    if (clause.Args[0].Calls(CodeSymbols.Var))
+                    {
+                        var varCall = clause.Args[0];
+
+                        if (!NodeHelpers.CheckArity(varCall, 2, Scope.Log))
+                            continue;
+
+                        var exceptionType = Converter.ConvertCheckedTypeOrError(
+                                                varCall.Args[0], Scope.Function.Global);
+
+                        var exceptionVarName = varCall.Args[1].Name.Name;
+                        var exceptionVarDesc = new DescribedVariableMember(
+                                                   exceptionVarName, exceptionType);
+
+                        resultClause = new CatchClause(exceptionVarDesc);
+                        clauseScope = new LocalScope(Scope);
+                        clauseScope.DeclareLocal(
+                            exceptionVarName, exceptionVarDesc, 
+                            resultClause.ExceptionVariable);
+                    }
+                    else
+                    {
+                        var exceptionType = Converter.ConvertCheckedTypeOrError(
+                                                clause.Args[0], Scope.Function.Global);
+                        resultClause = new CatchClause(new DescribedVariableMember(
+                            "exception", exceptionType));
+                        clauseScope = Scope;
+                    }
+
+                    resultClause.Body = Converter.ConvertScopedStatement(
+                        clause.Args[2], clauseScope);
+
+                    // Don't release clauseScope's resources, because 
+                    // exception handling variables get special treatment.
+
+                    catchClauses.Add(resultClause);
+                }
+                else if (clause.Calls(CodeSymbols.Finally))
+                {
+                    // 'finally' clause
+                    if (!NodeHelpers.CheckArity(clause, 1, Scope.Log))
+                        continue;
+
+                    finallyClauses.Add(Converter.ConvertScopedStatement(
+                        clause.Args[0], Scope));
+                }
+                else
+                {
+                    // 'try' clause
+                    tryClauses.Add(Converter.ConvertScopedStatement(clause, Scope));
+                }
+            }
+
+            return ToExpression(new TryStatement(
+                new BlockStatement(tryClauses), 
+                new BlockStatement(finallyClauses), 
+                catchClauses));
+        }
     }
 }
