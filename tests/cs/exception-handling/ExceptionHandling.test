@@ -15,10 +15,8 @@ configs
 {
     EcscOg
     {
-        // TODO: remove the -fno-dead-code-elimination flag when
-        // -fdead-code-elimination is no longer a default pass.
         compiler = $ecsc;
-        Flags = -Og -platform clr -fno-dead-code-elimination -o $(Executable);
+        Flags = -Og -platform clr -o $(Executable);
     }
     EcscO3
     {

@@ -79,7 +79,7 @@ namespace ecsc
         }
 
         public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
-            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters, 
+            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
             IBinder Binder, IAssembly DeclaringAssembly)
         {
             var converter = NodeConverter.DefaultNodeConverter;
@@ -90,13 +90,13 @@ namespace ecsc
             processor.AddMacros(typeof(global::LeMP.StandardMacros).Assembly, false);
 
             return ParseCompilationUnitsAsync(
-                SourceItems, Parameters, Binder, 
+                SourceItems, Parameters, Binder,
                 DeclaringAssembly, converter, processor, sink);
         }
 
         public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
-            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters, 
-            IBinder Binder, IAssembly DeclaringAssembly, 
+            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
+            IBinder Binder, IAssembly DeclaringAssembly,
             NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
         {
             var units = new Task<INamespaceBranch>[SourceItems.Count];
@@ -104,7 +104,7 @@ namespace ecsc
             {
                 var item = SourceItems[i];
                 units[i] = ParseCompilationUnitAsync(
-                    item, Parameters, Binder, DeclaringAssembly, 
+                    item, Parameters, Binder, DeclaringAssembly,
                     Converter, Processor, Sink);
             }
             return Task.WhenAll(units);
@@ -126,7 +126,7 @@ namespace ecsc
         }
 
         public static Task<INamespaceBranch> ParseCompilationUnitAsync(
-            IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder, 
+            IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
             IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
         {
             Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
@@ -156,7 +156,7 @@ namespace ecsc
         }
 
         public static IEnumerable<LNode> ParseNodes(
-            string Text, string Identifier, IParsingService Service, 
+            string Text, string Identifier, IParsingService Service,
             MacroProcessor Processor, IMessageSink Sink)
         {
             var lexer = Service.Tokenize(new UString(Text), Identifier, Sink);
@@ -176,10 +176,10 @@ namespace ecsc
         public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
         {
             return new ParsedProject[]
-            { 
+            {
                 new ParsedProject(
-                    Projects.First().CurrentPath, 
-                    UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray())) 
+                    Projects.First().CurrentPath,
+                    UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray()))
             };
         }
 
@@ -188,10 +188,8 @@ namespace ecsc
             return new PassPreferences(new PassCondition[]
             {
                 new PassCondition(AutoInitializationPass.AutoInitializationPassName, _ => true),
-                new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName, 
+                new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName,
                     optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
-                new PassCondition(Flame.Front.Target.PassExtensions.EliminateDeadCodePassName,
-                    optInfo => !optInfo.OptimizeAggressive && (optInfo.OptimizeMinimal || optInfo.OptimizeDebug)),
                 new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
                     optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
             },
@@ -200,10 +198,6 @@ namespace ecsc
                     new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
                         AnalysisPasses.ValueTypeDelegatePass,
                         ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
-
-                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-                        VerifyingDeadCodePass.Instance,
-                        Flame.Front.Target.PassExtensions.EliminateDeadCodePassName),
 
                     new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
                         AutoInitializationPass.Instance,
