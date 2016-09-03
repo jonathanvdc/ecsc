@@ -2556,7 +2556,8 @@ namespace Flame.Ecs
             }
 
             return new IfElseStatement(
-                CreateNullCheck(Target.Expression, Scope.Function.Global), 
+                new NotExpression(
+                    CreateNullCheck(Target.Expression, Scope.Function.Global)), 
                 new ExpressionStatement(resolvedCall));
         }
 
