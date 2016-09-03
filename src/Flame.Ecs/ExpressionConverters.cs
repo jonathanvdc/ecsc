@@ -1592,12 +1592,15 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Converts a variable declaration node (type #var).
+        /// Converts a variable declaration node, (type #var)
+        /// and returns an (initialization-statement, variable-list)
+        /// pair.
         /// </summary>
-        public static IExpression ConvertVariableDeclaration(LNode Node, LocalScope Scope, NodeConverter Converter)
+        public static Tuple<IStatement, IReadOnlyList<IVariable>> ConvertVariableDeclaration(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return new Tuple<IStatement, IReadOnlyList<IVariable>>(
+                    EmptyStatement.Instance, new IVariable[] { });
 
             var varTyNode = Node.Args[0];
             bool isVar = varTyNode.IsIdNamed(CodeSymbols.Missing);
@@ -1613,12 +1616,13 @@ namespace Flame.Ecs
                             "type resolution",
                             NodeHelpers.HighlightEven("could not resolve variable type '", Node.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(varTyNode.Range)));
-                    return VoidExpression.Instance;
+                    return new Tuple<IStatement, IReadOnlyList<IVariable>>(
+                        EmptyStatement.Instance, new IVariable[] { });
                 }
             }
 
             var stmts = new List<IStatement>();
-            IExpression expr = null;
+            var locals = new List<IVariable>();
             foreach (var item in Node.Args.Slice(1))
             {
                 var decompNodes = NodeHelpers.DecomposeAssignOrId(item, Scope.Log);
@@ -1655,10 +1659,21 @@ namespace Flame.Ecs
                             val, varMember.VariableType,
                             NodeHelpers.ToSourceLocation(decompNodes.Item2.Range))));
                 }
-                expr = local.CreateGetExpression();
+                locals.Add(local);
             }
+            return new Tuple<IStatement, IReadOnlyList<IVariable>>(
+                new BlockStatement(stmts), locals);
+
+        }
+
+        /// <summary>
+        /// Converts a variable declaration node (type #var).
+        /// </summary>
+        public static IExpression ConvertVariableDeclarationExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            var declPair = ConvertVariableDeclaration(Node, Scope, Converter);
             return new InitializedExpression(
-                new BlockStatement(stmts), expr);
+                declPair.Item1, declPair.Item2.Last().CreateGetExpression());
         }
 
         /// <summary>
@@ -2439,6 +2454,179 @@ namespace Flame.Ecs
                 new BlockStatement(tryClauses), 
                 new BlockStatement(finallyClauses), 
                 catchClauses));
+        }
+
+        private static LogEntry CreateUsingDisposeError(
+            TypeOrExpression Target, LocalScope Scope,
+            SourceLocation Location)
+        {
+            return new LogEntry(
+                "method resolution",
+                NodeHelpers.HighlightEven(
+                    "type '", 
+                    Scope.Function.Global.TypeNamer.Convert(Target.ExpressionType),
+                    "' used in a '", "using", "' statement must " +
+                "have an unambiguous parameterless '",
+                    "Dispose", "' method."),
+                Location);
+        }
+
+        private static IType FindAnyRefTypeAncestor(
+            IType Type, GlobalScope Scope)
+        {
+            if (Type.GetIsReferenceType())
+                return Type;
+
+            var refTyParent = Type.GetAllBaseTypes()
+                .FirstOrDefault(x => x.GetIsReferenceType());
+
+            if (refTyParent != null)
+                return refTyParent;
+
+            refTyParent = Scope.Environment.RootType; 
+            if (refTyParent != null)
+                return refTyParent;
+
+            return PrimitiveTypes.Void;
+        }
+
+        private static IExpression CreateNullCheck(
+            IExpression Expression, GlobalScope Scope)
+        {
+            var exprTy = Expression.Type;
+            if (exprTy.GetIsValueType()
+                || PrimitiveTypes.GetIsPrimitive(exprTy))
+            {
+                // TODO: nullables
+                // This cannot possibly be 'null'.
+                return new BooleanExpression(false);
+            }
+            else if (exprTy.GetIsGenericParameter())
+            {
+                // Generic type parameters have to be boxed,
+                // and the result should then be compared to
+                // 'null'. 
+                Expression = new ConversionDescription(
+                    ConversionKind.BoxingConversion, null)
+                        .Convert(Expression, FindAnyRefTypeAncestor(exprTy, Scope));
+            }
+            // Reference types.
+            return new EqualityExpression(
+                Expression, 
+                new ReinterpretCastExpression(
+                    NullExpression.Instance, Expression.Type));
+        }
+
+        // Creates a 'Dispose' call for a 'using' statement.
+        private static IStatement CreateUsingDisposeStatement(
+            TypeOrExpression Target, 
+            LocalScope Scope, SourceLocation Location)
+        {
+            var method = ConvertMemberAccess(
+                             Target, "Dispose", 
+                             new IType[] { },
+                             Scope, Location); 
+            
+            if (!method.IsExpression)
+            {
+                Scope.Log.LogError(CreateUsingDisposeError(
+                    Target, Scope, Location));
+                return EmptyStatement.Instance;
+            }
+
+            var inter = IntersectionExpression.GetIntersectedExpressions(
+                            method.Expression).ToArray();
+
+            if (inter.Length == 0)
+            {
+                Scope.Log.LogError(CreateUsingDisposeError(
+                    Target, Scope, Location));
+                return EmptyStatement.Instance;
+            }
+
+            var resolvedCall = OverloadResolution.CreateUncheckedInvocation(
+                                   inter, new Tuple<IExpression, SourceLocation>[] { },
+                                   Scope.Function.Global);
+                
+            if (resolvedCall == null)
+            {
+                Scope.Log.LogError(CreateUsingDisposeError(
+                    Target, Scope, Location));
+                return EmptyStatement.Instance;
+            }
+
+            return new IfElseStatement(
+                CreateNullCheck(Target.Expression, Scope.Function.Global), 
+                new ExpressionStatement(resolvedCall));
+        }
+
+        /// <summary>
+        /// Converts a using-statement, and wraps it in an expression. (type #using).
+        /// </summary>
+        /// <returns>The using-statement, as an expression.</returns>
+        public static IExpression ConvertUsingExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            // FIXME: the EC# parser doesn't seem to support multiple
+            // variable declarations in 'using' statements.
+
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var childScope = new LocalScope(Scope);
+
+            IStatement initStmt;
+            IStatement disposeStmt;
+
+            if (Node.Args[0].Calls(CodeSymbols.Var))
+            {
+                var declPair = ConvertVariableDeclaration(
+                                   Node.Args[0], childScope, Converter);
+                initStmt = declPair.Item1;
+                var disposeActions = new List<IStatement>();
+                var srcLoc = NodeHelpers.ToSourceLocation(Node.Args[0].Range);
+                foreach (var local in declPair.Item2)
+                {
+                    disposeActions.Add(CreateUsingDisposeStatement(
+                        new TypeOrExpression(local.CreateGetExpression()),
+                        Scope, srcLoc));
+                }
+                disposeStmt = new BlockStatement(disposeActions);
+            }
+            else
+            {
+                var usedExpr = Converter.ConvertExpression(
+                                   Node.Args[0], childScope);
+                var local = new LocalVariable("usingTemp", usedExpr.Type);
+                initStmt = local.CreateSetStatement(usedExpr);
+                disposeStmt = CreateUsingDisposeStatement(
+                    new TypeOrExpression(local.CreateGetExpression()),
+                    Scope, NodeHelpers.ToSourceLocation(Node.Args[0].Range));
+            }
+            
+            var usingBody = Converter.ConvertScopedStatement(Node.Args[1], childScope);
+
+            // Now, build an IR tree that is equivalent to like this:
+            //
+            //
+            // initStmt;
+            // try
+            // {
+            //     usingBody;
+            // }
+            // finally
+            // {
+            //     disposeStmt;
+            // }
+
+            return ToExpression(new BlockStatement(
+                new IStatement[]
+                {
+                    initStmt,
+                    new TryStatement(
+                        usingBody, 
+                        disposeStmt)
+                }));
         }
     }
 }

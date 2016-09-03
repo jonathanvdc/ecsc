@@ -321,7 +321,22 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames { get { return locals.Keys.Union(Parent.VariableNames); } }
+        public IEnumerable<string> VariableNames 
+        { 
+            get 
+            { 
+                return LocalVariableNames.Union(Parent.VariableNames); 
+            } 
+        }
+
+        /// <summary>
+        /// Gets the set of locally defined variable identifiers
+        /// for this scope.
+        /// </summary>
+        public IEnumerable<string> LocalVariableNames 
+        { 
+            get { return locals.Keys; } 
+        }
 
         /// <summary>
         /// Creates a statement that releases 

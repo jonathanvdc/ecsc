@@ -59,6 +59,16 @@ namespace Flame.Ecs
 
         public bool IsNamespace { get { return !Namespace.IsEmpty; } }
 
+        public IType ExpressionType
+        {
+            get
+            {
+                return Expression == null
+                    ? null
+                    : Expression.Type;
+            }
+        }
+
         /// <summary>
         /// Adds a source location to this type-or-expression object.
         /// A new instance is returned that represents the updated entity.

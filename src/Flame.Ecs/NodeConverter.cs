@@ -477,6 +477,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.DoWhile, ExpressionConverters.ConvertDoWhileExpression);
                 result.AddExprConverter(CodeSymbols.Lock, ExpressionConverters.ConvertLockExpression);
                 result.AddExprConverter(CodeSymbols.Try, ExpressionConverters.ConvertTryExpression);
+                result.AddExprConverter(CodeSymbols.UsingStmt, ExpressionConverters.ConvertUsingExpression);
 
                 // Expressions
                 result.AddExprConverter(CodeSymbols.Braces, ExpressionConverters.ConvertBlock);
@@ -498,7 +499,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
 
                 // Variable declaration
-                result.AddExprConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclaration);
+                result.AddExprConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclarationExpression);
 
                 // Operators
                 // - Ternary operators
