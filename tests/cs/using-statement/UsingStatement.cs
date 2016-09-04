@@ -26,5 +26,7 @@ public static class Program
         {
             Console.WriteLine(r);
         }
+        using (new Resource())
+        { }
     }
 }
