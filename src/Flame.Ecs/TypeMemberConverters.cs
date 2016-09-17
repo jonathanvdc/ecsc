@@ -820,7 +820,9 @@ namespace Flame.Ecs
             // which can be used when analyzing the property.
             IField backingField = null;
             if (Node.Args[3].Calls(CodeSymbols.Braces)
-                && Node.Args[3].Args.Any(item => item.IsId))
+                && Node.Args[3].Args.Any(item => item.IsId)
+                && !Node.Attrs.Any(item => item.IsIdNamed(CodeSymbols.Abstract))
+                && !DeclaringType.GetIsInterface())
             {
                 backingField = new LazyDescribedField(
                     new SimpleName(name.ToString() + "$value"), 
@@ -1174,8 +1176,8 @@ namespace Flame.Ecs
             BasePropertySpec BaseProperties,
             GlobalScope Scope, NodeConverter Converter)
         {
-            bool isGetter = Node.Calls(CodeSymbols.get);
-            if (!isGetter && !Node.Calls(CodeSymbols.set))
+            bool isGetter = Node.Calls(CodeSymbols.get) || Node.IsIdNamed(CodeSymbols.get);
+            if (!isGetter && !Node.Calls(CodeSymbols.set) && !Node.IsIdNamed(CodeSymbols.set))
             {
                 // The given node is neither a 'get' nor a 'set'
                 // call.
@@ -1184,8 +1186,8 @@ namespace Flame.Ecs
                     NodeHelpers.ToSourceLocation(Node.Range));
                 return;
             }
-
-            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+            
+            if (!NodeHelpers.CheckMaxArity(Node, 1, Scope.Log))
                 return;
 
             var accKind = isGetter 
@@ -1222,11 +1224,56 @@ namespace Flame.Ecs
                 
                 var localScope = new LocalScope(
                                      CreateFunctionScope(accDef, Scope));
+                    
+                bool isAbstract = DeclaringProperty.GetIsAbstract() 
+                    || DeclaringProperty.DeclaringType.GetIsInterface();
 
-                // Analyze the body.
-                accDef.Body = ExpressionConverters.AutoReturn(
-                    accDef.ReturnType, Converter.ConvertExpression(Node.Args[0], localScope), 
-                    NodeHelpers.ToSourceLocation(Node.Args[0].Range), Scope);  
+                if (Node.ArgCount == 0)
+                {
+                    // Accessor doesn't have a body.
+                    if (!isAbstract)
+                    {
+                        if (DeclaringProperty.DeclaringType.GetIsInterface())
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                    "' cannot have a method body, because it is " +
+                                    "declared in an '", "interface", "'."),
+                                NodeHelpers.ToSourceLocation(Node.Range)));
+                        }
+                        else
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                    "' cannot have a method body, because it is " +
+                                    "marked '", "abstract", "'."),
+                                NodeHelpers.ToSourceLocation(Node.Range)));
+                        }
+                    }
+                    accDef.Body = EmptyStatement.Instance;
+                }
+                else
+                {
+                    if (isAbstract)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                "' must have a method body, because it is not '",
+                                "abstract", "', and its declaring type is not an '", 
+                                "interface", "'."),
+                            NodeHelpers.ToSourceLocation(Node.Range)));
+                    }
+                    // Analyze the body.
+                    accDef.Body = ExpressionConverters.AutoReturn(
+                        accDef.ReturnType, Converter.ConvertExpression(Node.Args[0], localScope), 
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range), Scope);  
+                }
             });
 
             // Don't forget to add this accessor to its enclosing
