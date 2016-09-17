@@ -73,9 +73,10 @@ namespace Flame.Ecs
             Func<LNode, bool> HandleSpecial)
         {
             bool isStatic = false;
+            bool isInterface = DeclaringType.GetIsInterface();
             var attrs = Converter.ConvertAttributeListWithAccess(
-                            Attributes, DeclaringType.GetIsInterface() ? AccessModifier.Public : AccessModifier.Private,
-                            node =>
+                            Attributes, isInterface ? AccessModifier.Public : AccessModifier.Private,
+                            isInterface, node =>
                 {
                     if (node.IsIdNamed(CodeSymbols.Static))
                     {
@@ -225,6 +226,20 @@ namespace Flame.Ecs
                 Location));
         }
 
+        private static void CheckNonInterfaceMemberAttribute(
+            LNode Node, ITypeMember Target, GlobalScope Scope)
+        {
+            if (Target.DeclaringType.GetIsInterface())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "modifier '", Node.Name.Name, "' cannot be applied to '", 
+                        "interface", "' members."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+        }
+
         /// <summary>
         /// Handles type member attributes for members that
         /// can support abstract, virtual, sealed, override and
@@ -246,26 +261,31 @@ namespace Flame.Ecs
                 if (node.IsIdNamed(CodeSymbols.Override))
                 {
                     overrideNode = node;
+                    CheckNonInterfaceMemberAttribute(node, Target, Scope);
                     return true;
                 }
                 else if (node.IsIdNamed(CodeSymbols.Abstract))
                 {
                     abstractNode = node;
+                    CheckNonInterfaceMemberAttribute(node, Target, Scope);
                     return true;
                 }
                 else if (node.IsIdNamed(CodeSymbols.Virtual))
                 {
                     virtualNode = node;
+                    CheckNonInterfaceMemberAttribute(node, Target, Scope);
                     return true;
                 }
                 else if (node.IsIdNamed(CodeSymbols.Sealed))
                 {
                     sealedNode = node;
+                    CheckNonInterfaceMemberAttribute(node, Target, Scope);
                     return true;
                 }
                 else if (node.IsIdNamed(CodeSymbols.New))
                 {
                     newNode = node;
+                    CheckNonInterfaceMemberAttribute(node, Target, Scope);
                     return true;
                 }
                 else
@@ -569,11 +589,21 @@ namespace Flame.Ecs
 
                 bool isExtern = methodDef.HasAttribute(
                                     PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+                bool isInterface = methodDef.DeclaringType.GetIsInterface();
                 bool isAbstractOrExtern = methodDef.GetIsAbstract() || isExtern;
 
                 if (Node.ArgCount > 3)
                 {
-                    if (isAbstractOrExtern)
+                    if (isInterface)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "'", "interface", "' method '", methodDef.Name.ToString(), 
+                                "' cannot have a body."),
+                            methodDef.GetSourceLocation()));
+                    }
+                    else if (isAbstractOrExtern)
                     {
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
@@ -591,14 +621,15 @@ namespace Flame.Ecs
                 }
                 else
                 {
-                    if (!isAbstractOrExtern)
+                    if (!isAbstractOrExtern && !isInterface)
                     {
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
                                 "method '", methodDef.Name.ToString(), 
                                 "' must have a body because it is not marked '", 
-                                "abstract", "', '", "extern", "' or '", "partial", "'."),
+                                "abstract", "', '", "extern", "' or '", "partial", 
+                                "', and is not an '", "interface", "' member."),
                             methodDef.GetSourceLocation()));
                     }
                     methodDef.Body = EmptyStatement.Instance;
@@ -1103,6 +1134,7 @@ namespace Flame.Ecs
         {
             return Converter.ConvertAttributeListWithAccess(
                 Attributes, DeclaringProperty.GetAccess(), 
+                DeclaringProperty.DeclaringType.GetIsInterface(),
                 _ => false, Scope);
         }
 

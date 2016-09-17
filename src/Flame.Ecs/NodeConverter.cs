@@ -71,12 +71,12 @@ namespace Flame.Ecs
         private static void LogCannotConvert(LNode Node, ICompilerLog Log)
         {
             Log.LogError(new LogEntry(
-                "unknown node",
-                NodeHelpers.HighlightEven(
-                    "syntax node '", Node.Name.Name, 
-                    "' could not be converted because its node type was not recognized " +
-                    "as a known node type. (in this context)"),
-                NodeHelpers.ToSourceLocation(Node.Range)));
+                    "unknown node",
+                    NodeHelpers.HighlightEven(
+                        "syntax node '", Node.Name.Name, 
+                        "' could not be converted because its node type was not recognized " +
+                        "as a known node type. (in this context)"),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
         }
 
         /// <summary>
@@ -122,8 +122,8 @@ namespace Flame.Ecs
             LNode Node, GlobalScope Scope)
         {
             var localScope = new LocalScope(new FunctionScope(
-                        Scope, null, null, null, 
-                        new Dictionary<string, IVariable>()));
+                                     Scope, null, null, null, 
+                                     new Dictionary<string, IVariable>()));
 
             return ConvertTypeOrExpression(Node, localScope).CollapseTypes(
                 NodeHelpers.ToSourceLocation(Node.Range), Scope);
@@ -142,10 +142,10 @@ namespace Flame.Ecs
             if (retType == null)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "type resolution",
-                    NodeHelpers.HighlightEven(
-                        "could not resolve type '", Node.ToString(), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
+                        "type resolution",
+                        NodeHelpers.HighlightEven(
+                            "could not resolve type '", Node.ToString(), "'."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
             }
             return retType;
         }
@@ -210,16 +210,41 @@ namespace Flame.Ecs
         /// handled, the function returns 'true'. Only nodes
         /// for which the special case function returns 
         /// 'false', are directly converted by this node converter. 
-        /// Additionally, access modifiers are treated separately.
+        /// Additionally, access modifiers are treated by a separate
+        /// function.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
-            IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
+            IEnumerable<LNode> Attributes, 
+            Func<IEnumerable<LNode>,  GlobalScope, AccessModifier> HandleAccess,
             Func<LNode, bool> HandleSpecial, GlobalScope Scope)
         {
             var partitioned = NodeHelpers.Partition(Attributes, item => item.IsId && NodeHelpers.IsAccessModifier(item.Name));
 
+            yield return new AccessAttribute(HandleAccess(partitioned.Item1, Scope));
+            foreach (var item in ConvertAttributeList(partitioned.Item2, HandleSpecial, Scope))
+                yield return item;
+        }
+
+        /// <summary>
+        /// Converts the given sequence of access modifier nodes
+        /// to a single access modifier. A default access modifier
+        /// is used if the given sequence of modifiers is empty.
+        /// </summary>
+        /// <returns>An access modifier.</returns>
+        /// <param name="Modifiers">
+        /// The sequence of access modifier nodes.
+        /// </param>
+        /// <param name="Scope">The global scope.</param>
+        /// <param name="DefaultAccess">
+        /// The default access modifier, which is returned if 
+        /// the set of access modifier nodes was empty.
+        /// </param>
+        public AccessModifier ConvertAccessModifiersDefault(
+            IEnumerable<LNode> Modifiers, GlobalScope Scope, 
+            AccessModifier DefaultAccess)
+        {
             var accModSet = new HashSet<Symbol>();
-            foreach (var item in partitioned.Item1)
+            foreach (var item in Modifiers)
             {
                 var symbol = item.Name;
                 if (!accModSet.Add(symbol) && EcsWarnings.DuplicateAccessModifierWarning.UseWarning(Scope.Log.Options))
@@ -227,27 +252,31 @@ namespace Flame.Ecs
                     // Looks like this access modifier is a duplicate.
                     // Let's issue a warning.
                     Scope.Log.LogWarning(new LogEntry(
-                        "duplicate access modifier",
-                        EcsWarnings.DuplicateAccessModifierWarning.CreateMessage(new MarkupNode(
-                            "#group",
-                            NodeHelpers.HighlightEven("access modifier '", symbol.Name, "' is duplicated. "))),
-                        NodeHelpers.ToSourceLocation(item.Range)));
+                            "duplicate access modifier",
+                            EcsWarnings.DuplicateAccessModifierWarning.CreateMessage(new MarkupNode(
+                                    "#group",
+                                    NodeHelpers.HighlightEven("access modifier '", symbol.Name, "' is duplicated. "))),
+                            NodeHelpers.ToSourceLocation(item.Range)));
                 }
             }
 
             var accMod = NodeHelpers.ToAccessModifier(accModSet);
-            if (!accMod.HasValue)
+            if (accMod.HasValue)
+            {
+                return accMod.Value;
+            }
+            else
             {
                 if (accModSet.Count != 0)
                 {
                     // The set of access modifiers we found was no good.
                     // Throw an error in the user's direction.
-                    var first = partitioned.Item1.First();
+                    var first = Modifiers.First();
                     var srcLoc = NodeHelpers.ToSourceLocation(first.Range);
                     var fragments = new List<string>();
                     fragments.Add("set of access modifiers '");
                     fragments.Add(first.Name.Name);
-                    foreach (var item in partitioned.Item1.Skip(1))
+                    foreach (var item in Modifiers.Skip(1))
                     {
                         srcLoc = srcLoc.Concat(NodeHelpers.ToSourceLocation(item.Range));
                         fragments.Add("', '");
@@ -255,18 +284,85 @@ namespace Flame.Ecs
                     }
                     fragments.Add("' could not be unambiguously resolved.");
                     Scope.Log.LogError(new LogEntry(
-                        "ambiguous access modifiers",
-                        NodeHelpers.HighlightEven(fragments.ToArray()),
-                        srcLoc));
+                            "ambiguous access modifiers",
+                            NodeHelpers.HighlightEven(fragments.ToArray()),
+                            srcLoc));
                 }
 
                 // Assume that the default access modifier was intended.
-                accMod = DefaultAccess;
+                return DefaultAccess;
             }
+        }
 
-            yield return new AccessAttribute(accMod.Value);
-            foreach (var item in ConvertAttributeList(partitioned.Item2, HandleSpecial, Scope))
-                yield return item;
+        /// <summary>
+        /// Always returns the 'public' access modifier, and 
+        /// flags all explicit access modifiers as errors.
+        /// </summary>
+        /// <returns>The 'public' access modifier.</returns>
+        /// <param name="Modifiers">
+        /// The sequence of access modifier nodes.
+        /// </param>
+        /// <param name="Scope">The global scope.</param>
+        public AccessModifier ConvertAccessModifiersInterface(
+            IEnumerable<LNode> Modifiers, GlobalScope Scope)
+        {
+            foreach (var item in Modifiers)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error", 
+                    NodeHelpers.HighlightEven(
+                        "modifier '", item.Name.Name, "' is not valid on this item, " +
+                        "because '", "interface", "' members cannot have access modifiers."),
+                    NodeHelpers.ToSourceLocation(item.Range)));
+            }
+            return AccessModifier.Public;
+        }
+
+        /// <summary>
+        /// Converts the given sequence of attribute nodes.
+        /// A function is given that can be used to handle 
+        /// special cases. If such a special case has been 
+        /// handled, the function returns 'true'. Only nodes
+        /// for which the special case function returns 
+        /// 'false', are directly converted by this node converter. 
+        /// Additionally, access modifiers are treated separately.
+        /// </summary>
+        public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
+            IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
+            Func<LNode, bool> HandleSpecial, GlobalScope Scope)
+        {
+            return ConvertAttributeListWithAccess(
+                Attributes, 
+                (nodes, s) => 
+                    ConvertAccessModifiersDefault(nodes, s, DefaultAccess), 
+                HandleSpecial, Scope);
+        }
+
+        /// <summary>
+        /// Converts the given sequence of attribute nodes.
+        /// A function is given that can be used to handle 
+        /// special cases. If such a special case has been 
+        /// handled, the function returns 'true'. Only nodes
+        /// for which the special case function returns 
+        /// 'false', are directly converted by this node converter. 
+        /// Additionally, access modifiers are treated separately.
+        /// </summary>
+        public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
+            IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
+            bool IsInterface, Func<LNode, bool> HandleSpecial, 
+            GlobalScope Scope)
+        {
+            if (IsInterface)
+            {
+                return ConvertAttributeListWithAccess(
+                    Attributes, ConvertAccessModifiersInterface,
+                    HandleSpecial, Scope);
+            }
+            else
+            {
+                return ConvertAttributeListWithAccess(
+                    Attributes, DefaultAccess, HandleSpecial, Scope);
+            }
         }
 
         /// <summary>
@@ -287,7 +383,7 @@ namespace Flame.Ecs
                     else if (Node.IsCall)
                     {
                         return new TypeOrExpression(SourceExpression.Create(
-                            CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
+                                CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
                     }
                     else if (Node.IsLiteral)
                     {
@@ -301,10 +397,10 @@ namespace Flame.Ecs
                         else
                         {
                             Scope.Function.Global.Log.LogError(new LogEntry(
-                                "unsupported literal type",
-                                NodeHelpers.HighlightEven(
-                                    "literals of type '", val.GetType().FullName, "' are not supported."),
-                                NodeHelpers.ToSourceLocation(Node.Range)));
+                                    "unsupported literal type",
+                                    NodeHelpers.HighlightEven(
+                                        "literals of type '", val.GetType().FullName, "' are not supported."),
+                                    NodeHelpers.ToSourceLocation(Node.Range)));
                             return new TypeOrExpression(VoidExpression.Instance);
                         }
                     }
@@ -331,9 +427,9 @@ namespace Flame.Ecs
             else
             {
                 Scope.Function.Global.Log.LogError(new LogEntry(
-                    "expression resolution",
-                    NodeHelpers.HighlightEven("expression could not be resolved."),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
+                        "expression resolution",
+                        NodeHelpers.HighlightEven("expression could not be resolved."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 return VoidExpression.Instance;
             }
         }
@@ -361,9 +457,9 @@ namespace Flame.Ecs
         {
             AddTypeOrExprConverter(Symbol, (node, scope, self) => 
 				new TypeOrExpression(new IType[]
-            { 
-                Converter(node, scope.Function.Global, self)
-            }));
+                    { 
+                        Converter(node, scope.Function.Global, self)
+                    }));
         }
 
         /// <summary>
@@ -446,8 +542,8 @@ namespace Flame.Ecs
             get
             {
                 var result = new NodeConverter(
-                     ExpressionConverters.LookupUnqualifiedName,
-                     ExpressionConverters.ConvertCall);
+                                 ExpressionConverters.LookupUnqualifiedName,
+                                 ExpressionConverters.ConvertCall);
 
                 // Global entities
                 result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);

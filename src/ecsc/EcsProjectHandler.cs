@@ -33,180 +33,180 @@ using Flame.Front.Passes;
 
 namespace ecsc
 {
-    public class EcsProjectHandler : IProjectHandler
-    {
-        public IEnumerable<string> Extensions
-        {
-            get { return new string[] { "ecsproj", "ecs", "cs", "les" }; }
-        }
+	public class EcsProjectHandler : IProjectHandler
+	{
+		public IEnumerable<string> Extensions
+		{
+			get { return new string[] { "ecsproj", "ecs", "cs", "les" }; }
+		}
 
-        public IProject Parse(ProjectPath Path, ICompilerLog Log)
-        {
-            if (Path.HasExtension("ecs") || Path.HasExtension("cs") || Path.HasExtension("les"))
-            {
-                return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
-            }
-            else
-            {
-                return DSProject.ReadProject(Path.Path.Path);
-            }
-        }
+		public IProject Parse(ProjectPath Path, ICompilerLog Log)
+		{
+			if (Path.HasExtension("ecs") || Path.HasExtension("cs") || Path.HasExtension("les"))
+			{
+				return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
+			}
+			else
+			{
+				return DSProject.ReadProject(Path.Path.Path);
+			}
+		}
 
-        public IProject MakeProject(IProject Project, ProjectPath Path, ICompilerLog Log)
-        {
-            var newPath = Path.Path.Parent.Combine(Project.Name).ChangeExtension("ecsproj");
-            var dsp = DSProject.FromProject(Project, newPath.AbsolutePath.Path);
-            dsp.WriteTo(newPath.Path);
-            return dsp;
-        }
+		public IProject MakeProject(IProject Project, ProjectPath Path, ICompilerLog Log)
+		{
+			var newPath = Path.Path.Parent.Combine(Project.Name).ChangeExtension("ecsproj");
+			var dsp = DSProject.FromProject(Project, newPath.AbsolutePath.Path);
+			dsp.WriteTo(newPath.Path);
+			return dsp;
+		}
 
-        public async Task<IAssembly> CompileAsync(IProject Project, CompilationParameters Parameters)
-        {
-            var name = Parameters.Log.GetAssemblyName(Project.AssemblyName ?? Project.Name ?? "");
-            var extBinder = await Parameters.BinderTask;
-            var asm = new DescribedAssembly(new SimpleName(name), extBinder.Environment);
+		public async Task<IAssembly> CompileAsync(IProject Project, CompilationParameters Parameters)
+		{
+			var name = Parameters.Log.GetAssemblyName(Project.AssemblyName ?? Project.Name ?? "");
+			var extBinder = await Parameters.BinderTask;
+			var asm = new DescribedAssembly(new SimpleName(name), extBinder.Environment);
 
-            var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
+			var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
 
-            foreach (var item in await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm))
-            {
-                asm.AddNamespace(item);
-            }
+			foreach (var item in await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm))
+			{
+				asm.AddNamespace(item);
+			}
 
-            asm.EntryPoint = EntryPointHelpers.InferEntryPoint(asm, Parameters.Log);
+			asm.EntryPoint = EntryPointHelpers.InferEntryPoint(asm, Parameters.Log);
 
-            return asm;
-        }
+			return asm;
+		}
 
-        public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
-            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-            IBinder Binder, IAssembly DeclaringAssembly)
-        {
-            var converter = NodeConverter.DefaultNodeConverter;
-            NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
-            var sink = new CompilerLogMessageSink(Parameters.Log);
-            var processor = new MacroProcessor(typeof(LeMP.Prelude.BuiltinMacros), sink);
+		public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
+			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
+			IBinder Binder, IAssembly DeclaringAssembly)
+		{
+			var converter = NodeConverter.DefaultNodeConverter;
+			NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
+			var sink = new CompilerLogMessageSink(Parameters.Log);
+			var processor = new MacroProcessor(typeof(LeMP.Prelude.BuiltinMacros), sink);
 
-            processor.AddMacros(typeof(global::LeMP.StandardMacros).Assembly, false);
+			processor.AddMacros(typeof(global::LeMP.StandardMacros).Assembly, false);
 
-            return ParseCompilationUnitsAsync(
-                SourceItems, Parameters, Binder,
-                DeclaringAssembly, converter, processor, sink);
-        }
+			return ParseCompilationUnitsAsync(
+				SourceItems, Parameters, Binder,
+				DeclaringAssembly, converter, processor, sink);
+		}
 
-        public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
-            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-            IBinder Binder, IAssembly DeclaringAssembly,
-            NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
-        {
-            var units = new Task<INamespaceBranch>[SourceItems.Count];
-            for (int i = 0; i < units.Length; i++)
-            {
-                var item = SourceItems[i];
-                units[i] = ParseCompilationUnitAsync(
-                    item, Parameters, Binder, DeclaringAssembly,
-                    Converter, Processor, Sink);
-            }
-            return Task.WhenAll(units);
-        }
+		public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
+			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
+			IBinder Binder, IAssembly DeclaringAssembly,
+			NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
+		{
+			var units = new Task<INamespaceBranch>[SourceItems.Count];
+			for (int i = 0; i < units.Length; i++)
+			{
+				var item = SourceItems[i];
+				units[i] = ParseCompilationUnitAsync(
+					item, Parameters, Binder, DeclaringAssembly,
+					Converter, Processor, Sink);
+			}
+			return Task.WhenAll(units);
+		}
 
-        private static IParsingService GetParsingService(ICompilerOptions Options, string Key, IParsingService Default)
-        {
-            switch (Options.GetOption<string>(Key, "").ToLower())
-            {
-                case "les":
-                    return LesLanguageService.Value;
-                case "ecs":
-                    return EcsLanguageService.Value;
-                case "cs":
-                    return EcsLanguageService.WithPlainCSharpPrinter;
-                default:
-                    return Default;
-            }
-        }
+		private static IParsingService GetParsingService(ICompilerOptions Options, string Key, IParsingService Default)
+		{
+			switch (Options.GetOption<string>(Key, "").ToLower())
+			{
+				case "les":
+					return LesLanguageService.Value;
+				case "ecs":
+					return EcsLanguageService.Value;
+				case "cs":
+					return EcsLanguageService.WithPlainCSharpPrinter;
+				default:
+					return Default;
+			}
+		}
 
-        public static Task<INamespaceBranch> ParseCompilationUnitAsync(
-            IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
-            IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
-        {
-            Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
-            return Task.Run(() =>
-            {
-                var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
-                if (code == null)
-                {
-                    return null;
-                }
-                var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
-                bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
-                var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
-                var nodes = ParseNodes(code.Source, SourceItem.SourceIdentifier, service, Processor, Sink);
+		public static Task<INamespaceBranch> ParseCompilationUnitAsync(
+			IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
+			IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
+		{
+			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
+			return Task.Run(() =>
+				{
+					var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
+					if (code == null)
+					{
+						return null;
+					}
+					var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
+					bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
+					var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
+					var nodes = ParseNodes(code.Source, SourceItem.SourceIdentifier, service, Processor, Sink);
 
-                if (Parameters.Log.Options.GetOption<bool>("E", false))
-                {
-                    var outputService = GetParsingService(Parameters.Log.Options, "syntax-format", service);
-                    string newFile = outputService.Print(nodes, Sink, indentString: new string(' ', 4));
-                    Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
-                }
+					if (Parameters.Log.Options.GetOption<bool>("E", false))
+					{
+						var outputService = GetParsingService(Parameters.Log.Options, "syntax-format", service);
+						string newFile = outputService.Print(nodes, Sink, indentString: new string(' ', 4));
+						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
+					}
 
-                var unit = ParseCompilationUnit(nodes, globalScope, DeclaringAssembly, Converter);
-                Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
-                return unit;
-            });
-        }
+					var unit = ParseCompilationUnit(nodes, globalScope, DeclaringAssembly, Converter);
+					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
+					return unit;
+				});
+		}
 
-        public static IEnumerable<LNode> ParseNodes(
-            string Text, string Identifier, IParsingService Service,
-            MacroProcessor Processor, IMessageSink Sink)
-        {
-            var lexer = Service.Tokenize(new UString(Text), Identifier, Sink);
+		public static IEnumerable<LNode> ParseNodes(
+			string Text, string Identifier, IParsingService Service,
+			MacroProcessor Processor, IMessageSink Sink)
+		{
+			var lexer = Service.Tokenize(new UString(Text), Identifier, Sink);
 
-            var nodes = Service.Parse(lexer, Sink);
+			var nodes = Service.Parse(lexer, Sink);
 
-            return Processor.ProcessSynchronously(new VList<LNode>(nodes));
-        }
+			return Processor.ProcessSynchronously(new VList<LNode>(nodes));
+		}
 
-        public static INamespaceBranch ParseCompilationUnit(
-            IEnumerable<LNode> Nodes, GlobalScope Scope, IAssembly DeclaringAssembly,
-            NodeConverter Converter)
-        {
-            return Converter.ConvertCompilationUnit(Scope, DeclaringAssembly, Nodes);
-        }
+		public static INamespaceBranch ParseCompilationUnit(
+			IEnumerable<LNode> Nodes, GlobalScope Scope, IAssembly DeclaringAssembly,
+			NodeConverter Converter)
+		{
+			return Converter.ConvertCompilationUnit(Scope, DeclaringAssembly, Nodes);
+		}
 
-        public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
-        {
-            return new ParsedProject[]
-            {
-                new ParsedProject(
-                    Projects.First().CurrentPath,
-                    UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray()))
-            };
-        }
+		public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
+		{
+			return new ParsedProject[]
+			{
+				new ParsedProject(
+					Projects.First().CurrentPath,
+					UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray()))
+			};
+		}
 
-        public PassPreferences GetPassPreferences(ICompilerLog Log)
-        {
-            return new PassPreferences(new PassCondition[]
-            {
-                new PassCondition(AutoInitializationPass.AutoInitializationPassName, _ => true),
-                new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName,
-                    optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
-                new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
-                    optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
-            },
-                new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[]
-                {
-                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-                        AnalysisPasses.ValueTypeDelegatePass,
-                        ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
+		public PassPreferences GetPassPreferences(ICompilerLog Log)
+		{
+			return new PassPreferences(new PassCondition[]
+				{
+					new PassCondition(AutoInitializationPass.AutoInitializationPassName, _ => true),
+					new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName,
+						optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
+					new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
+						optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
+				},
+				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[]
+				{
+					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+						AnalysisPasses.ValueTypeDelegatePass,
+						ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
 
-                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-                        AutoInitializationPass.Instance,
-                        AutoInitializationPass.AutoInitializationPassName),
+					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+						AutoInitializationPass.Instance,
+						AutoInitializationPass.AutoInitializationPassName),
 
-                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-                        InfiniteRecursionPass.Instance,
-                        InfiniteRecursionPass.InfiniteRecursionPassName)
-                });
-        }
-    }
+					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+						InfiniteRecursionPass.Instance,
+						InfiniteRecursionPass.InfiniteRecursionPassName)
+				});
+		}
+	}
 }
