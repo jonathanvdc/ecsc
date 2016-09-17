@@ -80,6 +80,16 @@ namespace Flame.Ecs
                 {
                     if (node.IsIdNamed(CodeSymbols.Static))
                     {
+                        if (isInterface)
+                        {
+                            // Interfaces can't contain 'static' members. 
+                            // Report an error.
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "'", "interface", "' members cannot be '", "static", "'."),
+                                NodeHelpers.ToSourceLocation(node.Range)));
+                        }
                         isStatic = true;
                         return true;
                     }
@@ -707,6 +717,16 @@ namespace Flame.Ecs
 
             var attrNodes = Node.Attrs;
             var typeNode = Node.Args[0];
+
+            if (DeclaringType.GetIsInterface())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "an '", "interface", 
+                        "' cannot contain fields or constants."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
 
             // Analyze attributes lazily, but only analyze them _once_.
             // A shared lazy object does just that.
