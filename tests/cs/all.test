@@ -18,6 +18,7 @@ tests
     generics/Generics.test;
     hello-world/HelloWorld.test;
     inc-dec/IncDec.test;
+    interface/Interface.test;
     internal/Internal.test;
     local-decl/LocalDecl.test;
     lock/Lock.test;
