@@ -3,11 +3,14 @@ using System;
 interface IFlyable
 {
     void Fly();
+    string Name { get; }
 }
 
 class Bird : IFlyable
 {
     public Bird() { }
+
+    public string Name => "Bird";
 
     public void Fly()
     {
@@ -18,6 +21,8 @@ class Bird : IFlyable
 class Plane : IFlyable
 {
     public Plane() { }
+
+    public string Name => "Plane";
 
     public void Fly()
     {
@@ -41,6 +46,7 @@ static class Program
         var items = GetBirdInstancesAndPlaneInstancesMixed();
         for (int i = 0; i < items.Length; i++)
         {
+            Console.Write(items[i].Name + ": ");
             items[i].Fly();
         }
     }
