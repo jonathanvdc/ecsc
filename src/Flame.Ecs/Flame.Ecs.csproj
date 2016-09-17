@@ -181,4 +181,10 @@
     <Folder Include="Passes\" />
     <Folder Include="Semantics\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">
+      <Project>{61918DE6-2C88-4A37-9306-8CE13DFFA263}</Project>
+      <Name>EcscMacros</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

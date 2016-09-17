@@ -5,12 +5,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ecsc", "ecsc\ecsc.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flame.Ecs", "Flame.Ecs\Flame.Ecs.csproj", "{DB650664-CFE1-42BC-969B-FEB22B028378}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcscMacros", "EcscMacros\EcscMacros.csproj", "{61918DE6-2C88-4A37-9306-8CE13DFFA263}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{61918DE6-2C88-4A37-9306-8CE13DFFA263}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{61918DE6-2C88-4A37-9306-8CE13DFFA263}.Debug|x86.Build.0 = Debug|Any CPU
+		{61918DE6-2C88-4A37-9306-8CE13DFFA263}.Release|x86.ActiveCfg = Release|Any CPU
+		{61918DE6-2C88-4A37-9306-8CE13DFFA263}.Release|x86.Build.0 = Release|Any CPU
 		{DB650664-CFE1-42BC-969B-FEB22B028378}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{DB650664-CFE1-42BC-969B-FEB22B028378}.Debug|x86.Build.0 = Debug|Any CPU
 		{DB650664-CFE1-42BC-969B-FEB22B028378}.Release|x86.ActiveCfg = Release|Any CPU

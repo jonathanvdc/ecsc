@@ -164,6 +164,10 @@
       <Project>{DB650664-CFE1-42BC-969B-FEB22B028378}</Project>
       <Name>Flame.Ecs</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">
+      <Project>{61918DE6-2C88-4A37-9306-8CE13DFFA263}</Project>
+      <Name>EcscMacros</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
