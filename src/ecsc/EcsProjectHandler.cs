@@ -35,7 +35,7 @@ namespace ecsc
 {
 	public class EcsProjectHandler : IProjectHandler
 	{
-		public IEnumerable<string> Extensions
+        public IEnumerable<string> Extensions
 		{
 			get { return new string[] { "ecsproj", "ecs", "cs", "les" }; }
 		}
@@ -87,7 +87,8 @@ namespace ecsc
 			var sink = new CompilerLogMessageSink(Parameters.Log);
 			var processor = new MacroProcessor(typeof(LeMP.Prelude.BuiltinMacros), sink);
 
-			processor.AddMacros(typeof(global::LeMP.StandardMacros).Assembly, false);
+			processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
+			processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
 
 			return ParseCompilationUnitsAsync(
 				SourceItems, Parameters, Binder,
@@ -163,7 +164,9 @@ namespace ecsc
 
 			var nodes = Service.Parse(lexer, Sink);
 
-			return Processor.ProcessSynchronously(new VList<LNode>(nodes));
+            return Processor.ProcessSynchronously(new VList<LNode>(
+                new LNode[] {  EcscMacros.RequiredMacros.EcscPrologue }.Concat(
+                    nodes)));
 		}
 
 		public static INamespaceBranch ParseCompilationUnit(
