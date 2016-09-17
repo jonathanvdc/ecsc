@@ -14,6 +14,7 @@ namespace Flame.Ecs
 {
     using GlobalConverter = Func<LNode, IMutableNamespace, GlobalScope, NodeConverter, GlobalScope>;
     using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
+    using LocalTypeConverter = Func<LNode, LocalScope, NodeConverter, IType>;
     using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
     using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
     using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
@@ -121,12 +122,9 @@ namespace Flame.Ecs
         public IType ConvertType(
             LNode Node, GlobalScope Scope)
         {
-            var localScope = new LocalScope(new FunctionScope(
-                                     Scope, null, null, null, 
-                                     new Dictionary<string, IVariable>()));
-
-            return ConvertTypeOrExpression(Node, localScope).CollapseTypes(
-                NodeHelpers.ToSourceLocation(Node.Range), Scope);
+            return ConvertType(Node, new LocalScope(new FunctionScope(
+                        Scope, null, null, null, 
+                        new Dictionary<string, IVariable>())));
         }
 
         /// <summary>
@@ -158,6 +156,49 @@ namespace Flame.Ecs
         /// </summary>
         public IType ConvertCheckedTypeOrError(
             LNode Node, GlobalScope Scope)
+        {
+            return ConvertCheckedType(Node, Scope) ?? PrimitiveTypes.Void;
+        }
+
+        /// <summary>
+        /// Converts the given type reference node.
+        /// </summary>
+        public IType ConvertType(
+            LNode Node, LocalScope Scope)
+        {
+            return ConvertTypeOrExpression(Node, Scope).CollapseTypes(
+                NodeHelpers.ToSourceLocation(Node.Range), Scope.Function.Global);
+        }
+
+        /// <summary>
+        /// Converts the given type reference node.
+        /// If the type it describes cannot be resolved 
+        /// unambiguously, then the error is reported,
+        /// and null is returned.
+        /// </summary>
+        public IType ConvertCheckedType(
+            LNode Node, LocalScope Scope)
+        {
+            var retType = ConvertType(Node, Scope);
+            if (retType == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "type resolution",
+                    NodeHelpers.HighlightEven(
+                        "could not resolve type '", Node.ToString(), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+            return retType;
+        }
+
+        /// <summary>
+        /// Converts the given type reference node.
+        /// If the type it describes cannot be resolved 
+        /// unambiguously, then the error is reported,
+        /// and the void type is returned.
+        /// </summary>
+        public IType ConvertCheckedTypeOrError(
+            LNode Node, LocalScope Scope)
         {
             return ConvertCheckedType(Node, Scope) ?? PrimitiveTypes.Void;
         }
@@ -463,6 +504,18 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Registers a type converter.
+        /// </summary>
+        public void AddTypeConverter(Symbol Symbol, LocalTypeConverter Converter)
+        {
+            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
+                new TypeOrExpression(new IType[]
+                    { 
+                        Converter(node, scope, self)
+                    }));
+        }
+
+        /// <summary>
         /// Registers an attribute converter.
         /// </summary>
         public void AddAttributeConverter(Symbol Symbol, AttributeConverter Converter)
@@ -515,7 +568,7 @@ namespace Flame.Ecs
         /// </summary>
         public void AliasType(Symbol Symbol, IType Type)
         {
-            AddTypeConverter(Symbol, (node, scope, self) => Type);
+            AddTypeConverter(Symbol, (LNode node, GlobalScope scope, NodeConverter self) => Type);
         }
 
         /// <summary>
@@ -596,6 +649,11 @@ namespace Flame.Ecs
 
                 // Variable declaration
                 result.AddExprConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclarationExpression);
+
+                // Ecsc builtins
+                result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIf, ExpressionConverters.ConvertBuiltinStaticIfExpression);
+                result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
+                result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDecltype, ExpressionConverters.ConvertBuiltinDecltype);
 
                 // Operators
                 // - Ternary operators

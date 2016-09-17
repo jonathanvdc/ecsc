@@ -700,7 +700,7 @@ namespace Flame.Ecs
             {
                 NodeHelpers.CheckArity(Node, 2, Scope.Log);
 
-                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope.Function.Global);
+                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope);
                 return new TypeOrExpression(new IType[] { elemTy.MakeArrayType(arrayDims) });
             }
 
@@ -709,14 +709,14 @@ namespace Flame.Ecs
             {
                 NodeHelpers.CheckArity(Node, 2, Scope.Log);
 
-                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope.Function.Global);
+                var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope);
                 return new TypeOrExpression(new IType[] { elemTy.MakePointerType(PointerKind.TransientPointer) });
             }
 
             // Why, it must be a generic instance, then.
 
             var tArgs = args.Select(item =>
-                Converter.ConvertCheckedTypeOrError(item, Scope.Function.Global)).ToArray();
+                Converter.ConvertCheckedTypeOrError(item, Scope)).ToArray();
 
             // The target of a generic instance is either
             // an unqualified expression (i.e. an Id node),
@@ -835,7 +835,7 @@ namespace Flame.Ecs
                 }
             }
 
-            var ctorType = Converter.ConvertCheckedType(ctorCallNode.Target, globalScope);
+            var ctorType = Converter.ConvertCheckedType(ctorCallNode.Target, Scope);
             var ctorArgs = OverloadResolution.ConvertArguments(ctorCallNode.Args, Scope, Converter);
 
             if (ctorType == null)
@@ -1608,7 +1608,7 @@ namespace Flame.Ecs
 
             if (!isVar)
             {
-                varTy = Converter.ConvertType(varTyNode, Scope.Function.Global);
+                varTy = Converter.ConvertType(varTyNode, Scope);
                 if (varTy == null)
                 {
                     Scope.Log.LogError(
@@ -1945,7 +1945,7 @@ namespace Flame.Ecs
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
                 return VoidExpression.Instance;
 
-            var ty = Converter.ConvertCheckedType(Node.Args[0], Scope.Function.Global);
+            var ty = Converter.ConvertCheckedType(Node.Args[0], Scope);
 
             if (ty == null)
             {
@@ -1975,7 +1975,7 @@ namespace Flame.Ecs
                 return VoidExpression.Instance;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+            var ty = Converter.ConvertType(Node.Args[1], Scope);
 
             // In an operation of the form E as T, E must be an expression and T must be a
             // reference type, a type parameter known to be a reference type, or a nullable type.
@@ -2099,7 +2099,7 @@ namespace Flame.Ecs
                 return VoidExpression.Instance;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+            var ty = Converter.ConvertType(Node.Args[1], Scope);
             var result = new IsExpression(op, ty);
 
             if (ty.GetIsStaticType())
@@ -2174,7 +2174,7 @@ namespace Flame.Ecs
                 return VoidExpression.Instance;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+            var ty = Converter.ConvertType(Node.Args[1], Scope);
 
             return Scope.Function.Global.ConvertExplicit(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
@@ -2202,7 +2202,7 @@ namespace Flame.Ecs
             // where `x` is a struct and `T` is not.
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope.Function.Global);
+            var ty = Converter.ConvertType(Node.Args[1], Scope);
 
             var implConv = Scope.Function.Global.GetImplicitConversion(
                                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
@@ -2243,7 +2243,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "cannot resolve type '", "System.Threading.Monitor", 
                         "', without which '", "lock", "' statements cannot be " +
-                    "compiled successfully."),
+                        "compiled successfully."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return ToExpression(new BlockStatement(
                     new IStatement[] { ToStatement(lockee), lockBody }));
@@ -2274,7 +2274,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "cannot resolve method '", "System.Threading.Monitor.Enter(object, out bool)", 
                         "', without which '", "lock", "' statements cannot be " +
-                    "compiled successfully."),
+                        "compiled successfully."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return ToExpression(new BlockStatement(
                     new IStatement[] { ToStatement(lockee), lockBody }));
@@ -2292,7 +2292,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "cannot resolve method '", "System.Threading.Monitor.Exit(object)", 
                         "', without which '", "lock", "' statements cannot be " +
-                    "compiled successfully."),
+                        "compiled successfully."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return ToExpression(new BlockStatement(
                     new IStatement[] { ToStatement(lockee), lockBody }));
@@ -2405,7 +2405,7 @@ namespace Flame.Ecs
                             continue;
 
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
-                                                varCall.Args[0], Scope.Function.Global);
+                                                varCall.Args[0], Scope);
 
                         var exceptionVarName = varCall.Args[1].Name.Name;
                         var exceptionVarDesc = new DescribedVariableMember(
@@ -2420,7 +2420,7 @@ namespace Flame.Ecs
                     else
                     {
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
-                                                clause.Args[0], Scope.Function.Global);
+                                                clause.Args[0], Scope);
                         resultClause = new CatchClause(new DescribedVariableMember(
                             "exception", exceptionType));
                         clauseScope = Scope;
@@ -2628,6 +2628,108 @@ namespace Flame.Ecs
                         usingBody, 
                         disposeStmt)
                 }));
+        }
+
+        /// <summary>
+        /// Converts a builtin static-if-expression node (type #builtin_static_if).
+        /// </summary>
+        public static IExpression ConvertBuiltinStaticIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
+                return VoidExpression.Instance;
+
+            var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var result = cond.EvaluateOrNull();
+            if (result == null)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "could not evaluate",
+                    NodeHelpers.HighlightEven(
+                        "the condition of the '", EcscMacros.EcscSymbols.BuiltinStaticIf.Name, 
+                        "' node could not be evaluated."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                return VoidExpression.Instance;
+            }
+            else if (result.EvaluatesTo<bool>(true))
+            {
+                return Converter.ConvertScopedExpression(Node.Args[1], Scope);
+            }
+            else if (result.EvaluatesTo<bool>(false))
+            {
+                if (Node.ArgCount == 3)
+                    return Converter.ConvertScopedExpression(Node.Args[2], Scope);
+                else
+                    return VoidExpression.Instance;
+            }
+            else
+            {
+                // TODO: maybe remove this?
+                // This should never happen, because we have already introduced 
+                // an implicit cast.
+                Scope.Log.LogError(new LogEntry(
+                    "type error",
+                    NodeHelpers.HighlightEven(
+                        "the condition of the '", EcscMacros.EcscSymbols.BuiltinStaticIf.Name, 
+                        "' had type '", Scope.Function.Global.TypeNamer.Convert(result.Type),
+                        "', but '", "bool", "' was expected."),
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                return VoidExpression.Instance;
+            }
+        }
+
+        /// <summary>
+        /// Converts a builtin static-is-array node (type #builtin_static_is_array).
+        /// </summary>
+        public static IExpression ConvertBuiltinStaticIsArrayExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var ty = Converter.ConvertCheckedTypeOrError(Node.Args[0], Scope);
+            if (ty.GetIsArray())
+            {
+                if (Node.ArgCount == 2)
+                {
+                    object rank = Node.Args[1].Value;
+                    if (rank is int)
+                    {
+                        return new BooleanExpression(ty.AsArrayType().ArrayRank == (int)rank);
+                    }
+                    else
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "the (optional) second argument of a '", 
+                                EcscMacros.EcscSymbols.BuiltinStaticIsArray.Name, 
+                                "' node was not an integer literal."),
+                            NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+                        return new BooleanExpression(false);
+                    }
+                }
+                else
+                {
+                    return new BooleanExpression(true);
+                }
+            }
+            else
+            {
+                return new BooleanExpression(false);
+            }
+        }
+
+        /// <summary>
+        /// Converts a builtin decltype node (type #builtin_decltype).
+        /// </summary>
+        public static IType ConvertBuiltinDecltype(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                return null;
+
+            var expr = Converter.ConvertExpression(Node.Args[0], Scope);
+            return expr.Type;
         }
     }
 }
