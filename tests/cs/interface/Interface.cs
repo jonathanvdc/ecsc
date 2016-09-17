@@ -8,9 +8,12 @@ interface IFlyable
 
 class Bird : IFlyable
 {
-    public Bird() { }
+    public Bird()
+    {
+        Name = "Bird";
+    }
 
-    public string Name => "Bird";
+    public string Name { get; private set; }
 
     public void Fly()
     {
