@@ -14,6 +14,7 @@ tests
     exception-handling/ExceptionHandling.test;
     field/Field.test;
     flow/Flow.test;
+    foreach/Foreach.test;
     fractal/Fractal.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
