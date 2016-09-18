@@ -30,13 +30,13 @@ namespace EcscMacros
         {
             // Produce a Loyc tree that looks like this:
             //
-            //     #builtin_stash_names(col, colLen, i, {
-            //         var col = <collection>;
+            //     #builtin_stash_locals(col, colLen, i, {
+            //         var col = #builtin_restore_locals(col, colLen, i, <collection>);
             //         var colLen = col.Length;
             //         for (#builtin_decltype(colLen) i = 0; i < colLen; i++)
             //         {
             //             #var(<type>, <name> = col[i]);
-            //             #builtin_restore_names(col, colLen, i, <body>);
+            //             #builtin_restore_locals(col, colLen, i, <body>);
             //         }
             //     });
             //
@@ -50,7 +50,10 @@ namespace EcscMacros
                     F.Var(
                         F.Id(GSymbol.Empty), 
                         colName, 
-                        Collection),
+                        F.Call(
+                            EcscSymbols.BuiltinRestoreLocals,
+                            F.Id(colName), F.Id(colLenName), F.Id(iName), 
+                            Collection)),
                     F.Var(
                         F.Id(GSymbol.Empty), 
                         colLenName, 
@@ -86,14 +89,14 @@ namespace EcscMacros
         {
             // Produce a Loyc tree that looks like this:
             //
-            //     #builtin_stash_names(enumerator, {
-            //         var enumerator = <collection>.GetEnumerator();
+            //     #builtin_stash_locals(enumerator, {
+            //         var enumerator = #builtin_restore_locals(enumerator, <collection>).GetEnumerator();
             //         try
             //         {
             //             while (enumerator.MoveNext())
             //             {
             //                 #var(<type>, <name> = enumerator.Current);
-            //                 #builtin_restore_names(enumerator, <body>);
+            //                 #builtin_restore_locals(enumerator, <body>);
             //             }
             //         }
             //         finally
@@ -111,7 +114,12 @@ namespace EcscMacros
                     F.Var(
                         F.Id(GSymbol.Empty), 
                         enumeratorName, 
-                        F.Call(F.Dot(Collection, (Symbol)"GetEnumerator"))),
+                        F.Call(F.Dot(
+                            F.Call(
+                                EcscSymbols.BuiltinRestoreLocals,
+                                F.Id(enumeratorName),
+                                Collection), 
+                            (Symbol)"GetEnumerator"))),
                     F.Call(
                         CodeSymbols.Try,
                         F.Braces(
