@@ -44,7 +44,7 @@ namespace EcscMacros
             var colLenName = (Symbol)"colLen";
             var iName = (Symbol)"i";
             return F.Call(
-                EcscSymbols.BuiltinStashNames, 
+                EcscSymbols.BuiltinStashLocals, 
                 F.Id(colName), F.Id(colLenName), F.Id(iName), 
                 F.Braces(
                     F.Var(
@@ -57,25 +57,25 @@ namespace EcscMacros
                         F.Dot(colName, (Symbol)"Length")),
                     F.Call(
                         CodeSymbols.For,
-                        F.Var(
+                        F.Tuple(F.Var(
                             F.Call(
                                 EcscSymbols.BuiltinDecltype, 
                                 F.Id(colLenName)),
                             iName, 
-                            F.Literal(0)),
+                            F.Literal(0))),
                         F.Call(
                             CodeSymbols.LT, 
                             F.Id(iName), F.Id(colLenName)),
-                        F.Call(
+                        F.Tuple(F.Call(
                             CodeSymbols.PostInc,
-                            F.Id(iName)),
+                            F.Id(iName))),
                         F.Braces(
                             F.Var(
                                 InductionType,
                                 InductionName,
                                 F.Call(CodeSymbols.IndexBracks, F.Id(colName), F.Id(iName))),
                             F.Call(
-                                EcscSymbols.BuiltinRestoreNames,
+                                EcscSymbols.BuiltinRestoreLocals,
                                 F.Id(colName), F.Id(colLenName), F.Id(iName),
                                 Body)))));
         }
@@ -98,15 +98,14 @@ namespace EcscMacros
             //         }
             //         finally
             //         {
-            //             if (enumerator is System.IDisposable)
-            //                  ((System.IDisposable)enumerator).Dispose();
+            //             #dispose_local(enumerator);
             //         }
             //     });
             //
             var enumeratorName = (Symbol)"enumerator";
-            var idisposableNode = F.Dot("System", "IDisposable");
+
             return F.Call(
-                EcscSymbols.BuiltinStashNames,
+                EcscSymbols.BuiltinStashLocals,
                 F.Id(enumeratorName),
                 F.Braces(
                     F.Var(
@@ -125,25 +124,15 @@ namespace EcscMacros
                                         InductionName, 
                                         F.Dot(enumeratorName, (Symbol)"Current")),
                                     F.Call(
-                                        EcscSymbols.BuiltinRestoreNames,
+                                        EcscSymbols.BuiltinRestoreLocals,
                                         F.Id(enumeratorName),
                                         Body)))),
                         F.Call(
                             CodeSymbols.Finally,
                             F.Braces(
                                 F.Call(
-                                    CodeSymbols.If,
-                                    F.Call(
-                                        CodeSymbols.Is,
-                                        F.Id(enumeratorName),
-                                        idisposableNode),
-                                    F.Call(
-                                        F.Dot(
-                                            F.Call(
-                                                CodeSymbols.Cast,
-                                                F.Id(enumeratorName),
-                                                idisposableNode),
-                                            (Symbol)"Dispose"))))))));
+                                    EcscSymbols.DisposeLocal, 
+                                    F.Id(enumeratorName)))))));
         }
 
         [LexicalMacro("foreach (type name in collection) body;", "macro-expanded instead of implemented directly", "#foreach")]
@@ -184,6 +173,70 @@ namespace EcscMacros
                     F.Literal(1)),
                 ExpandArrayForeach(indTy, indName, col, body),
                 ExpandDefaultForeach(indTy, indName, col, body));
+        }
+
+        [LexicalMacro("#dispose_value(value);", "disposes a value if it implements IDisposable", "#dispose_value")]
+        public static LNode DisposeValue(LNode Node, IMacroContext Sink)
+        {
+            // Given this Loyc tree:
+            //
+            //     #dispose_value(Value);
+            //
+            // we will produce a Loyc tree that looks like this:
+            //
+            //      #builtin_stash_locals(temp, {
+            //          var temp = Value;
+            //          #dispose_local(temp);
+            //      });
+            //
+
+            if (!Node.Calls(EcscSymbols.DisposeValue, 1))
+                return Reject(Sink, Node, "'#dispose_value' nodes must take exactly one argument.");
+
+            var value = Node.Args[0];
+            var tempName = (Symbol)"temp";
+            return F.Call(
+                EcscSymbols.BuiltinStashLocals,
+                F.Id(tempName),
+                F.Braces(
+                    F.Var(F.Id(GSymbol.Empty), tempName, value),
+                    F.Call(EcscSymbols.DisposeLocal, F.Id(tempName))));
+        }
+
+        [LexicalMacro("#dispose_local(value);", "disposes a local variable if it implements IDisposable", "#dispose_local")]
+        public static LNode DisposeLocal(LNode Node, IMacroContext Sink)
+        {
+            // Given this Loyc tree:
+            //
+            //     #dispose_local(Value);
+            //
+            // we will produce a Loyc tree that looks like this:
+            //
+            //      if (Value is System.IDisposable)
+            //          ((System.IDisposable)Value).Dispose();
+            //
+            // Note: this intentionally does boxing for value types,
+            // because 'foreach' has the same behavior (and 'foreach'
+            // uses this macro).
+
+            if (!Node.Calls(EcscSymbols.DisposeLocal, 1))
+                return Reject(Sink, Node, "'#dispose_local' nodes must take exactly one argument.");
+
+            var value = Node.Args[0];
+            var idisposableNode = F.Dot("System", "IDisposable");
+            return F.Call(
+                CodeSymbols.If,
+                F.Call(
+                    CodeSymbols.Is,
+                    value,
+                    idisposableNode),
+                F.Call(
+                    F.Dot(
+                        F.Call(
+                            CodeSymbols.Cast,
+                            value,
+                            idisposableNode),
+                        (Symbol)"Dispose")));
         }
     }
 }

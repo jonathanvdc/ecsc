@@ -27,6 +27,15 @@ namespace EcscMacros
         public static readonly Symbol BuiltinStaticIf = GSymbol.Get("#builtin_static_if");
 
         /// <summary>
+        /// A builtin node type that tests if the first argument is a subtype
+        /// of the second argument.
+        /// </summary>
+        /// <remarks>
+        /// Usage: #builtin_static_is(type1, type2);
+        /// </remarks>
+        public static readonly Symbol BuiltinStaticIs = GSymbol.Get("#builtin_static_is");
+
+        /// <summary>
         /// A builtin node type that tests if a type is an array. An optional array rank can be
         /// given.
         /// </summary>
@@ -40,17 +49,27 @@ namespace EcscMacros
         /// Stashes a number of names in the local context of a node. 
         /// </summary>
         /// <remarks>
-        /// Usage: #builtin_stash_names(x, y, z, expr);
+        /// Usage: #builtin_stash_locals(x, y, z, expr);
         /// </remarks>
-        public static readonly Symbol BuiltinStashNames = GSymbol.Get("#builtin_stash_names");
+        public static readonly Symbol BuiltinStashLocals = GSymbol.Get("#builtin_stash_locals");
 
         /// <summary>
         /// Restores stashed names from the local context of a node.
         /// </summary>
         /// <remarks>
-        /// Usage: #builtin_restore_names(x, y, z, expr);
+        /// Usage: #builtin_restore_locals(x, y, z, expr);
         /// </remarks>
-        public static readonly Symbol BuiltinRestoreNames = GSymbol.Get("#builtin_restore_names");
+        public static readonly Symbol BuiltinRestoreLocals = GSymbol.Get("#builtin_restore_locals");
+
+        /// <summary>
+        /// Disposes a local variable, if it implements IDisposable.
+        /// </summary>
+        public static readonly Symbol DisposeLocal = GSymbol.Get("#dispose_local");
+
+        /// <summary>
+        /// Disposes a value, if it implements IDisposable.
+        /// </summary>
+        public static readonly Symbol DisposeValue = GSymbol.Get("#dispose_value");
     }
 }
 
