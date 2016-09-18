@@ -31,15 +31,18 @@ public class Enumerable
 
 public static class Program
 {
+    public static Enumerable StaticEnumerable = new Enumerable();
+
     public static void Main(string[] Args)
     {
-        foreach (var item in Args)
+        var col = Args;
+        foreach (var item in col)
             Console.WriteLine(item);
 
         foreach (var item in new List<string>(Args))
             Console.WriteLine(item);
 
-        foreach (var item in new Enumerable())
+        foreach (var item in StaticEnumerable)
             Console.WriteLine(item);
     }
 }
