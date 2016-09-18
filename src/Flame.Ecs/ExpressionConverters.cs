@@ -2731,5 +2731,56 @@ namespace Flame.Ecs
             var expr = Converter.ConvertExpression(Node.Args[0], Scope);
             return expr.Type;
         }
+
+        private static HashSet<string> ToSymbolSet(IEnumerable<LNode> Nodes, LocalScope Scope)
+        {
+            var results = new HashSet<string>();
+            foreach (var item in Nodes)
+            {
+                if (item.IsId)
+                {
+                    results.Add(item.Name.Name);
+                }
+                else
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "found '", item.ToString(), 
+                            "', but expected an identifier."),
+                        NodeHelpers.ToSourceLocation(item.Range)));
+                }
+            }
+            return results;
+        }
+
+        /// <summary>
+        /// Converts a builtin stash-locals node (type #builtin_stash_locals).
+        /// </summary>
+        public static IExpression ConvertBuiltinStashLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return VoidExpression.Instance;
+
+            var varNames = ToSymbolSet(Node.Args.Slice(0, Node.ArgCount - 1), Scope);
+            return Converter.ConvertScopedExpression(
+                Node.Args[Node.ArgCount - 1], 
+                new StashScope(Scope, varNames));
+        }
+
+        /// <summary>
+        /// Converts a builtin restore-locals node (type #builtin_restore_locals).
+        /// </summary>
+        public static IExpression ConvertBuiltinRestoreLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return VoidExpression.Instance;
+
+            var nameNodes = Node.Args.Slice(0, Node.ArgCount - 1);
+            var varNames = ToSymbolSet(nameNodes, Scope);
+            return Converter.ConvertScopedExpression(
+                Node.Args[Node.ArgCount - 1], 
+                new RestoreScope(Scope, varNames));
+        }
     }
 }

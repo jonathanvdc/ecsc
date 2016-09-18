@@ -46,6 +46,16 @@ namespace Flame.Ecs
         /// Gets the variable with the given name.
         /// </summary>
         IVariable GetVariable(string Name);
+
+        /// <summary>
+        /// Gets the stashed variable with the given name,
+        /// at the given stash-stack depth. Null is returned
+        /// if there is no such variable.
+        /// </summary>
+        /// <returns>The stashed variable.</returns>
+        /// <param name="Name">The stashed variable's name.</param>
+        /// <param name="StackDepth">The stack depth of the variable in the stash.</param>
+        IVariable GetStashedVariable(string Name, int StackDepth);
     }
 
     /// <summary>
@@ -140,6 +150,12 @@ namespace Flame.Ecs
                 return result;
             else
                 return null;
+        }
+
+        /// <inheritdoc/>
+        public IVariable GetStashedVariable(string Name, int StackDepth)
+        {
+            return null;
         }
 
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
@@ -418,6 +434,12 @@ namespace Flame.Ecs
             else
                 return Parent.GetVariable(Name);
         }
+
+        /// <inheritdoc/>
+        public IVariable GetStashedVariable(string Name, int StackDepth)
+        {
+            return Parent.GetStashedVariable(Name, StackDepth);
+        }
     }
 
     /// <summary>
@@ -471,6 +493,156 @@ namespace Flame.Ecs
         public IVariable GetVariable(string Name)
         {
             return Parent.GetVariable(Name);
+        }
+
+        /// <inheritdoc/>
+        public IVariable GetStashedVariable(string Name, int StackDepth)
+        {
+            return Parent.GetStashedVariable(Name, StackDepth);
+        }
+    }
+
+    /// <summary>
+    /// A data structure that represents a local scope that stashes
+    /// a number of variables.
+    /// </summary>
+    public sealed class StashScope : ILocalScope
+    {
+        public StashScope(
+            ILocalScope Parent, IEnumerable<string> StashedNames)
+        {
+            this.Parent = Parent;
+            this.stashedNameSet = new HashSet<string>(StashedNames);
+        }
+
+        private HashSet<string> stashedNameSet;
+
+        /// <summary>
+        /// Gets this local scope's parent scope.
+        /// </summary>
+        public ILocalScope Parent { get; private set; }
+
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get { return Parent.Function; } }
+
+        /// <summary>
+        /// Gets the log object for this scope.
+        /// </summary>
+        public ICompilerLog Log { get { return Function.Global.Log; } }
+
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        public IType ReturnType
+        {
+            get { return Parent.ReturnType; }
+        }
+
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<string> VariableNames { get { return Parent.VariableNames.Except(stashedNameSet); } }
+
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(string Name)
+        {
+            if (stashedNameSet.Contains(Name))
+                return null;
+            else
+                return Parent.GetVariable(Name);
+        }
+
+        /// <inheritdoc/>
+        public IVariable GetStashedVariable(string Name, int StackDepth)
+        {
+            if (!stashedNameSet.Contains(Name))
+                return Parent.GetStashedVariable(Name, StackDepth);
+            else if (StackDepth == 0)
+                return Parent.GetVariable(Name);
+            else
+                return Parent.GetStashedVariable(Name, StackDepth - 1);
+        }
+    }
+
+    /// <summary>
+    /// A data structure that represents a local scope that restores
+    /// a number of stashed variables.
+    /// </summary>
+    public sealed class RestoreScope : ILocalScope
+    {
+        public RestoreScope(
+            ILocalScope Parent, IEnumerable<string> RestoredNames)
+        {
+            this.Parent = Parent;
+            this.restoredNameSet = new HashSet<string>(RestoredNames);
+        }
+
+        private HashSet<string> restoredNameSet;
+
+        /// <summary>
+        /// Gets this local scope's parent scope.
+        /// </summary>
+        public ILocalScope Parent { get; private set; }
+
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get { return Parent.Function; } }
+
+        /// <summary>
+        /// Gets the log object for this scope.
+        /// </summary>
+        public ICompilerLog Log { get { return Function.Global.Log; } }
+
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        public IType ReturnType
+        {
+            get { return Parent.ReturnType; }
+        }
+
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<string> VariableNames { get { return Parent.VariableNames.Union(restoredNameSet); } }
+
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(string Name)
+        {
+            if (restoredNameSet.Contains(Name))
+                return Parent.GetStashedVariable(Name, 0);
+            else
+                return Parent.GetVariable(Name);
+        }
+
+        /// <inheritdoc/>
+        public IVariable GetStashedVariable(string Name, int StackDepth)
+        {
+            if (restoredNameSet.Contains(Name))
+                // Stashed variables are stored in a stack of sorts.
+                // Since this RestoreScope "pops" a stashed variable
+                // from this stack, we must look further, which we can
+                // accomplish by incrementing the stack depth.
+                return Parent.GetStashedVariable(Name, StackDepth + 1);
+            else
+                return Parent.GetStashedVariable(Name, StackDepth);
         }
     }
 }
