@@ -246,6 +246,18 @@ namespace Flame.Ecs
             return new InitializedExpression(EmptyStatement.Instance, expr, childScope.Release());
         }
 
+        public static TypeOrExpression ConvertScopedTypeOrExpression(this NodeConverter Converter, LNode Node, ILocalScope Scope)
+        {
+            var childScope = new LocalScope(Scope);
+            var expr = Converter.ConvertTypeOrExpression(Node, childScope);
+            if (expr.IsExpression)
+                return new TypeOrExpression(
+                    new InitializedExpression(EmptyStatement.Instance, expr.Expression, childScope.Release()),
+                    expr.Types, expr.Namespace);
+            else
+                return expr;
+        }
+
         public static IExpression ConvertExpression(
             this NodeConverter Converter, LNode Node, LocalScope Scope,
             IType Type)
@@ -2757,13 +2769,13 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts a builtin stash-locals node (type #builtin_stash_locals).
         /// </summary>
-        public static IExpression ConvertBuiltinStashLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
+        public static TypeOrExpression ConvertBuiltinStashLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return VoidExpression.Instance;
+                return TypeOrExpression.Void;
 
             var varNames = ToSymbolSet(Node.Args.Slice(0, Node.ArgCount - 1), Scope);
-            return Converter.ConvertScopedExpression(
+            return Converter.ConvertScopedTypeOrExpression(
                 Node.Args[Node.ArgCount - 1], 
                 new StashScope(Scope, varNames));
         }
@@ -2771,14 +2783,14 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts a builtin restore-locals node (type #builtin_restore_locals).
         /// </summary>
-        public static IExpression ConvertBuiltinRestoreLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
+        public static TypeOrExpression ConvertBuiltinRestoreLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return VoidExpression.Instance;
+                return TypeOrExpression.Void;
 
             var nameNodes = Node.Args.Slice(0, Node.ArgCount - 1);
             var varNames = ToSymbolSet(nameNodes, Scope);
-            return Converter.ConvertScopedExpression(
+            return Converter.ConvertScopedTypeOrExpression(
                 Node.Args[Node.ArgCount - 1], 
                 new RestoreScope(Scope, varNames));
         }
