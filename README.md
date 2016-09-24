@@ -5,7 +5,13 @@ Linux | Windows
 [![Build Status](https://travis-ci.org/jonathanvdc/ecsc.svg?branch=master)](https://travis-ci.org/jonathanvdc/ecsc) | [![Build status](https://ci.appveyor.com/api/projects/status/6t6whsqeiebiggbc?svg=true)](https://ci.appveyor.com/project/jonathanvdc/ecsc)
 
 # ecsc
-A Flame-based EC# compiler. (WIP)
+
+`ecsc` is an [Enhanced C#](http://ecsharp.net/) compiler that uses Flame as its back-end. It can be used to compile both C# and EC# source code files, and ships with the following features:
+* EC#'s [lexical macro processor (LeMP)](http://ecsharp.net/lemp/)
+* EC# language extensions, such as the `using` cast.
+* Flame's aggressive ahead-of-time compiler optimizations
+
+Caveat: `ecsc` is still a work-in-progress. It does not support a number of C# language features that everyone takes for granted nowadays, like nullable value types, lambdas and type argument inference. Furthermore, it can at times get the C# semantics wrong. Feel free to open an issue (or a pull request!) if you run into an issue like this.
 
 ## Build instructions
 
@@ -27,3 +33,19 @@ xbuild /p:Configuration=Release src/ecsc.sln
 ```
 
 You should be all set now. Maybe you also want to add `ecsc` to your `PATH` environment variable, but I'll leave that up to you.
+
+## Using `ecsc`
+
+`ecsc` should be pretty straightforward to use. Once you've installed `ecsc` and added it to your `PATH` environment variable, you can compile files like so:
+
+```
+ecsc code.cs ecs-code.ecs -platform clr
+```
+
+Note the `-platform clr` option, which instructs `ecsc` to generate code for the CLR. This is almost always what you want. Also, source files must be specified _first_, before any other option. If you want to specify source files later on, you must use the `-source` option. For example:
+
+```
+ecsc -platform clr -source code.cs ecs-code.ecs 
+```
+
+That's about all there is to it, really.
