@@ -42,10 +42,14 @@ You should be all set now. Maybe you also want to add `ecsc` to your `PATH` envi
 ecsc code.cs ecs-code.ecs -platform clr
 ```
 
-Note the `-platform clr` option, which instructs `ecsc` to generate code for the CLR. This is almost always what you want. Also, source files must be specified _first_, before any other option. If you want to specify source files later on, you must use the `-source` option. For example:
+Note the `-platform clr` option, which instructs `ecsc` to generate code for the CLR. This is almost always what you want. Also, source files must be specified _first_, before any other option. If you want to specify source files later on, you must use the `-source` option. 
 
 ```
 ecsc -platform clr -source code.cs ecs-code.ecs 
 ```
 
-That's about all there is to it, really.
+By default, `ecsc` will put your output file(s) in a folder called `bin`. If you want them to end up elsewhere, use the `-o` option.
+
+```
+ecsc code.cs ecs-code.ecs -platform clr -o a.exe
+```
