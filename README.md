@@ -9,7 +9,7 @@ Linux | Windows
 `ecsc` is an [Enhanced C#](http://ecsharp.net/) compiler that uses Flame as its back-end. It can be used to compile both C# and EC# source code files, and ships with the following features:
 * EC#'s [lexical macro processor (LeMP)](http://ecsharp.net/lemp/)
 * EC# language extensions, such as the `using` cast.
-* Flame's aggressive ahead-of-time compiler optimizations
+* Aggressive ahead-of-time [compiler optimizations](https://github.com/jonathanvdc/ecsc/wiki/Optimization-options)
 
 Caveat: `ecsc` is still a work-in-progress. It does not support a number of C# language features that everyone takes for granted nowadays, like nullable value types, lambdas and type argument inference. Furthermore, it can at times get the C# semantics wrong. Feel free to open an issue (or a pull request!) if you run into an issue like this.
 
