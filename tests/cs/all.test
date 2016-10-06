@@ -29,6 +29,7 @@ tests
     ref-out/RefOut.test;
     return/Return.test;
     sealed/Sealed.test;
+    sequence-equal/SequenceEqual.test;
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
     user-defined-operators/UserDefinedOperators.test;
