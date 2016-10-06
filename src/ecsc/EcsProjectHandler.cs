@@ -131,7 +131,7 @@ namespace ecsc
 			IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
 		{
 			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
-			return Task.Run(() =>
+            Func<INamespaceBranch> doParse = () =>
 				{
 					var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
 					if (code == null)
@@ -153,7 +153,10 @@ namespace ecsc
 					var unit = ParseCompilationUnit(nodes, globalScope, DeclaringAssembly, Converter);
 					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
 					return unit;
-				});
+                };
+            // TODO: re-enable this when race condition bug in Loyc is solved
+            // return Task.Run(doParse);
+            return Task.FromResult(doParse());
 		}
 
 		public static IEnumerable<LNode> ParseNodes(
