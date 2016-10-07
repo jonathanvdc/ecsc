@@ -24,6 +24,7 @@ tests
     local-decl/LocalDecl.test;
     lock/Lock.test;
     logical-ops/LogicalOps.test;
+    null/Null.test;
     overrides/Overrides.test;
     prop-init/PropInit.test;
     properties/Properties.test;
