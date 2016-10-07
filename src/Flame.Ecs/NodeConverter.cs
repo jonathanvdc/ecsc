@@ -429,6 +429,9 @@ namespace Flame.Ecs
                     else if (Node.IsLiteral)
                     {
                         object val = Node.Value;
+                        if (val == null)
+                            return new TypeOrExpression(NullExpression.Instance);
+                        
                         LiteralConverter litConv;
                         if (literalConverters.TryGetValue(val.GetType(), out litConv))
                         {
