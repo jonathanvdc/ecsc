@@ -180,7 +180,7 @@ namespace Flame.Ecs
         /// Analyzes the given parameter list for the
         /// given described method.
         /// </summary>
-        private static FunctionScope AnalyzeParameters(
+        private static void AnalyzeParameters(
             IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
             GlobalScope Scope, NodeConverter Converter)
         {
@@ -188,7 +188,6 @@ namespace Flame.Ecs
             {
                 Target.AddParameter(ConvertParameter(item, Scope, Converter));
             }
-            return CreateFunctionScope(Target, Scope);
         }
 
         /// <summary>
@@ -210,6 +209,19 @@ namespace Flame.Ecs
                 paramIndex++;
             }
             return new FunctionScope(Scope, thisTy, Method, Method.ReturnType, paramVarDict);
+        }
+
+        public static GlobalScope CreateGenericScope(
+            IGenericMember Member, GlobalScope Scope)
+        {
+            var innerScope = Scope;
+            foreach (var item in Member.GenericParameters)
+            {
+                // Create generic parameters.
+                innerScope = innerScope.WithBinder(
+                    innerScope.Binder.AliasType(item.Name, item));
+            }
+            return innerScope;
         }
 
         /// <summary>
@@ -408,6 +420,7 @@ namespace Flame.Ecs
             // Handle the function's name first.
             var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
             var op = ParseOperatorName(name.Item1.Name);
+            Tuple<LNode, LNode> attrNodePair = null;
             var def = new LazyDescribedMethod(new SimpleName(name.Item1.Name), DeclaringType, methodDef =>
             {
                 // Take care of the generic parameters next.
@@ -421,7 +434,7 @@ namespace Flame.Ecs
 
                 // Attributes next. override, abstract, virtual, sealed
                 // and new are specific to methods, so we'll handle those here.
-                var attrNodePair = UpdateVirtualTypeMemberAttributes("method", Node.Attrs, methodDef, innerScope, Converter);
+                attrNodePair = UpdateVirtualTypeMemberAttributes("method", Node.Attrs, methodDef, innerScope, Converter);
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
 
                 if (op.IsDefined)
@@ -455,7 +468,7 @@ namespace Flame.Ecs
                 methodDef.ReturnType = retType;
 
                 // Resolve the parameters
-                var funScope = AnalyzeParameters(
+                AnalyzeParameters(
                        Node.Args[2].Args, methodDef, innerScope, Converter);
 
                 // Operator methods must take at least one parameter of the 
@@ -463,7 +476,9 @@ namespace Flame.Ecs
                 if (op.IsDefined)
                 {
                     if (!methodDef.Parameters.Any(p => 
-                        p.ParameterType.Equals(funScope.DeclaringType)))
+                        p.ParameterType.Equals(
+                            FunctionScope.GetThisExpressionType(
+                                methodDef.DeclaringType))))
                     {
                         Scope.Log.LogError(new LogEntry(
                             "user-defined operator",
@@ -474,10 +489,13 @@ namespace Flame.Ecs
                             methodDef.GetSourceLocation()));
                     }
                 }
-
+            }, methodDef =>
+            {
                 // Handle overrides
                 if (!methodDef.IsStatic)
                 {
+                    var innerScope = CreateGenericScope(methodDef, Scope);
+                    var funScope = CreateFunctionScope(methodDef, innerScope);
                     var overrideNode = attrNodePair.Item1;
                     var newNode = attrNodePair.Item2;
 
@@ -488,7 +506,7 @@ namespace Flame.Ecs
                             .OfType<IMethod>()
                             .Where(m => m.HasSameCallSignature(methodDef))
                             .ToArray();
-                        
+
                         if (baseMethods.Length == 0)
                         {
                             if (overrideNode != null)
@@ -502,7 +520,7 @@ namespace Flame.Ecs
                                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
                             }
                             else if (newNode != null
-                                     && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                                && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "redundant attribute",
@@ -510,7 +528,7 @@ namespace Flame.Ecs
                                         "method '", methodDef.Name.ToString(), "' is marked '", "new", 
                                         "', but base type '", Scope.TypeNamer.Convert(parentTy), 
                                         "' does not define any (visible) methods that match its signature. ")
-                                        .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
+                                    .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
                                     NodeHelpers.ToSourceLocation(newNode.Range)));
                             }
                         }
@@ -527,7 +545,7 @@ namespace Flame.Ecs
                                             NodeHelpers.HighlightEven(
                                                 "method '", methodDef.Name.ToString(), "' is marked '", 
                                                 "override", "', but differs in return type. " +
-                                            "Expected return type: ", 
+                                                "Expected return type: ", 
                                                 Scope.TypeNamer.Convert(m.ReturnType), "'."),
                                             methodDef.GetSourceLocation()));
                                     }
@@ -548,24 +566,24 @@ namespace Flame.Ecs
                                 }
                             }
                             else if (newNode == null
-                                     && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                                && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "member hiding",
                                     NodeHelpers.HighlightEven(
                                         "method '", methodDef.Name.ToString(), "' hides " +
-                                    (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") +
-                                    ". Consider using the '", "new", "' keyword if hiding was intentional. ")
-                                        .Concat(new MarkupNode[]
-                                    { 
-                                        EcsWarnings.HiddenMemberWarning.CauseNode,
-                                        methodDef.GetSourceLocation().CreateDiagnosticsNode()
-                                    })
-                                        .Concat(
+                                        (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") +
+                                        ". Consider using the '", "new", "' keyword if hiding was intentional. ")
+                                    .Concat(new MarkupNode[]
+                                        { 
+                                            EcsWarnings.HiddenMemberWarning.CauseNode,
+                                            methodDef.GetSourceLocation().CreateDiagnosticsNode()
+                                        })
+                                    .Concat(
                                         baseMethods
-                                            .Select(m => m.GetSourceLocation())
-                                            .Where(loc => loc != null)
-                                            .Select(loc => loc.CreateRemarkDiagnosticsNode("hidden method: ")))));
+                                        .Select(m => m.GetSourceLocation())
+                                        .Where(loc => loc != null)
+                                        .Select(loc => loc.CreateRemarkDiagnosticsNode("hidden method: ")))));
                             }
                         }
                     }
@@ -596,9 +614,10 @@ namespace Flame.Ecs
                         }
                     }
                 }
-
+            }, methodDef =>
+            {
                 bool isExtern = methodDef.HasAttribute(
-                                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
                 bool isInterface = methodDef.DeclaringType.GetIsInterface();
                 bool isAbstractOrExtern = methodDef.GetIsAbstract() || isExtern;
 
@@ -624,6 +643,8 @@ namespace Flame.Ecs
                     }
 
                     // Analyze the function body.
+                    var innerScope = CreateGenericScope(methodDef, Scope);
+                    var funScope = CreateFunctionScope(methodDef, innerScope);
                     var localScope = new LocalScope(funScope);
                     methodDef.Body = ExpressionConverters.AutoReturn(
                         methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
@@ -689,14 +710,17 @@ namespace Flame.Ecs
                 }
 
                 // Resolve the parameters
-                var funScope = AnalyzeParameters(
+                AnalyzeParameters(
                        Node.Args[2].Args, methodDef, innerScope, Converter);
-
+            }, _ => { }, methodDef =>
+            {
+                var innerScope = CreateGenericScope(methodDef, Scope);
+                var funScope = CreateFunctionScope(methodDef, Scope);
                 // Analyze the function body.
                 var localScope = new LocalScope(funScope);
                 methodDef.Body = ExpressionConverters.AutoReturn(
                     methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);	
+                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);  
             });
 
             // Finally, add the function to the declaring type.
@@ -1214,8 +1238,9 @@ namespace Flame.Ecs
                 ? AccessorType.GetAccessor 
                 : AccessorType.SetAccessor;
             var def = new LazyDescribedAccessor(
-                          accKind, DeclaringProperty, accDef =>
+                          accKind, DeclaringProperty, methodDef =>
             {
+                var accDef = (LazyDescribedAccessor)methodDef;
                 // Analyze the attributes first.
                 accDef.AddAttributes(ConvertAccessorAttributes(
                     Node.Attrs, DeclaringProperty, Scope, Converter));
@@ -1234,17 +1259,21 @@ namespace Flame.Ecs
                 foreach (var indParam in DeclaringProperty.IndexerParameters)
                     accDef.AddParameter(indParam);
 
-                foreach (var m in FindBaseAccessors(accDef, BaseProperties, Scope))
-                    accDef.AddBaseMethod(m);
-
                 if (!isGetter)
                     // Setters get an extra 'value' parameter.
                     accDef.AddParameter(new DescribedParameter(
                         "value", DeclaringProperty.PropertyType));
-                
+            }, methodDef =>
+            {
+                var accDef = (LazyDescribedAccessor)methodDef;
+                foreach (var m in FindBaseAccessors(accDef, BaseProperties, Scope))
+                    accDef.AddBaseMethod(m);
+            }, methodDef =>
+            {
+                var accDef = (LazyDescribedAccessor)methodDef;
                 var localScope = new LocalScope(
-                                     CreateFunctionScope(accDef, Scope));
-                    
+                    CreateFunctionScope(accDef, Scope));
+
                 bool isAbstract = DeclaringProperty.GetIsAbstract() 
                     || DeclaringProperty.DeclaringType.GetIsInterface();
 

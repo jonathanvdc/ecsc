@@ -79,14 +79,14 @@ namespace Flame.Ecs
                 return new SubtractExpression(
                     Variable.CreateGetExpression(), 
                     new StaticCastExpression(
-                        new Int32Expression(-Increment), Type).Optimize());
+                        new IntegerExpression(-Increment), Type).Optimize());
             }
             else
             {
                 return new AddExpression(
                     Variable.CreateGetExpression(), 
                     new StaticCastExpression(
-                        new Int32Expression(Increment), Type).Optimize());
+                        new IntegerExpression(Increment), Type).Optimize());
             }
         }
 

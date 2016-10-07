@@ -32,9 +32,19 @@ namespace Flame.Ecs.Semantics
         ExplicitStaticCast,
 
         /// <summary>
-        /// A boxing conversion is applicable.
+        /// An implicit boxing conversion is applicable.
         /// </summary>
-        BoxingConversion,
+        ImplicitBoxingConversion,
+
+        /// <summary>
+        /// An implicit boxing conversion is applicable.
+        /// </summary>
+        ExplicitBoxingConversion,
+
+        /// <summary>
+        /// A value-unboxing conversion is applicable.
+        /// </summary>
+        UnboxValueConversion,
 
         /// <summary>
         /// An explicit static cast is used to perform
@@ -122,22 +132,29 @@ namespace Flame.Ecs.Semantics
         /// Gets a value indicating whether this instance describes a static conversion,
         /// which does not incur any run-time check.
         /// </summary>
-        /// <value><c>true</c> if this instance is static; otherwise, <c>false</c>.</value>
         public bool IsStatic
         {
-            get { return Kind != ConversionKind.DynamicCast; }
+            get { return Kind != ConversionKind.DynamicCast && Kind != ConversionKind.UnboxValueConversion; }
         }
 
         /// <summary>
         /// Gets a value indicating whether this instance describes a reference conversion.
         /// </summary>
-        /// <value><c>true</c> if this instance is reference; otherwise, <c>false</c>.</value>
         public bool IsReference
         {
             get
             { 
                 return Kind == ConversionKind.DynamicCast
                 || Kind == ConversionKind.ReinterpretCast; 
+            }
+        }
+
+        public bool IsBoxing
+        {
+            get
+            {
+                return Kind == ConversionKind.ImplicitBoxingConversion
+                || Kind == ConversionKind.ExplicitBoxingConversion;
             }
         }
 
@@ -154,12 +171,15 @@ namespace Flame.Ecs.Semantics
                     case ConversionKind.DynamicCast:
                     case ConversionKind.ExplicitUserDefined:
                     case ConversionKind.ExplicitStaticCast:
+                    case ConversionKind.ExplicitBoxingConversion:
                     case ConversionKind.NumberToEnumStaticCast:
                     case ConversionKind.EnumToNumberStaticCast:
+                    case ConversionKind.UnboxValueConversion:
                         return true;
                     case ConversionKind.ReinterpretCast:
                     case ConversionKind.ImplicitUserDefined:
                     case ConversionKind.ImplicitStaticCast:
+                    case ConversionKind.ImplicitBoxingConversion:
                     case ConversionKind.Identity:
                     case ConversionKind.None:
                     default:
@@ -183,8 +203,15 @@ namespace Flame.Ecs.Semantics
                     return new DynamicCastExpression(Value, TargetType);
                 case ConversionKind.ImplicitStaticCast:
                 case ConversionKind.ExplicitStaticCast:
-                case ConversionKind.BoxingConversion:
                     return new StaticCastExpression(Value, TargetType);
+                case ConversionKind.ImplicitBoxingConversion:
+                    return new ReinterpretCastExpression(
+                        new BoxExpression(Value), TargetType);
+                case ConversionKind.ExplicitBoxingConversion:
+                    return new DynamicCastExpression(
+                        new BoxExpression(Value), TargetType);
+                case ConversionKind.UnboxValueConversion:
+                    return new UnboxValueExpression(Value, TargetType);
                 case ConversionKind.NumberToEnumStaticCast:
                     // An 'enum' static cast requires two casts:
                     // a static cast to the underlying type, 

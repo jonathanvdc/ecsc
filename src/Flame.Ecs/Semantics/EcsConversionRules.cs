@@ -47,8 +47,17 @@ namespace Flame.Ecs.Semantics
         public static bool IsClrReferenceType(IType Type)
         {
             return Type.GetIsReferenceType()
-            && (!Type.GetIsPrimitive()
-            || PrimitiveTypes.String.Equals(Type));
+                && (!Type.GetIsPrimitive() || PrimitiveTypes.String.Equals(Type));
+        }
+
+        private static bool UseExplicitBox(IType SourceType, IType TargetType)
+        {
+            // TODO: Switch to ConversionExpression.UseExplicitBox when it
+            // becomes available in the next version of Flame.
+            return !SourceType.GetIsReferenceType()
+                && !SourceType.GetIsPointer()
+                && TargetType.GetIsReferenceType()
+                && !ConversionExpression.Instance.IsNonBoxPointer(TargetType);
         }
 
         /// <summary>
@@ -100,6 +109,13 @@ namespace Flame.Ecs.Semantics
                     new ConversionDescription(ConversionKind.NumberToEnumStaticCast)
                 };
             }
+            else if (ConversionExpression.Instance.UseUnboxValue(SourceType, TargetType))
+            {
+                return new ConversionDescription[]
+                { 
+                    new ConversionDescription(ConversionKind.UnboxValueConversion) 
+                };
+            }
             else if (ConversionExpression.Instance.UseDynamicCast(SourceType, TargetType))
             {
                 if (ConversionExpression.Instance.UseReinterpretAsDynamicCast(SourceType, TargetType))
@@ -119,12 +135,15 @@ namespace Flame.Ecs.Semantics
                     };
                 }
             }
-            else if (SourceType.GetIsValueType() && IsClrReferenceType(TargetType))
+            else if (UseExplicitBox(SourceType, TargetType))
             {
-                // Boxing conversion. Flame handles that as a static cast.
+                // Boxing conversion.
                 return new ConversionDescription[]
-                { 
-                    new ConversionDescription(ConversionKind.BoxingConversion) 
+                {
+                    new ConversionDescription(
+                        SourceType.Is(TargetType)
+                            ? ConversionKind.ImplicitBoxingConversion
+                            : ConversionKind.ExplicitBoxingConversion)
                 };
             }
 

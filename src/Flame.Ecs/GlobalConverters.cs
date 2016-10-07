@@ -268,6 +268,7 @@ namespace Flame.Ecs
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
                                     Node.Attrs, AccessModifier.Assembly, node => false, Scope);
                 descTy.AddAttribute(PrimitiveAttributes.Instance.EnumAttribute);
+                descTy.AddAttribute(PrimitiveAttributes.Instance.ValueTypeAttribute);
                 descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 foreach (var item in convAttrs)
                 {
@@ -388,7 +389,7 @@ namespace Flame.Ecs
                         fieldDef.Value = new AddExpression(
                             Predecessor.Value, 
                             new StaticCastExpression(
-                                new Int32Expression(1), 
+                                new IntegerExpression((int)1), 
                                 UnderlyingType)).Optimize();
                     }
                     else

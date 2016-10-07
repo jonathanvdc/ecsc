@@ -678,6 +678,8 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
                 result.AddExprConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
                 result.AddExprConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
+                result.AddExprConverter(CodeSymbols.And, ExpressionConverters.ConvertLogicalAnd);
+                result.AddExprConverter(CodeSymbols.Or, ExpressionConverters.ConvertLogicalOr);
 
                 // - Unary operators
                 result.AddExprConverter(CodeSymbols.PreInc, UnaryConverters.ConvertPrefixIncrement);
@@ -704,14 +706,14 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.XorBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
 
                 // Literals
-                result.AddLiteralConverter<sbyte>(val => new Int8Expression(val));
-                result.AddLiteralConverter<short>(val => new Int16Expression(val));
-                result.AddLiteralConverter<int>(val => new Int32Expression(val));
-                result.AddLiteralConverter<long>(val => new Int64Expression(val));
-                result.AddLiteralConverter<byte>(val => new UInt8Expression(val));
-                result.AddLiteralConverter<ushort>(val => new UInt16Expression(val));
-                result.AddLiteralConverter<uint>(val => new UInt32Expression(val));
-                result.AddLiteralConverter<ulong>(val => new UInt64Expression(val));
+                result.AddLiteralConverter<sbyte>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<short>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<int>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<long>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<byte>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<ushort>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<uint>(val => new IntegerExpression(val));
+                result.AddLiteralConverter<ulong>(val => new IntegerExpression(val));
                 result.AddLiteralConverter<float>(val => new Float32Expression(val));
                 result.AddLiteralConverter<double>(val => new Float64Expression(val));
                 result.AddLiteralConverter<bool>(val => new BooleanExpression(val));

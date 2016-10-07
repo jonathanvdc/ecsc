@@ -78,9 +78,7 @@ namespace Flame.Ecs
 
             this.Global = Global;
             this.CurrentType = CurrentType;
-            this.DeclaringType = CurrentType != null && CurrentType.GetIsPointer() 
-                ? CurrentType.AsPointerType().ElementType
-                : CurrentType;
+            this.DeclaringType = DereferenceOrId(CurrentType);
             this.CurrentMethod = CurrentMethod;
             this.ReturnType = ReturnType;
             this.ParameterVariables = ParameterVariables;
@@ -275,6 +273,28 @@ namespace Flame.Ecs
                 operatorCache[Type] = localOps;
                 return localOps.GetAll(Op);
             }
+        }
+
+        /// <summary>
+        /// Dereferences the given type if it is a pointer type.
+        /// Otherwise, the type itself is returned. 
+        /// </summary>
+        public static IType DereferenceOrId(IType Type)
+        {
+            return Type != null && Type.GetIsPointer() 
+                ? Type.AsPointerType().ElementType
+                : Type;
+        }
+
+        /// <summary>
+        /// Gets the type of a hypothetical 'this' expression for
+        /// the given type.
+        /// </summary>
+        public static IType GetThisExpressionType(IType Type)
+        {
+            return Type == null
+                ? null
+                : DereferenceOrId(ThisVariable.GetThisType(Type));
         }
     }
 

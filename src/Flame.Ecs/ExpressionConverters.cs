@@ -916,7 +916,7 @@ namespace Flame.Ecs
                         // size mismatches, though.
                         int expectedSize = initializerExprs.Length;
                         var dim = arrDims[0];
-                        if (!dim.EvaluatesTo(expectedSize))
+                        if (!dim.EvaluatesTo(new IntegerValue(expectedSize)))
                         {
                             Scope.Log.LogError(new LogEntry(
                                 "array creation",
@@ -1502,6 +1502,62 @@ namespace Flame.Ecs
                     NodeHelpers.ToSourceLocation(node.Args[0].Range),
                     NodeHelpers.ToSourceLocation(node.Args[1].Range));
             };
+        }
+
+        /// <summary>
+        /// Converts the given logical-and expression.
+        /// </summary>
+        public static IExpression ConvertLogicalAnd(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var lhs = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
+
+            var rhsTy = rhs.Type;
+            if (PrimitiveTypes.Boolean.Equals(rhsTy))
+            {
+                return new LazyAndExpression(lhs, rhs);
+            }
+            else
+            {
+                return new SelectExpression(
+                    lhs, 
+                    rhs, 
+                    Scope.Function.Global.ConvertImplicit(
+                        new BooleanExpression(false),
+                        rhsTy, NodeHelpers.ToSourceLocation(Node.Range)));
+            }
+        }
+
+        /// <summary>
+        /// Converts the given logical-or expression.
+        /// </summary>
+        public static IExpression ConvertLogicalOr(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return VoidExpression.Instance;
+
+            var lhs = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
+            var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
+
+            var rhsTy = rhs.Type;
+            if (PrimitiveTypes.Boolean.Equals(rhsTy))
+            {
+                return new LazyOrExpression(lhs, rhs);
+            }
+            else
+            {
+                return new SelectExpression(
+                    lhs, 
+                    Scope.Function.Global.ConvertImplicit(
+                        new BooleanExpression(true),
+                        rhsTy, NodeHelpers.ToSourceLocation(Node.Range)),
+                    rhs);
+            }
         }
 
         /// <summary>
@@ -2144,7 +2200,7 @@ namespace Flame.Ecs
             var evalResult = result.Evaluate();
             if (evalResult != null)
             {
-                bool resultVal = evalResult.GetPrimitiveValue<bool>();
+                bool resultVal = evalResult.GetValue<bool>();
                 string lit = resultVal ? "true" : "false";
                 var warn = resultVal ? EcsWarnings.AlwaysTrueWarning : EcsWarnings.AlwaysFalseWarning;
                 if (warn.UseWarning(Scope.Log.Options))
@@ -2219,7 +2275,7 @@ namespace Flame.Ecs
             var implConv = Scope.Function.Global.GetImplicitConversion(
                                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
 
-            if (implConv.Kind == ConversionKind.BoxingConversion)
+            if (implConv.IsBoxing)
                 // Create a special using-box expression node here,
                 // which we can recognize when analyzing
                 // method groups.
@@ -2519,7 +2575,7 @@ namespace Flame.Ecs
                 // and the result should then be compared to
                 // 'null'. 
                 Expression = new ConversionDescription(
-                    ConversionKind.BoxingConversion, null)
+                    ConversionKind.ImplicitBoxingConversion, null)
                         .Convert(Expression, FindAnyRefTypeAncestor(exprTy, Scope));
             }
             // Reference types.
