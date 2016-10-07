@@ -6,5 +6,6 @@ public static class Program
     {
         var c = new object();
         Console.WriteLine(c != null);
+        Console.WriteLine("hi" != null);
     }
 }
