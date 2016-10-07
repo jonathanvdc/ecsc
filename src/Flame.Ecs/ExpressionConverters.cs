@@ -1476,12 +1476,54 @@ namespace Flame.Ecs
                     .Select(m => new GetMethodExpression(m, null))
                     .ToArray();
 
-            return OverloadResolution.CreateCheckedInvocation(
-                "operator", candidates, new[]
+            var args = new Tuple<IExpression, SourceLocation>[]
             {
                 Tuple.Create(Left, LeftLocation),
                 Tuple.Create(Right, RightLocation)
-            }, Scope.Global, LeftLocation.Concat(RightLocation));
+            };
+            var argTypes = OverloadResolution.GetArgumentTypes(args);
+            var result = OverloadResolution.CreateUncheckedInvocation(
+                candidates, args, Scope.Global);
+            if (result != null)
+            {
+                // We found a user-defined operator to apply.
+                return result;
+            }
+
+            // We didn't find an applicable user-defined operator. 
+            // Try reference equality.
+
+            // We couldn't find a single binary operator to apply.
+            var errLoc = LeftLocation.Concat(RightLocation);
+            if (candidates.Length > 0)
+            {
+                // If we have discovered candidate user-defined operators
+                // in the meantime, then this would be a good time to print them.
+                return OverloadResolution.LogFailedOverload(
+                    "operator", candidates, args, Scope.Global, 
+                    errLoc, argTypes);
+            }
+            else
+            {
+                // Print a special message, and return an unknown-expression
+                // with as type the lhs's type.
+                Scope.Global.Log.LogError(new LogEntry(
+                    "operator resolution", 
+                    NodeHelpers.HighlightEven(
+                        "operator '", Op.Name, 
+                        "' could not be applied to operands of types '",
+                        Scope.Global.TypeNamer.Convert(lTy),
+                        "' and '", Scope.Global.TypeNamer.Convert(rTy),
+                        "'."),
+                    errLoc));
+                return new InitializedExpression(
+                    new BlockStatement(new IStatement[]
+                    {
+                        ToStatement(Left),
+                        ToStatement(Right)
+                    }), 
+                    new UnknownExpression(lTy));
+            }
         }
 
         /// <summary>

@@ -161,6 +161,28 @@ namespace Flame.Ecs
             return new MarkupNode("#group", nodes);
         }
 
+        internal static IExpression CreateFailedOverloadExpression(
+            IExpression Target, IEnumerable<IStatement> ArgStmts, 
+            IType ReturnType)
+        {
+            var innerStmts = new List<IStatement>();
+            innerStmts.Add(new ExpressionStatement(Target));
+            innerStmts.AddRange(ArgStmts);
+            return new InitializedExpression(
+                new BlockStatement(innerStmts), new UnknownExpression(ReturnType));
+        }
+
+        internal static IExpression CreateFailedOverloadExpression(
+            IExpression Target, 
+            IEnumerable<Tuple<IExpression, SourceLocation>> Arguments, 
+            IType ReturnType)
+        {
+            return CreateFailedOverloadExpression(
+                Target, 
+                Arguments.Select(arg => new ExpressionStatement(arg.Item1)), 
+                ReturnType);
+        }
+
         /// <summary>
         /// Provides diagnostics for a failed overload.
         /// An expression is returned that executes the
@@ -184,11 +206,7 @@ namespace Flame.Ecs
             // Create an inner expression that consists of the invocation's target and arguments,
             // whose values are calculated and then popped. Said expression will return an 
             // unknown value of the return type.
-            var innerStmts = new List<IStatement>();
-            innerStmts.Add(new ExpressionStatement(target));
-            innerStmts.AddRange(Arguments.Select(arg => new ExpressionStatement(arg.Item1)));
-            var innerExpr = new InitializedExpression(
-                                new BlockStatement(innerStmts), new UnknownExpression(retType));
+            var innerExpr = CreateFailedOverloadExpression(target, Arguments, retType);
 
             var log = Scope.Log;
             if (matches.Any())
