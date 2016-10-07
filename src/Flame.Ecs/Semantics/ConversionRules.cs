@@ -41,11 +41,40 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
+        /// Finds out whether the given value
+        /// can be converted implicitly to the given target type.
+        /// </summary>
+        public bool HasImplicitConversion(IExpression From, IType To)
+        {
+            foreach (var conv in ClassifyConversion(From, To))
+            {
+                if (conv.IsImplicit)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Finds out whether a value of the given source type
         /// can be converted to the given target type by using
         /// a reference conversion.
         /// </summary>
         public bool HasReferenceConversion(IType From, IType To)
+        {
+            foreach (var conv in ClassifyConversion(From, To))
+            {
+                if (conv.Kind == ConversionKind.DynamicCast)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Finds out whether the given value
+        /// can be converted to the given target type by using
+        /// a reference conversion.
+        /// </summary>
+        public bool HasReferenceConversion(IExpression From, IType To)
         {
             foreach (var conv in ClassifyConversion(From, To))
             {

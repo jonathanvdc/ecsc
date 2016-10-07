@@ -1492,6 +1492,16 @@ namespace Flame.Ecs
 
             // We didn't find an applicable user-defined operator. 
             // Try reference equality.
+            if (BinaryOperatorResolution.IsReferenceEquality(Op, lTy, rTy))
+            {
+                opTy = Scope.Global.ConversionRules.HasImplicitConversion(lTy, rTy)
+                    ? rTy : lTy;
+
+                return DirectBinaryExpression.Instance.Create(
+                    globalScope.ConvertImplicit(Left, opTy, LeftLocation),
+                    Op,
+                    globalScope.ConvertImplicit(Right, opTy, RightLocation));
+            }
 
             // We couldn't find a single binary operator to apply.
             var errLoc = LeftLocation.Concat(RightLocation);

@@ -29,6 +29,31 @@ namespace Flame.Ecs.Semantics
             && dict.TryGetValue(Tuple.Create(Left, Right), out Result);
         }
 
+        /// <summary>
+        /// Checks if the given pair of types have 
+        /// reference equality.
+        /// </summary>
+        public static bool HaveReferenceEquality(
+            IType Left, IType Right)
+        {
+            return Left.GetIsReferenceType()
+            && Right.GetIsReferenceType();
+        }
+
+        /// <summary>
+        /// Determines if an application of the given operator
+        /// to the given pair of types could be reference 
+        /// equality, assuming that one of these types is
+        /// implicitly convertible to the other.
+        /// </summary>
+        public static bool IsReferenceEquality(
+            Operator Op, IType Left, IType Right)
+        {
+            return (Op.Equals(Operator.CheckEquality)
+            || Op.Equals(Operator.CheckInequality))
+            && HaveReferenceEquality(Left, Right);
+        }
+
         public static IType GetUnderlyingType(IType EnumType)
         {
             return EnumType.GetParent();
