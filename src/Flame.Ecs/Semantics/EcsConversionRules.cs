@@ -74,6 +74,16 @@ namespace Flame.Ecs.Semantics
                     new ConversionDescription(ConversionKind.Identity) 
                 };
             }
+            else if (PrimitiveTypes.Null.Equals(SourceType)
+                     && TargetType.GetIsReferenceType())
+            {
+                // Convert 'null' to any reference type, no
+                // questions asked.
+                return new ConversionDescription[]
+                { 
+                    new ConversionDescription(ConversionKind.ReinterpretCast) 
+                };
+            }
 
             ConversionKind kind;
             if (primitiveConversions.TryGetValue(
