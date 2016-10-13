@@ -873,6 +873,7 @@ namespace Flame.Ecs
                     DeclaringType, fieldDef =>
                 {
                     fieldDef.FieldType = lazyRetType.Value ?? PrimitiveTypes.Void;
+                    fieldDef.IsStatic = NodeHelpers.ContainsStaticAttribute(Node.Attrs);
                     // Make the backing field private and hidden, 
                     // then assign it the enclosing property's 
                     // source location.

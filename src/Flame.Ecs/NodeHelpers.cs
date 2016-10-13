@@ -393,6 +393,24 @@ namespace Flame.Ecs
             { new HashSet<Symbol>() { CodeSymbols.Public }, AccessModifier.Public },
             { new HashSet<Symbol>() { CodeSymbols.Protected, CodeSymbols.Internal }, AccessModifier.ProtectedOrAssembly },
         };
+
+        /// <summary>
+        /// Determines if the given attribute is the 'static' attribute.
+        /// </summary>
+        /// <returns><c>true</c> if the given attribute is the 'static' attribute; otherwise, <c>false</c>.</returns>
+        public static bool IsStaticAttribute(LNode Attribute)
+        {
+            return Attribute.IsIdNamed(CodeSymbols.Static);
+        }
+
+        /// <summary>
+        /// Determines if any of the given attribute are the 'static' attribute.
+        /// </summary>
+        /// <returns><c>true</c> if any of the given attribute are the 'static' attribute; otherwise, <c>false</c>.</returns>
+        public static bool ContainsStaticAttribute(IEnumerable<LNode> Attibutes)
+        {
+            return Attibutes.Any(IsStaticAttribute);
+        }
     }
 }
 
