@@ -60,6 +60,23 @@ namespace Flame.Ecs.Semantics
                 && !ConversionExpression.Instance.IsNonBoxPointer(TargetType);
         }
 
+        private IReadOnlyList<ConversionDescription> NoConversion(
+            IType SourceType, IType TargetType)
+        {
+            if (SourceType is ErrorType)
+            {
+                // The error type can be converted to any other type.
+                return new ConversionDescription[]
+                { 
+                    new ConversionDescription(ConversionKind.ReinterpretCast) 
+                };
+            }
+            else
+            {
+                return new ConversionDescription[0];
+            }
+        }
+
         /// <summary>
         /// Classifies a conversion of the given source type to the given target type.
         /// </summary>
@@ -92,7 +109,7 @@ namespace Flame.Ecs.Semantics
                 // Built-in conversion.
                 if (kind == ConversionKind.None)
                 {
-                    return new ConversionDescription[0];
+                    return NoConversion(SourceType, TargetType);
                 }
                 else
                 {
@@ -161,7 +178,7 @@ namespace Flame.Ecs.Semantics
             // TODO: pointer conversions
 
             // Didn't find any applicable conversions.
-            return new ConversionDescription[0];
+            return NoConversion(SourceType, TargetType);
         }
 
         private static readonly Dictionary<Tuple<IType, IType>, ConversionKind> primitiveConversions = 
