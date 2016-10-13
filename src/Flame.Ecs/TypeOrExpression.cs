@@ -125,11 +125,14 @@ namespace Flame.Ecs
 
 
         /// <summary>
-        /// Gets the void type-or-expression: an entity that is both
-        /// a void type and a void expression.
+        /// Gets the error type-or-expression: an entity that is both
+        /// the error type and the error expression.
         /// </summary>
-        public static readonly TypeOrExpression Void = 
-            new TypeOrExpression(VoidExpression.Instance, new IType[] { PrimitiveTypes.Void }, default(QualifiedName));
+        public static readonly TypeOrExpression Error = 
+            new TypeOrExpression(
+                ExpressionConverters.ErrorTypeExpression, 
+                new IType[] { ErrorType.Instance }, 
+                default(QualifiedName));
     }
 }
 

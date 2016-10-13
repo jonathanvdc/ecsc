@@ -172,6 +172,7 @@
     <Compile Include="GlobalMemberCache.cs" />
     <Compile Include="Semantics\AssignmentExpression.cs" />
     <Compile Include="Semantics\UsingBoxExpression.cs" />
+    <Compile Include="Semantics\ErrorType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -445,7 +445,7 @@ namespace Flame.Ecs
                                     NodeHelpers.HighlightEven(
                                         "literals of type '", val.GetType().FullName, "' are not supported."),
                                     NodeHelpers.ToSourceLocation(Node.Range)));
-                            return new TypeOrExpression(VoidExpression.Instance);
+                            return new TypeOrExpression(ExpressionConverters.ErrorTypeExpression);
                         }
                     }
                 }
@@ -474,7 +474,7 @@ namespace Flame.Ecs
                         "expression resolution",
                         NodeHelpers.HighlightEven("expression could not be resolved."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ExpressionConverters.ErrorTypeExpression;
             }
         }
 

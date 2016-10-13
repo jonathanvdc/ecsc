@@ -17,8 +17,21 @@ using Flame.Collections;
 
 namespace Flame.Ecs
 {
+    /// <summary>
+    /// Defines a set of members that facilitate the analysis
+    /// and lowering of Enhanced C# LNodes into Flame IR.
+    /// </summary>
     public static class ExpressionConverters
     {
+        /// <summary>
+        /// Gets the error expression, which is used whenever an error occurs.
+        /// </summary>
+        /// <value>The error expression.</value>
+        public static IExpression ErrorTypeExpression
+        {
+            get { return new UnknownExpression(ErrorType.Instance); }
+        }
+
         /// <summary>
         /// Retrieves the 'this' variable from the given
         /// local scope.
@@ -806,7 +819,7 @@ namespace Flame.Ecs
             //
 
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var ctorCallNode = Node.Args[0];
 
@@ -836,7 +849,7 @@ namespace Flame.Ecs
                             "could not infer an element type for a " +
                             "type-inferred initialized arrays."),
                         loc));
-                    return VoidExpression.Instance;
+                    return ErrorTypeExpression;
                 }
                 else
                 {
@@ -851,7 +864,7 @@ namespace Flame.Ecs
             var ctorArgs = OverloadResolution.ConvertArguments(ctorCallNode.Args, Scope, Converter);
 
             if (ctorType == null)
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             if (ctorType.GetIsArray())
             {
@@ -1544,7 +1557,7 @@ namespace Flame.Ecs
             return (node, scope, conv) =>
             {
                 if (!NodeHelpers.CheckArity(node, 2, scope.Log))
-                    return VoidExpression.Instance;
+                    return ErrorTypeExpression;
 
                 return CreateBinary(
                     Op,
@@ -1563,7 +1576,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var lhs = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
@@ -1591,7 +1604,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var lhs = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
@@ -1654,7 +1667,7 @@ namespace Flame.Ecs
         public static IExpression ConvertAssignment(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var lhs = Converter.ConvertExpression(Node.Args[0], Scope);
             var rhs = Converter.ConvertExpression(Node.Args[1], Scope);
@@ -1683,7 +1696,7 @@ namespace Flame.Ecs
             return (node, scope, conv) =>
             {
                 if (!NodeHelpers.CheckArity(node, 2, scope.Log))
-                    return VoidExpression.Instance;
+                    return ErrorTypeExpression;
 
                 var lhs = conv.ConvertExpression(node.Args[0], scope);
                 var rhs = conv.ConvertExpression(node.Args[1], scope);
@@ -1810,7 +1823,7 @@ namespace Flame.Ecs
                         "keyword '", "this",
                         "' is not valid in a static property, static method, or static field initializer."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             var thisExpr = thisVar.CreateGetExpression();
 
@@ -1849,7 +1862,7 @@ namespace Flame.Ecs
                         "keyword '", "base",
                         "' is not valid in a static property, static method, or static field initializer."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
 
             var baseType = Scope.Function.CurrentType.GetParent();
@@ -1863,7 +1876,7 @@ namespace Flame.Ecs
                         "keyword '", "base",
                         "' is only valid for types that have a base type."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
 
             var baseExpr = new ReinterpretCastExpression(
@@ -1901,7 +1914,7 @@ namespace Flame.Ecs
         {
             if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
                 || !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
@@ -1919,7 +1932,7 @@ namespace Flame.Ecs
         public static IExpression ConvertSelectExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
@@ -1963,7 +1976,7 @@ namespace Flame.Ecs
                         "no enclosing loop out of which to ",
                         "break", "."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             else
             {
@@ -1990,7 +2003,7 @@ namespace Flame.Ecs
                         "no enclosing loop out of which to ",
                         "continue", "."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             else
             {
@@ -2006,7 +2019,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var tag = new UniqueTag("while");
 
@@ -2024,7 +2037,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var tag = new UniqueTag("do-while");
 
@@ -2042,7 +2055,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var childScope = new LocalScope(Scope);
 
@@ -2063,13 +2076,13 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var ty = Converter.ConvertCheckedType(Node.Args[0], Scope);
 
             if (ty == null)
             {
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             else if (ty.Equals(PrimitiveTypes.Void))
             {
@@ -2077,7 +2090,7 @@ namespace Flame.Ecs
                     "syntax error",
                     NodeHelpers.HighlightEven("type '", "void", "' cannot be used in this context."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             else
             {
@@ -2092,7 +2105,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
@@ -2216,7 +2229,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
@@ -2291,7 +2304,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
@@ -2313,7 +2326,7 @@ namespace Flame.Ecs
             //
 
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             // Don't log a warning here. Instead, we'll log a warning
             // when `x using T` is used in a context where `using` cast
@@ -2344,7 +2357,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var lockee = Converter.ConvertExpression(Node.Args[0], Scope);
             var lockeeTy = lockee.Type;
@@ -2491,7 +2504,7 @@ namespace Flame.Ecs
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var tryClauses = new List<IStatement>();
             var catchClauses = new List<CatchClause>();
@@ -2692,7 +2705,7 @@ namespace Flame.Ecs
             // variable declarations in 'using' statements.
 
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var childScope = new LocalScope(Scope);
 
@@ -2757,7 +2770,7 @@ namespace Flame.Ecs
         {
             if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log)
                 || !NodeHelpers.CheckMaxArity(Node, 3, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var result = cond.EvaluateOrNull();
@@ -2769,7 +2782,7 @@ namespace Flame.Ecs
                         "the condition of the '", EcscMacros.EcscSymbols.BuiltinStaticIf.Name, 
                         "' node could not be evaluated."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
             else if (result.EvaluatesTo<bool>(true))
             {
@@ -2794,7 +2807,7 @@ namespace Flame.Ecs
                         "' had type '", Scope.Function.Global.TypeNamer.Convert(result.Type),
                         "', but '", "bool", "' was expected."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
             }
         }
 
@@ -2805,7 +2818,7 @@ namespace Flame.Ecs
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log)
                 || !NodeHelpers.CheckMaxArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return ErrorTypeExpression;
 
             var ty = Converter.ConvertCheckedTypeOrError(Node.Args[0], Scope);
             if (ty.GetIsArray())
@@ -2880,7 +2893,7 @@ namespace Flame.Ecs
         public static TypeOrExpression ConvertBuiltinStashLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return TypeOrExpression.Void;
+                return TypeOrExpression.Error;
 
             var varNames = ToSymbolSet(Node.Args.Slice(0, Node.ArgCount - 1), Scope);
             return Converter.ConvertScopedTypeOrExpression(
@@ -2894,7 +2907,7 @@ namespace Flame.Ecs
         public static TypeOrExpression ConvertBuiltinRestoreLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return TypeOrExpression.Void;
+                return TypeOrExpression.Error;
 
             var nameNodes = Node.Args.Slice(0, Node.ArgCount - 1);
             var varNames = ToSymbolSet(nameNodes, Scope);
