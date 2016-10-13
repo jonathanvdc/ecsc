@@ -32,6 +32,7 @@ tests
     return/Return.test;
     sealed/Sealed.test;
     sequence-equal/SequenceEqual.test;
+    static-properties/StaticProperties.test;
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
     user-defined-operators/UserDefinedOperators.test;
