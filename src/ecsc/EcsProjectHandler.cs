@@ -84,7 +84,7 @@ namespace ecsc
 		{
 			var converter = NodeConverter.DefaultNodeConverter;
 			NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
-			var sink = new CompilerLogMessageSink(Parameters.Log);
+            var sink = new CompilerLogMessageSink(Parameters.Log, new SourceDocumentCache());
 			var processor = new MacroProcessor(typeof(LeMP.Prelude.BuiltinMacros), sink);
 
 			processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
@@ -98,7 +98,7 @@ namespace ecsc
 		public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
 			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
 			IBinder Binder, IAssembly DeclaringAssembly,
-			NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
+            NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
 		{
 			var units = new Task<INamespaceBranch>[SourceItems.Count];
 			for (int i = 0; i < units.Length; i++)
@@ -128,16 +128,17 @@ namespace ecsc
 
 		public static Task<INamespaceBranch> ParseCompilationUnitAsync(
 			IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
-			IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, IMessageSink Sink)
+            IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
 		{
 			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
             Func<INamespaceBranch> doParse = () =>
 				{
 					var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
 					if (code == null)
-					{
 						return null;
-					}
+
+                    Sink.DocumentCache.Add(code);
+
 					var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
 					bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
 					var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
