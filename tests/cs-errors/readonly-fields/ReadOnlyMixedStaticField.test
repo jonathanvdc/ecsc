@@ -1,0 +1,29 @@
+// A compare-test test description.
+// This test compares ecsc to the reference implementation (csc or mcs).
+
+run
+{
+    // Check that an error occurs
+    _ = @($(compiler) $(Filename).cs $(Flags), -1);
+}
+
+configs
+{
+    Ecsc
+    {
+        compiler = $ecsc;
+        Flags = -platform clr -o $(Executable);
+    }
+    Reference
+    {
+        compiler = $csc;
+        Flags = /out:$(Executable);
+    }
+}
+
+init
+{
+    Filename = ReadOnlyMixedStaticField;
+    Executable = bin/$(Filename).exe;
+    Args = ;
+}

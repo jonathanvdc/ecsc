@@ -2,4 +2,7 @@
 tests
 {
     field-value-assign/FieldValueAssign.test;
+    readonly-fields/ReadOnlyInstanceField.test;
+    readonly-fields/ReadOnlyMixedStaticField.test;
+    readonly-fields/ReadOnlyStaticField.test;
 }
