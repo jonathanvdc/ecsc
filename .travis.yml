@@ -1,7 +1,7 @@
 language: csharp
 solution: src/ecsc.sln
 install:
-  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.1/compare-test.zip > compare-test.zip
+  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.2/compare-test.zip > compare-test.zip
   - mkdir -p bin/compare-test
   - unzip compare-test.zip -d bin/compare-test
   - nuget restore src/ecsc.sln
