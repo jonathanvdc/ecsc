@@ -1,0 +1,5 @@
+
+tests
+{
+    field-value-assign/FieldValueAssign.test;
+}
