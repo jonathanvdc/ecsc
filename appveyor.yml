@@ -1,7 +1,7 @@
 version: 0.1.1.{build}
 
 install:
-  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.1/compare-test.zip > compare-test.zip
+  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.2/compare-test.zip > compare-test.zip
   - mkdir bin
   - 7z x compare-test.zip -obin\compare-test
   - nuget restore src\ecsc.sln
