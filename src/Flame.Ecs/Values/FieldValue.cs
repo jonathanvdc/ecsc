@@ -50,9 +50,20 @@ namespace Flame.Ecs.Values
         {
             return ExpressionConverters.AsTargetValue(
                 Target, Scope, Location, false)
-                .MapResult<IExpression>(targetExpr =>
+                .BindResult(targetExpr =>
                 {
-                    return new FieldGetPointerExpression(Field, targetExpr);
+                    if (Field.GetIsConstant())
+                    {
+                        return ResultOrError<IExpression, LogEntry>.FromError(
+                            new LogEntry(
+                                "address of constant field",
+                                NodeHelpers.HighlightEven(
+                                    "field '", Field.Name.ToString(), "' is '", "const", "'; " +
+                                    "its address cannot be taken."),
+                                Location));
+                    }
+                    return ResultOrError<IExpression, LogEntry>.FromResult(
+                        new FieldGetPointerExpression(Field, targetExpr));
                 });
         }
 
@@ -65,13 +76,17 @@ namespace Flame.Ecs.Values
                 Target, Scope, Location, false)
                 .BindResult(targetExpr =>
                 {
-                    if (Field.HasAttribute(PrimitiveAttributes.Instance.InitOnlyAttribute.AttributeType))
+                    if (Field.HasAttribute(
+                        PrimitiveAttributes.Instance.InitOnlyAttribute.AttributeType))
                     {
                         // Values can be assigned to 'readonly' fields in exactly two 
                         // places:
                         //    1) the constructors of the class that defines the field,
                         //       with the same staticness as the field
                         //    2) the field's initial value
+                        //
+                        // Only the former case is relevant here; the latter case is handled
+                        // separately during field definition analysis.
 
                         var method = Scope.Function.CurrentMethod;
                         if (!method.IsConstructor 
@@ -87,7 +102,21 @@ namespace Flame.Ecs.Values
                                     Location));
                         }
                     }
-                    return ResultOrError<IStatement, LogEntry>.FromResult(new FieldSetStatement(Field, targetExpr, Value));
+                    if (Field.GetIsConstant())
+                    {
+                        // No value can ever be assigned to a 'const' field (outside
+                        // of its definition).
+
+                        return ResultOrError<IStatement, LogEntry>.FromError(
+                            new LogEntry(
+                                "constant field assignment",
+                                NodeHelpers.HighlightEven(
+                                    "field '", Field.Name.ToString(), "' is '", "const", "' and cannot " +
+                                    "be assigned a value."),
+                                Location));
+                    }
+                    return ResultOrError<IStatement, LogEntry>.FromResult(
+                        new FieldSetStatement(Field, targetExpr, Value));
                 });
         }
     }
