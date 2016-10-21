@@ -9,18 +9,18 @@ namespace Flame.Ecs.Semantics
 {
     /// <summary>
     /// An assignment variable: an expression that corresponds 
-    /// to a store to another variable, which may then
-    /// be used again in another store.
+    /// to a store to another variable. This expression type facilitates
+    /// the use of the variable's new value in another expression.
     /// </summary>
     public class AssignmentExpression : ComplexExpressionBase
     {
         public AssignmentExpression(
-            IVariable TargetVariable, IExpression Value)
+            Func<IExpression, IStatement> CreateAssignment, IExpression Value)
         {
             this.tempVar = new RegisterVariable("tmp", Value.Type);
             this.storeValExpr = new SpeculativeExpression(
                 Value, tempVar.CreateGetExpression());
-            this.storeStmt = TargetVariable.CreateSetStatement(storeValExpr);
+            this.storeStmt = CreateAssignment(storeValExpr);
         }
 
         private SpeculativeExpression storeValExpr;

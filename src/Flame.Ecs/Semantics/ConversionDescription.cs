@@ -237,7 +237,7 @@ namespace Flame.Ecs.Semantics
                     else
                         return new InvocationExpression(
                             ConversionMethod, 
-                            ExpressionConverters.AsTargetObject(Value), 
+                            ExpressionConverters.AsTargetExpression(Value), 
                             null);
                 case ConversionKind.None:
                 default:

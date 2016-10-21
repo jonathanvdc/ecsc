@@ -183,6 +183,16 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Determines whether this instance can access the specified member.
+        /// </summary>
+        /// <returns><c>true</c> if this instance can access the specified member; otherwise, <c>false</c>.</returns>
+        /// <param name="Member">The member that might be accessible.</param>
+        public bool CanAccess(ITypeMember Member)
+        {
+            return DeclaringType.CanAccess(Member);
+        }
+
+        /// <summary>
         /// Gets all indexers that can be accessed on an instance
         /// of the given type.
         /// </summary>
@@ -197,7 +207,7 @@ namespace Flame.Ecs
             {
                 result = Global.MemberCache.GetAllIndexers(Type)
                     .Where(p => 
-                        !p.IsStatic && DeclaringType.CanAccess(p))
+                        !p.IsStatic && CanAccess(p))
                     .ToArray();
                 instanceIndexerCache[Type] = result;
                 return result;
@@ -212,7 +222,7 @@ namespace Flame.Ecs
         {
             return GetMembers(Type, Name, instanceMemberCache, item =>
             {
-                return !item.IsStatic && DeclaringType.CanAccess(item);
+                return !item.IsStatic && CanAccess(item);
             });
         }
 
@@ -224,7 +234,7 @@ namespace Flame.Ecs
         {
             return GetMembers(Type, Name, staticMemberCache, item =>
             {
-                return item.IsStatic && DeclaringType.CanAccess(item);
+                return item.IsStatic && CanAccess(item);
             });
         }
 
@@ -267,7 +277,7 @@ namespace Flame.Ecs
                 var localOps = new SmallMultiDictionary<Operator, IMethod>(globalOps.Count);
                 foreach (var item in globalOps.Values)
                 {
-                    if (DeclaringType.CanAccess(item))
+                    if (CanAccess(item))
                         localOps.Add(item.GetOperator(), item);
                 }
                 operatorCache[Type] = localOps;

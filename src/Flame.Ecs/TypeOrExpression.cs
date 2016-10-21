@@ -3,42 +3,38 @@ using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using System.Collections.Generic;
 using System.Linq;
+using Flame.Ecs.Values;
 
 namespace Flame.Ecs
 {
     /// <summary>
     /// A data structure that represents an entity that
-    /// is an expression, a type, a namespace, or a
+    /// is an expression, a type, a namespace, a variable, or a
     /// combination of these things.
     /// </summary>
     public sealed class TypeOrExpression
     {
-        public TypeOrExpression(IExpression Expression)
+        public TypeOrExpression(IValue Expression)
             : this(Expression, Enumerable.Empty<IType>(), default(QualifiedName))
-        {
-        }
+        { }
 
-        public TypeOrExpression(IExpression Expression, IEnumerable<IType> Types)
+        public TypeOrExpression(IValue Expression, IEnumerable<IType> Types)
             : this(Expression, Types, default(QualifiedName))
-        {
-        }
+        { }
 
         public TypeOrExpression(IEnumerable<IType> Types)
             : this(null, Types, default(QualifiedName))
-        {
-        }
+        { }
 
-        public TypeOrExpression(IExpression Expression, QualifiedName Namespace)
+        public TypeOrExpression(IValue Expression, QualifiedName Namespace)
             : this(Expression, Enumerable.Empty<IType>(), Namespace)
-        {
-        }
+        { }
 
         public TypeOrExpression(QualifiedName Namespace)
             : this(null, Enumerable.Empty<IType>(), Namespace)
-        {
-        }
+        { }
 
-        public TypeOrExpression(IExpression Expression, IEnumerable<IType> Types, QualifiedName Namespace)
+        public TypeOrExpression(IValue Expression, IEnumerable<IType> Types, QualifiedName Namespace)
         {
             this.Expression = Expression;
             this.typeSet = new HashSet<IType>(Types);
@@ -47,18 +43,48 @@ namespace Flame.Ecs
 
         private HashSet<IType> typeSet;
 
-        public IExpression Expression { get; private set; }
+        /// <summary>
+        /// Gets the expression that this type-or-expression represents.
+        /// </summary>
+        /// <value>The expression.</value>
+        public IValue Expression { get; private set; }
 
+        /// <summary>
+        /// Gets the set of types that this type-or-expression represents.
+        /// </summary>
+        /// <value>The set of types.</value>
         public IEnumerable<IType> Types { get { return typeSet; } }
 
+        /// <summary>
+        /// Gets the namespace this this type-or-expression represents.
+        /// </summary>
+        /// <value>The namespace.</value>
         public QualifiedName Namespace { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether this type-or-expression is an expression.
+        /// </summary>
+        /// <value><c>true</c> if this instance is an expression; otherwise, <c>false</c>.</value>
         public bool IsExpression { get { return Expression != null; } }
+
+        /// <summary>
+        /// Gets a value indicating whether this type-or-expression is at least one type.
+        /// </summary>
+        /// <value><c>true</c> if this instance is at least one type; otherwise, <c>false</c>.</value>
 
         public bool IsType { get { return typeSet.Count > 0; } }
 
+        /// <summary>
+        /// Gets a value indicating whether this type-or-expression is a namespace.
+        /// </summary>
+        /// <value><c>true</c> if this instance is a namespace; otherwise, <c>false</c>.</value>
         public bool IsNamespace { get { return !Namespace.IsEmpty; } }
 
+        /// <summary>
+        /// Gets the type of this type-or-expression's expression, if
+        /// this instance is an expression.
+        /// </summary>
+        /// <value>The type of the expression.</value>
         public IType ExpressionType
         {
             get
@@ -73,13 +99,17 @@ namespace Flame.Ecs
         /// Adds a source location to this type-or-expression object.
         /// A new instance is returned that represents the updated entity.
         /// </summary>
-        public TypeOrExpression WithSourceLocation(SourceLocation Location)
+        public TypeOrExpression WithSourceLocation()
         {
-            if (Expression == null)
+            if (!IsExpression)
+            {
                 return this;
+            }
             else
+            {
                 return new TypeOrExpression(
-                    SourceExpression.Create(Expression, Location), Types, Namespace);
+                    new SourceValue(Expression), Types, Namespace);
+            }
         }
 
         /// <summary>
@@ -130,7 +160,7 @@ namespace Flame.Ecs
         /// </summary>
         public static readonly TypeOrExpression Error = 
             new TypeOrExpression(
-                ExpressionConverters.ErrorTypeExpression, 
+                new ExpressionValue(ExpressionConverters.ErrorTypeExpression), 
                 new IType[] { ErrorType.Instance }, 
                 default(QualifiedName));
     }

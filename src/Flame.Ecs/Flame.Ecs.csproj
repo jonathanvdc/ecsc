@@ -173,6 +173,17 @@
     <Compile Include="Semantics\AssignmentExpression.cs" />
     <Compile Include="Semantics\UsingBoxExpression.cs" />
     <Compile Include="Semantics\ErrorType.cs" />
+    <Compile Include="IValue.cs" />
+    <Compile Include="Values\ExpressionValue.cs" />
+    <Compile Include="Values\SourceValue.cs" />
+    <Compile Include="Values\VariableValue.cs" />
+    <Compile Include="Values\IntersectionValue.cs" />
+    <Compile Include="Values\FieldValue.cs" />
+    <Compile Include="ResultOrError.cs" />
+    <Compile Include="Values\ErrorValue.cs" />
+    <Compile Include="Values\PropertyValue.cs" />
+    <Compile Include="Values\ScopedValue.cs" />
+    <Compile Include="Values\ComputedExpressionValue.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -181,6 +192,7 @@
   <ItemGroup>
     <Folder Include="Passes\" />
     <Folder Include="Semantics\" />
+    <Folder Include="Values\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">

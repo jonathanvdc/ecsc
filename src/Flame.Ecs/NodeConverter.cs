@@ -9,6 +9,7 @@ using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Ecs.Semantics;
 using Pixie;
+using Flame.Ecs.Values;
 
 namespace Flame.Ecs
 {
@@ -18,6 +19,7 @@ namespace Flame.Ecs
     using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
     using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
     using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
+    using ValueConverter = Func<LNode, LocalScope, NodeConverter, IValue>;
     using TypeOrExpressionConverter = Func<LNode, LocalScope, NodeConverter, TypeOrExpression>;
     using LiteralConverter = Func<object, IExpression>;
 
@@ -419,24 +421,31 @@ namespace Flame.Ecs
                     if (Node.IsId)
                     {
                         var result = LookupUnqualifiedName(Node.Name.Name, Scope);
-                        return result.WithSourceLocation(NodeHelpers.ToSourceLocation(Node.Range));
+                        return result.WithSourceLocation();
                     }
                     else if (Node.IsCall)
                     {
-                        return new TypeOrExpression(SourceExpression.Create(
-                                CallConverter(Node, Scope, this), NodeHelpers.ToSourceLocation(Node.Range)));
+                        return new TypeOrExpression(
+                            new ExpressionValue(
+                                SourceExpression.Create(
+                                    CallConverter(Node, Scope, this), 
+                                    NodeHelpers.ToSourceLocation(Node.Range))));
                     }
                     else if (Node.IsLiteral)
                     {
                         object val = Node.Value;
                         if (val == null)
-                            return new TypeOrExpression(NullExpression.Instance);
+                            return new TypeOrExpression(
+                                new ExpressionValue(NullExpression.Instance));
                         
                         LiteralConverter litConv;
                         if (literalConverters.TryGetValue(val.GetType(), out litConv))
                         {
                             return new TypeOrExpression(
-                                SourceExpression.Create(litConv(val), NodeHelpers.ToSourceLocation(Node.Range)));
+                                new ExpressionValue(
+                                    SourceExpression.Create(
+                                        litConv(val),
+                                        NodeHelpers.ToSourceLocation(Node.Range))));
                         }
                         else
                         {
@@ -445,7 +454,8 @@ namespace Flame.Ecs
                                     NodeHelpers.HighlightEven(
                                         "literals of type '", val.GetType().FullName, "' are not supported."),
                                     NodeHelpers.ToSourceLocation(Node.Range)));
-                            return new TypeOrExpression(ExpressionConverters.ErrorTypeExpression);
+                            return new TypeOrExpression(
+                                new ExpressionValue(ExpressionConverters.ErrorTypeExpression));
                         }
                     }
                 }
@@ -454,14 +464,23 @@ namespace Flame.Ecs
             }
             else
             {
-                return conv(Node, Scope, this).WithSourceLocation(NodeHelpers.ToSourceLocation(Node.Range));
+                return conv(Node, Scope, this).WithSourceLocation();
             }
         }
 
         /// <summary>
-        /// Converts the given expression node.
+        /// Converts the given expression node to an IR expression.
         /// </summary>
         public IExpression ConvertExpression(LNode Node, LocalScope Scope)
+        {
+            return ConvertValue(Node, Scope).CreateGetExpressionOrError(
+                Scope, NodeHelpers.ToSourceLocation(Node.Range));
+        }
+
+        /// <summary>
+        /// Converts the given expression node to a value.
+        /// </summary>
+        public IValue ConvertValue(LNode Node, LocalScope Scope)
         {
             var result = ConvertTypeOrExpression(Node, Scope);
             if (result.IsExpression)
@@ -470,11 +489,10 @@ namespace Flame.Ecs
             }
             else
             {
-                Scope.Function.Global.Log.LogError(new LogEntry(
-                        "expression resolution",
-                        NodeHelpers.HighlightEven("expression could not be resolved."),
-                        NodeHelpers.ToSourceLocation(Node.Range)));
-                return ExpressionConverters.ErrorTypeExpression;
+                return new ErrorValue(new LogEntry(
+                    "expression resolution",
+                    NodeHelpers.HighlightEven("expression could not be resolved."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
             }
         }
 
@@ -538,6 +556,14 @@ namespace Flame.Ecs
         /// Registers an expression converter.
         /// </summary>
         public void AddExprConverter(Symbol Symbol, ExpressionConverter Converter)
+        {
+            exprConverters[Symbol] = (node, scope, self) => new TypeOrExpression(new ExpressionValue(Converter(node, scope, self)));
+        }
+
+        /// <summary>
+        /// Registers an expression converter.
+        /// </summary>
+        public void AddValueConverter(Symbol Symbol, ValueConverter Converter)
         {
             exprConverters[Symbol] = (node, scope, self) => new TypeOrExpression(Converter(node, scope, self));
         }
@@ -639,7 +665,7 @@ namespace Flame.Ecs
                 result.AddTypeOrExprConverter(CodeSymbols.Of, ExpressionConverters.ConvertInstantiation);
 
                 // Keyword expressions
-                result.AddExprConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
+                result.AddValueConverter(CodeSymbols.This, ExpressionConverters.ConvertThisExpression);
                 result.AddExprConverter(CodeSymbols.Base, ExpressionConverters.ConvertBaseExpression);
                 result.AddExprConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
                 result.AddExprConverter(CodeSymbols.New, ExpressionConverters.ConvertNewExpression);

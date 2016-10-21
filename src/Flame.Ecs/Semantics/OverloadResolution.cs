@@ -40,28 +40,33 @@ namespace Flame.Ecs
         {
             return ArgumentNodes.Select(item =>
             {
-                var argExpr = Converter.ConvertExpression(item, Scope);
+                var argVal = Converter.ConvertValue(item, Scope);
+                var srcLoc = NodeHelpers.ToSourceLocation(item.Range);
                 foreach (var attr in item.Attrs)
                 {
                     if (attr.IsIdNamed(CodeSymbols.Ref) || attr.IsIdNamed(CodeSymbols.Out))
                     {
-                        var argVar = ExpressionConverters.AsVariable(argExpr) as IUnmanagedVariable;
-                        if (argVar != null)
+                        var argAddr = argVal.CreateAddressOfExpression(Scope, srcLoc);
+                        if (!argAddr.IsError)
                         {
-                            argExpr = argVar.CreateAddressOfExpression();
+                            return Tuple.Create(argAddr.Result, srcLoc);
                         }
                         else
                         {
                             Scope.Log.LogError(new LogEntry(
                                 "syntax error", 
                                 NodeHelpers.HighlightEven(
-                                    "a ", "ref", " or ", "out", 
-                                    " argument must be an assignable variable."),
-                                NodeHelpers.ToSourceLocation(attr.Range)));
+                                    "a '", "ref", "' or '", "out", 
+                                    "' argument must be a variable with an address. "), 
+                                srcLoc));
+                            return Tuple.Create<IExpression, SourceLocation>(
+                                new UnknownExpression(argVal.Type.MakePointerType(PointerKind.ReferencePointer)),
+                                srcLoc);
                         }
                     }
                 }
-                return Tuple.Create(argExpr, NodeHelpers.ToSourceLocation(item.Range));
+                return Tuple.Create(
+                    argVal.CreateGetExpressionOrError(Scope, srcLoc), srcLoc);
             }).ToArray();
         }
 

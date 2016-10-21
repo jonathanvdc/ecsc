@@ -40,7 +40,8 @@ namespace Flame.Ecs.Semantics
 
         protected override IExpression Lower()
         {
-            return new StaticCastExpression(Value, ty);
+            return new ReinterpretCastExpression(
+                new BoxExpression(Value), ty);
         }
 
         public override string ToString()
