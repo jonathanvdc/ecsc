@@ -103,6 +103,18 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// If this instance is not an error, then the given function is applied
+        /// to the result; otherwise, the current error is propagated. 
+        /// </summary>
+        public ResultOrError<TResult2, TError> BindResult<TResult2>(Func<TResult, ResultOrError<TResult2, TError>> Map)
+        {
+            if (IsError)
+                return ResultOrError<TResult2, TError>.FromError(Error);
+            else
+                return Map(Result);
+        }
+
+        /// <summary>
         /// Applies one of the given functions, and returns the result.
         /// </summary>
         public T Apply<T>(Func<TResult, T> ResultMap, Func<TError, T> ErrorMap)

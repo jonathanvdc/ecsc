@@ -63,9 +63,31 @@ namespace Flame.Ecs.Values
         {
             return ExpressionConverters.AsTargetValue(
                 Target, Scope, Location, false)
-                .MapResult<IStatement>(targetExpr =>
+                .BindResult(targetExpr =>
                 {
-                    return new FieldSetStatement(Field, targetExpr, Value);
+                    if (Field.HasAttribute(PrimitiveAttributes.Instance.InitOnlyAttribute.AttributeType))
+                    {
+                        // Values can be assigned to 'readonly' fields in exactly two 
+                        // places:
+                        //    1) the constructors of the class that defines the field,
+                        //       with the same staticness as the field
+                        //    2) the field's initial value
+
+                        var method = Scope.Function.CurrentMethod;
+                        if (!method.IsConstructor 
+                            || method.IsStatic != Field.IsStatic
+                            || !Field.DeclaringType.Equals(Scope.Function.DeclaringType))
+                        {
+                            return ResultOrError<IStatement, LogEntry>.FromError(
+                                new LogEntry(
+                                    "readonly field assignment",
+                                    NodeHelpers.HighlightEven(
+                                        "field '", Field.Name.ToString(), "' is '", "readonly", "' and cannot " +
+                                        "be assigned a value in this context."),
+                                    Location));
+                        }
+                    }
+                    return ResultOrError<IStatement, LogEntry>.FromResult(new FieldSetStatement(Field, targetExpr, Value));
                 });
         }
     }
