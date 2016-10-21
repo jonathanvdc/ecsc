@@ -56,7 +56,7 @@ namespace Flame.Ecs.Values
                     {
                         return ResultOrError<IExpression, LogEntry>.FromError(
                             new LogEntry(
-                                "address of constant field",
+                                "constant field",
                                 NodeHelpers.HighlightEven(
                                     "field '", Field.Name.ToString(), "' is '", "const", "'; " +
                                     "its address cannot be taken."),
@@ -93,12 +93,14 @@ namespace Flame.Ecs.Values
                             || method.IsStatic != Field.IsStatic
                             || !Field.DeclaringType.Equals(Scope.Function.DeclaringType))
                         {
+                            string staticOrInst = Field.IsStatic ? "static" : "instance";
                             return ResultOrError<IStatement, LogEntry>.FromError(
                                 new LogEntry(
-                                    "readonly field assignment",
+                                    "readonly field",
                                     NodeHelpers.HighlightEven(
-                                        "field '", Field.Name.ToString(), "' is '", "readonly", "' and cannot " +
-                                        "be assigned a value in this context."),
+                                        staticOrInst + " field '", Field.Name.ToString(), "' is '", "readonly", 
+                                        "' and can only be assigned a value in a " + staticOrInst +
+                                        " constructor or a field initializer."),
                                     Location));
                         }
                     }
@@ -109,7 +111,7 @@ namespace Flame.Ecs.Values
 
                         return ResultOrError<IStatement, LogEntry>.FromError(
                             new LogEntry(
-                                "constant field assignment",
+                                "constant field",
                                 NodeHelpers.HighlightEven(
                                     "field '", Field.Name.ToString(), "' is '", "const", "' and cannot " +
                                     "be assigned a value."),
