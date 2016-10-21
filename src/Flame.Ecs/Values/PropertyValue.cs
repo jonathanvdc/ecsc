@@ -52,10 +52,10 @@ namespace Flame.Ecs.Values
             {
                 return ResultOrError<IExpression, LogEntry>.FromError(
                     new LogEntry(
-                        "getter not accessible",
+                        "inaccessible getter",
                         NodeHelpers.HighlightEven(
                             "cannot get the value of property '", Property.Name.ToString(), 
-                            "' its '", "get", "' accessor is not accessible in this scope."),
+                            "' because its '", "get", "' accessor is not accessible in this scope."),
                         Location));
             }
             else
@@ -102,10 +102,10 @@ namespace Flame.Ecs.Values
             {
                 return ResultOrError<IStatement, LogEntry>.FromError(
                     new LogEntry(
-                        "setter not accessible",
+                        "inaccessible setter",
                         NodeHelpers.HighlightEven(
                             "cannot set the value of property '", Property.Name.ToString(), 
-                            "' its '", "set", "' accessor is not accessible in this scope."),
+                            "' because its '", "set", "' accessor is not accessible in this scope."),
                         Location));
             }
             else
