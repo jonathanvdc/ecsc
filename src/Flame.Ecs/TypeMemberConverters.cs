@@ -754,13 +754,18 @@ namespace Flame.Ecs
 
             // Analyze attributes lazily, but only analyze them _once_.
             // A shared lazy object does just that.
-            LNode constNode = null;
+            LNode constNode = null, readonlyNode = null;
             var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() => 
                 AnalyzeTypeMemberAttributes(attrNodes, DeclaringType, Scope, Converter, node =>
             {
                 if (node.IsIdNamed(CodeSymbols.Const))
                 {
                     constNode = node;
+                    return true;
+                }
+                else if (node.IsIdNamed(CodeSymbols.Readonly))
+                {
+                    readonlyNode = node;
                     return true;
                 }
                 else
@@ -816,6 +821,10 @@ namespace Flame.Ecs
                                 }
                             }
                             fieldDef.IsStatic = true;
+                        }
+                        if (readonlyNode != null)
+                        {
+                            fieldDef.AddAttribute(PrimitiveAttributes.Instance.InitOnlyAttribute);
                         }
 
                         if (decomp.Item2 != null)
