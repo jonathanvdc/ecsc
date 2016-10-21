@@ -99,7 +99,7 @@ namespace Flame.Ecs
         /// Adds a source location to this type-or-expression object.
         /// A new instance is returned that represents the updated entity.
         /// </summary>
-        public TypeOrExpression WithSourceLocation()
+        public TypeOrExpression WithSourceLocation(SourceLocation Location)
         {
             if (!IsExpression)
             {
@@ -108,7 +108,8 @@ namespace Flame.Ecs
             else
             {
                 return new TypeOrExpression(
-                    new SourceValue(Expression), Types, Namespace);
+                    new SourceValue(Expression, Location), 
+                    Types, Namespace);
             }
         }
 

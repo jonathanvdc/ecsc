@@ -421,7 +421,8 @@ namespace Flame.Ecs
                     if (Node.IsId)
                     {
                         var result = LookupUnqualifiedName(Node.Name.Name, Scope);
-                        return result.WithSourceLocation();
+                        return result.WithSourceLocation(
+                            NodeHelpers.ToSourceLocation(Node.Range));
                     }
                     else if (Node.IsCall)
                     {
@@ -464,7 +465,8 @@ namespace Flame.Ecs
             }
             else
             {
-                return conv(Node, Scope, this).WithSourceLocation();
+                return conv(Node, Scope, this).WithSourceLocation(
+                    NodeHelpers.ToSourceLocation(Node.Range));
             }
         }
 

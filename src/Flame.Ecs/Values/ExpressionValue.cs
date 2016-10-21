@@ -38,7 +38,7 @@ namespace Flame.Ecs.Values
             return ResultOrError<IExpression, LogEntry>.FromError(
                 new LogEntry(
                     "invalid operation",
-                    "this expression's address cannot be retrieved.",
+                    "this expression does not have an address.",
                     Location));
         }
 

@@ -6,17 +6,19 @@ using Flame.Compiler.Statements;
 namespace Flame.Ecs.Values
 {
     /// <summary>
-    /// A value implementation that embeds the source locations
-    /// that are given by the Create* methods in the IR tree.
+    /// A value implementation that replaces any given source locations,
+    /// and embeds them in the IR tree.
     /// </summary>
     public class SourceValue : IValue
     {
-        public SourceValue(IValue Value)
+        public SourceValue(IValue Value, SourceLocation Location)
         {
             this.Value = Value;
+            this.Location = Location;
         }
 
         public IValue Value { get; private set; }
+        public SourceLocation Location { get; private set; }
 
         /// <inheritdoc/>
         public IType Type { get { return Value.Type; } }
@@ -25,16 +27,16 @@ namespace Flame.Ecs.Values
         public ResultOrError<IExpression, LogEntry> CreateGetExpression(
             ILocalScope Scope, SourceLocation Location)
         {
-            return Value.CreateGetExpression(Scope, Location)
-                .MapResult(expr => SourceExpression.Create(expr, Location));
+            return Value.CreateGetExpression(Scope, this.Location)
+                .MapResult(expr => SourceExpression.Create(expr, this.Location));
         }
 
         /// <inheritdoc/>
         public ResultOrError<IExpression, LogEntry> CreateAddressOfExpression(
             ILocalScope Scope, SourceLocation Location)
         {
-            return Value.CreateAddressOfExpression(Scope, Location)
-                .MapResult(expr => SourceExpression.Create(expr, Location));
+            return Value.CreateAddressOfExpression(Scope, this.Location)
+                .MapResult(expr => SourceExpression.Create(expr, this.Location));
         }
 
         /// <inheritdoc/>
@@ -42,8 +44,8 @@ namespace Flame.Ecs.Values
             IExpression Value, ILocalScope Scope, 
             SourceLocation Location)
         {
-            return this.Value.CreateSetStatement(Value, Scope, Location)
-                .MapResult(stmt => SourceStatement.Create(stmt, Location));
+            return this.Value.CreateSetStatement(Value, Scope, this.Location)
+                .MapResult(stmt => SourceStatement.Create(stmt, this.Location));
         }
     }
 }
