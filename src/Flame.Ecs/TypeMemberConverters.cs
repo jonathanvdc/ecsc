@@ -15,9 +15,13 @@ namespace Flame.Ecs
     public static class TypeMemberConverters
     {
         /// <summary>
-        /// Converts a parameter declaration node.
+        /// Converts a parameter declaration node. A tuple is 
+        /// returned, of which the first element describes the analyzed
+        /// parameter, and the is an optional 'this' attribute node,
+        /// which is present in extension methods.
         /// </summary>
-        public static IParameter ConvertParameter(LNode Node, GlobalScope Scope, NodeConverter Converter)
+        public static Tuple<IParameter, LNode> ConvertParameter(
+            LNode Node, GlobalScope Scope, NodeConverter Converter)
         {
             var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
             var paramTy = Converter.ConvertType(Node.Args[0], Scope);
@@ -32,6 +36,7 @@ namespace Flame.Ecs
                 paramTy = PrimitiveTypes.Void;
             }
             bool isOut = false;
+            LNode thisNode = null;
             var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
             {
                 if (node.IsIdNamed(CodeSymbols.Ref))
@@ -43,6 +48,11 @@ namespace Flame.Ecs
                 {
                     paramTy = paramTy.MakePointerType(PointerKind.ReferencePointer);
                     isOut = true;
+                    return true;
+                }
+                else if (node.IsIdNamed(CodeSymbols.This))
+                {
+                    thisNode = node;
                     return true;
                 }
                 else
@@ -59,7 +69,7 @@ namespace Flame.Ecs
             {
                 descParam.AddAttribute(PrimitiveAttributes.Instance.OutAttribute);
             }
-            return descParam;
+            return Tuple.Create<IParameter, LNode>(descParam, thisNode);
         }
 
         /// <summary>
@@ -184,9 +194,63 @@ namespace Flame.Ecs
             IEnumerable<LNode> Parameters, LazyDescribedMethod Target,
             GlobalScope Scope, NodeConverter Converter)
         {
+            int i = 0;
             foreach (var item in Parameters)
             {
-                Target.AddParameter(ConvertParameter(item, Scope, Converter));
+                var pair = ConvertParameter(item, Scope, Converter);
+                Target.AddParameter(pair.Item1);
+                if (pair.Item2 != null)
+                {
+                    if (i == 0)
+                    {
+                        if (Target.IsStatic)
+                        {
+                            if (Target.DeclaringType.GetIsStaticType())
+                            {
+                                Target.AddAttribute(
+                                    PrimitiveAttributes.Instance.ExtensionAttribute);
+                            }
+                            else
+                            {
+                                Scope.Log.LogError(new LogEntry(
+                                    "syntax error",
+                                    NodeHelpers.HighlightEven(
+                                        "the '", "this", "' attribute defines an" +
+                                        "extension method, but enclosing type '",
+                                        Target.DeclaringType.Name.ToString(), "' is not '", 
+                                        "static", "'.")
+                                    .Concat(new MarkupNode[]
+                                    {
+                                        NodeHelpers.ToSourceLocation(item.Range)
+                                            .CreateDiagnosticsNode(),
+                                        Target.DeclaringType.GetSourceLocation()
+                                            .CreateRemarkDiagnosticsNode("enclosing type definition")
+                                    })));
+                            }
+                        }
+                        else
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "the '", "this", "' attribute defines an" +
+                                    "extension method, but method '",
+                                    Target.Name.ToString(), "' is not '", "static", "'."),
+                                NodeHelpers.ToSourceLocation(item.Range)));
+                        }
+                    }
+                    else
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "only the first parameter of method '",
+                                Target.Name.ToString(), "' can have the '", 
+                                "this", "' attribute."),
+                            NodeHelpers.ToSourceLocation(item.Range)));
+                    }
+                }
+                i++;
             }
         }
 
@@ -943,7 +1007,18 @@ namespace Flame.Ecs
                 // Resolve the indexer parameters.
                 foreach (var item in Node.Args[2].Args)
                 {
-                    propDef.AddParameter(ConvertParameter(item, Scope, Converter));
+                    var pair = ConvertParameter(item, Scope, Converter);
+                    propDef.AddParameter(pair.Item1);
+                    if (pair.Item2 != null)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "parameter '", pair.Item1.Name.ToString(), 
+                                "' cannot have a '", "this", "' attribute, " +
+                                "because it is defined by an indexer."),
+                            NodeHelpers.ToSourceLocation(item.Range)));
+                    }
                 }
 
                 // Resolve base properties.

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Loyc.Syntax;
 using Flame.Build;
 using Flame.Build.Lazy;
@@ -130,6 +131,14 @@ namespace Flame.Ecs
                 if (isVirtual)
                 {
                     descTy.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
+                }
+
+                // Check if the type defines any extension methods 
+                // before proceeding.
+                if (descTy.GetIsStaticType()
+                    && Node.Args[2].Args.Any(NodeHelpers.IsExtensionMethod))
+                {
+                    descTy.AddAttribute(PrimitiveAttributes.Instance.ExtensionAttribute);
                 }
 
                 // Remember the base class.

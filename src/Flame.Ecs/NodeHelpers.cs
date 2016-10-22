@@ -411,6 +411,25 @@ namespace Flame.Ecs
         {
             return Attibutes.Any(IsStaticAttribute);
         }
+
+        /// <summary>
+        /// Determines if the given node is an extension method.
+        /// </summary>
+        /// <remarks>
+        /// This function can be used to detect if a class 
+        /// contains extension methods before attempting to
+        /// analyze the members.
+        /// </remarks>
+        public static bool IsExtensionMethod(LNode Node)
+        {
+            if (!Node.CallsMin(CodeSymbols.Fn, 3))
+                return false;
+
+            var paramList = Node.Args[2].Args;
+            return paramList.Any(item => 
+                item.Attrs.Any(attr => 
+                    attr.IsIdNamed(CodeSymbols.This)));
+        }
     }
 }
 
