@@ -41,28 +41,71 @@ namespace Flame.Ecs
             this.Log = Log;
             this.TypeNamer = TypeNamer;
             this.memCache = MemberCache;
+            this.extMemCache = new ThreadLocal<ExtensionMemberCache>(
+                CreateExtensionMemberCache);
         }
 
+        /// <summary>
+        /// Gets the qualified binder for this global scope.
+        /// </summary>
+        /// <value>The binder.</value>
         public QualifiedBinder Binder { get; private set; }
 
+        /// <summary>
+        /// Gets the set of conversion rules for this
+        /// global scope.
+        /// </summary>
+        /// <value>The conversion rules.</value>
         public ConversionRules ConversionRules { get; private set; }
 
+        /// <summary>
+        /// Gets the compiler log for this global scope.
+        /// </summary>
+        /// <value>The log.</value>
         public ICompilerLog Log { get; private set; }
 
+        /// <summary>
+        /// Gets the type namer for this global scope.
+        /// </summary>
+        /// <value>The type namer.</value>
         public TypeConverterBase<string> TypeNamer { get; private set; }
 
         private ThreadLocal<GlobalMemberCache> memCache;
+        private ThreadLocal<ExtensionMemberCache> extMemCache;
 
+        /// <summary>
+        /// Gets the global member cache for this global scope.
+        /// </summary>
+        /// <value>The member cache.</value>
         public GlobalMemberCache MemberCache
         { 
             get { return memCache.Value; }
         }
 
+        /// <summary>
+        /// Gets the extension member cache for this global scope.
+        /// </summary>
+        /// <value>The member cache.</value>
+        public ExtensionMemberCache ExtensionMemberCache
+        {
+            get { return extMemCache.Value; }
+        }
+
+        /// <summary>
+        /// Gets the environment for this global scope.
+        /// </summary>
+        /// <value>The environment.</value>
         public IEnvironment Environment { get { return Binder.Binder.Environment; } }
 
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
         {
-            return new GlobalScope(NewBinder, ConversionRules, Log, TypeNamer, memCache);
+            return new GlobalScope(
+                NewBinder, ConversionRules, Log, TypeNamer, memCache);
+        }
+
+        private ExtensionMemberCache CreateExtensionMemberCache()
+        {
+            return new ExtensionMemberCache(Binder, memCache.Value);
         }
 
         private ConversionDescription PickAnyConversion(

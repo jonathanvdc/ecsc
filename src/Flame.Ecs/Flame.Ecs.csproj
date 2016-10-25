@@ -184,6 +184,9 @@
     <Compile Include="Values\PropertyValue.cs" />
     <Compile Include="Values\ScopedValue.cs" />
     <Compile Include="Values\ComputedExpressionValue.cs" />
+    <Compile Include="TypeCache.cs" />
+    <Compile Include="ExtensionMemberCache.cs" />
+    <Compile Include="MemberCacheBase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

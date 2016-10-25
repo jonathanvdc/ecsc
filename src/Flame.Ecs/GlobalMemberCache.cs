@@ -8,25 +8,23 @@ namespace Flame.Ecs
     /// <summary>
     /// A data structure that memoizes member lookups.
     /// </summary>
-    public class GlobalMemberCache : IDisposable
+    public sealed class GlobalMemberCache : MemberCacheBase
     {
         public GlobalMemberCache()
         {
             this.globalMemberCache = new Dictionary<IType, ITypeMember[]>();
-            this.namedMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.indexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
         }
 
         private Dictionary<IType, ITypeMember[]> globalMemberCache;
-        private Dictionary<Tuple<IType, string>, ITypeMember[]> namedMemberCache;
         private Dictionary<IType, IProperty[]> indexerCache;
         private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
         /// <summary>
         /// Gets all members that are directly defined by the given type.
         /// </summary>
-        public IReadOnlyList<ITypeMember> GetMembers(IType Type)
+        public override IReadOnlyList<ITypeMember> GetMembers(IType Type)
         {
             ITypeMember[] result;
             if (globalMemberCache.TryGetValue(Type, out result))
@@ -42,114 +40,6 @@ namespace Flame.Ecs
                 globalMemberCache[Type] = result;
                 return result;
             }
-        }
-
-        /// <summary>
-        /// Gets all members that are defined by the given type
-        /// or one of its base types, and have the given name.
-        /// Standard hiding rules apply: once a match is found, 
-        /// this method returns.
-        /// </summary>
-        private ITypeMember[] GetAllMembers(Tuple<IType, string> Key)
-        {
-            ITypeMember[] result;
-            if (namedMemberCache.TryGetValue(Key, out result))
-            {
-                return result;
-            }
-            else
-            {
-
-                result = LookupAllMembers(Key);
-                namedMemberCache[Key] = result;
-                return result;
-            }
-        }
-
-        private IEnumerable<ITypeMember> GetVisibleMembers(
-            IType Type, string Name, IMethod[] HiddenSignatures)
-        {
-            var members = GetAllMembers(Type, Name);
-            if (HiddenSignatures.Length > 0)
-            {
-                // TODO: This is a silly O(n^2) approach. We could
-                // do better if we used hashing.
-                return members.OfType<IMethod>().Where(item => 
-                    !HiddenSignatures.Any(m => 
-                        MethodExtensions.HasSameCallSignature(m, item)));
-            }
-            else
-            {
-                return members;
-            }
-        }
-
-        /// <summary>
-        /// Gets all members that are defined by the given type
-        /// or one of its base types, and have the given name.
-        /// Standard hiding rules apply: once a match is found, 
-        /// this method returns.
-        /// </summary>
-        public IReadOnlyList<ITypeMember> GetAllMembers(IType Type, string Name)
-        {
-            return GetAllMembers(Tuple.Create(Type, Name));
-        }
-
-        private bool HidesAll(HashSet<ITypeMember> Members)
-        {
-            foreach (var item in Members)
-            {
-                if (!(item is IMethod))
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Actually looks up all members that are defined by 
-        /// the given type or one of its base types, 
-        /// and have the given name.
-        /// Standard hiding rules apply: once a match is found, 
-        /// this method returns.
-        /// </summary>
-        private ITypeMember[] LookupAllMembers(
-            Tuple<IType, string> Key)
-        {
-            var ty = Key.Item1;
-            var name = Key.Item2;
-            var results = new HashSet<ITypeMember>();
-            // First, look in the given type.
-            results.UnionWith(GetMembers(ty).Where(m =>
-            {
-                var sName = m.Name as SimpleName;
-                return sName != null && sName.Name == name;
-            }));
-
-            if (HidesAll(results))
-                return results.ToArray();
-
-            // Then try the base type.
-            var bType = ty.GetParent();
-            if (bType != null)
-            {
-                results.UnionWith(
-                    GetVisibleMembers(
-                        bType, name, 
-                        results.OfType<IMethod>().ToArray()));
-
-                if (results.Count > 0)
-                    return results.ToArray();
-            }
-
-            // Okay, so that didn't work. Maybe we'll
-            // have more luck in examining the interfaces.
-            var hidingMethods = results.OfType<IMethod>().ToArray();
-            foreach (var inter in ty.GetInterfaces())
-            {
-                results.UnionWith(GetVisibleMembers(
-                    inter, name, hidingMethods));
-            }
-            return results.ToArray();
         }
 
         private IEnumerable<IProperty> GetVisibleIndexers(
@@ -272,10 +162,10 @@ namespace Flame.Ecs
             return GetAllOperators(Type).GetAll(Op);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
+            base.Dispose();
             globalMemberCache = null;
-            namedMemberCache = null;
             indexerCache = null;
             operatorCache = null;
         }

@@ -72,6 +72,7 @@ namespace Flame.Ecs
             IReadOnlyDictionary<string, IVariable> ParameterVariables)
         {
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
+            this.extensionMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
@@ -157,27 +158,37 @@ namespace Flame.Ecs
         }
 
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
+        private Dictionary<Tuple<IType, string>, ITypeMember[]> extensionMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache;
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
         private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
         private ITypeMember[] GetMembers(
             IType Type, string Name, 
-            Dictionary<Tuple<IType, string>, ITypeMember[]> MemberCache,
+            Dictionary<Tuple<IType, string>, ITypeMember[]> TargetCache,
+            Func<ITypeMember, bool> Predicate)
+        {
+            return GetMembers(Type, Name, TargetCache, Global.MemberCache, Predicate);
+        }
+
+        private ITypeMember[] GetMembers(
+            IType Type, string Name, 
+            Dictionary<Tuple<IType, string>, ITypeMember[]> TargetCache,
+            MemberCacheBase SourceCache,
             Func<ITypeMember, bool> Predicate)
         {
             var key = Tuple.Create(Type, Name);
             ITypeMember[] result;
-            if (MemberCache.TryGetValue(key, out result))
+            if (TargetCache.TryGetValue(key, out result))
             {
                 return result;
             }
             else
             {
-                result = Global.MemberCache.GetAllMembers(Type, Name)
+                result = SourceCache.GetAllMembers(Type, Name)
                     .Where(Predicate)
                     .ToArray();
-                MemberCache[key] = result;
+                TargetCache[key] = result;
                 return result;
             }
         }
@@ -221,6 +232,20 @@ namespace Flame.Ecs
         public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
         {
             return GetMembers(Type, Name, instanceMemberCache, item =>
+            {
+                return !item.IsStatic && CanAccess(item);
+            });
+        }
+
+        /// <summary>
+        /// Gets thet set of all extension methods that are in scope for the
+        /// given type.
+        /// </summary>
+        public IEnumerable<ITypeMember> GetExtensionMembers(IType Type, string Name)
+        {
+            return GetMembers(
+                Type, Name, extensionMemberCache, 
+                Global.ExtensionMemberCache, item =>
             {
                 return !item.IsStatic && CanAccess(item);
             });
