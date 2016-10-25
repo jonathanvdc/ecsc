@@ -247,7 +247,7 @@ namespace Flame.Ecs
                 Type, Name, extensionMemberCache, 
                 Global.ExtensionMemberCache, item =>
             {
-                return !item.IsStatic && CanAccess(item);
+                return CanAccess(item);
             });
         }
 
