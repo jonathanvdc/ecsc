@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 public class Herp
 {
@@ -24,5 +26,16 @@ public static class Program
     {
         var herp = new Herp(20);
         herp.PrintX();
+
+        var items = new List<int>();
+        items.Add(10);
+        items.Add(20);
+        items.Add(30);
+        // Note that ToArray<int> is actually a generic extension method:
+        // Enumerable.ToArray<T>.
+        foreach (var x in items.ToArray<int>())
+        {
+            Console.WriteLine(x);
+        }
     }
 }
