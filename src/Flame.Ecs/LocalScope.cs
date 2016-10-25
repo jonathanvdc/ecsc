@@ -238,8 +238,8 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Gets thet set of all extension methods that are in scope for the
-        /// given type.
+        /// Gets all extension methods with the given name that can be accessed
+        /// on an instance of the given type. 
         /// </summary>
         public IEnumerable<ITypeMember> GetExtensionMembers(IType Type, string Name)
         {
@@ -249,6 +249,18 @@ namespace Flame.Ecs
             {
                 return CanAccess(item);
             });
+        }
+
+        /// <summary>
+        /// Gets all instance and extension members with the given name that 
+        /// can be accessed on an instance of the given type. 
+        /// </summary>
+        /// <returns>The instance and extension members.</returns>
+        /// <param name="Type">The type to access members on.</param>
+        /// <param name="Name">The name of the members to access.</param>
+        public IEnumerable<ITypeMember> GetInstanceAndExtensionMembers(IType Type, string Name)
+        {
+            return GetInstanceMembers(Type, Name).Concat(GetExtensionMembers(Type, Name));
         }
 
         /// <summary>

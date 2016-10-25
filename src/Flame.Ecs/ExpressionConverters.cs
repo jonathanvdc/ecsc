@@ -68,7 +68,7 @@ namespace Flame.Ecs
                 var thisVar = GetThisVariable(Scope);
                 if (thisVar != null)
                 {
-                    foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name))
                     {
                         var acc = AccessMember(
                             new VariableValue(thisVar), 
@@ -138,7 +138,7 @@ namespace Flame.Ecs
                 var thisVar = GetThisVariable(Scope);
                 if (GetThisVariable(Scope) != null)
                 {
-                    foreach (var item in Scope.Function.GetInstanceMembers(declType, Name))
+                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name))
                     {
                         CreateMemberAccess(
                             item, TypeArguments, new ExpressionValue(thisVar.CreateGetExpression()), exprSet,
@@ -624,7 +624,7 @@ namespace Flame.Ecs
             if (Target.IsExpression)
             {
                 var targetTy = Target.Expression.Type;
-                foreach (var item in Scope.Function.GetInstanceMembers(targetTy, MemberName))
+                foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(targetTy, MemberName))
                 {
                     CreateMemberAccess(
                         item, TypeArguments, Target.Expression, exprSet,
@@ -1020,7 +1020,7 @@ namespace Flame.Ecs
                 var tmp = new LocalVariable("tmp", constructedObjTy);
                 var constructedObjExpr = new VariableValue(tmp);
                 var addDelegates = new Lazy<IExpression[]>(() =>
-                    Scope.Function.GetInstanceMembers(constructedObjTy, "Add")
+                    Scope.Function.GetInstanceAndExtensionMembers(constructedObjTy, "Add")
                     .OfType<IMethod>()
                     .Select(m => 
                         AccessMember(constructedObjExpr, m, Scope.Function.Global)
