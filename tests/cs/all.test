@@ -11,6 +11,7 @@ tests
     const/Const.test;
     constructor/Constructor.test;
     enums/Enums.test;
+    extension-methods/ExtensionMethods.test;
     exception-handling/ExceptionHandling.test;
     field/Field.test;
     flow/Flow.test;
