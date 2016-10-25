@@ -559,7 +559,9 @@ namespace Flame.Ecs
 
             if (genericParamArr.Length != TypeArguments.Count)
             {
-                LogGenericArityMismatch(Declaration, TypeArguments.Count, Scope, Location);
+                // Don't log generic arity mismatches here. They can be logged
+                // elsewhere, and the return value tells the caller whether
+                // a match has occurred or not.
                 return false;
             }
 

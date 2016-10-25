@@ -50,15 +50,16 @@ namespace Flame.Ecs
             if (directExtMembers == null)
                 BuildDirectExtensionMemberMap();
 
+            var genType = Type.GetRecursiveGenericDeclaration();
             List<ITypeMember> results;
-            if (directExtMembers.TryGetValue(Type, out results))
+            if (directExtMembers.TryGetValue(genType, out results))
             {
                 return results;
             }
             else
             {
                 var arr = new List<ITypeMember>();
-                directExtMembers[Type] = arr;
+                directExtMembers[genType] = arr;
                 return arr;
             }
         }
