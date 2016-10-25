@@ -153,6 +153,11 @@ namespace Flame.Ecs
                 // encountered a method, but it was not given
                 // the right amount of type arguments.
                 LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
+                // Add the error-type expression to the set, to
+                // keep the node converter from logging a diagnostic
+                // about the fact that the expression returned here is
+                // not a value.
+                exprSet.Add(new ExpressionValue(ErrorTypeExpression));
             }
 
             return IntersectionValue.Create(exprSet);
@@ -211,11 +216,11 @@ namespace Flame.Ecs
             {
                 var initExpr = (InitializedExpression)Expression;
                 return new BlockStatement(new IStatement[]
-                {
-                    initExpr.Initialization,
-                    ToStatement(initExpr.Value),
-                    initExpr.Finalization
-                });
+                    {
+                        initExpr.Initialization,
+                        ToStatement(initExpr.Value),
+                        initExpr.Finalization
+                    });
             }
             else if (Expression is SourceExpression)
             {
@@ -402,30 +407,30 @@ namespace Flame.Ecs
                         {
                             return AsTargetValue(Target, scope, srcLoc, true)
                                 .MapResult<IExpression>(targetExpr =>
-                                {
-                                    var usingBoxExpr = targetExpr.GetEssentialExpression() as UsingBoxExpression;
-                                    if (usingBoxExpr != null)
                                     {
-                                        // Log a warning whenever we elide a boxing conversion, because
-                                        // regular C# typically can't do that.
-                                        var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
-                                        if (usingCastWarn.UseWarning(Scope.Log.Options))
+                                        var usingBoxExpr = targetExpr.GetEssentialExpression() as UsingBoxExpression;
+                                        if (usingBoxExpr != null)
                                         {
-                                            Scope.Log.LogWarning(new LogEntry(
-                                                "EC# extension",
-                                                usingCastWarn.CreateMessage(
-                                                    new MarkupNode("#group", NodeHelpers.HighlightEven(
-                                                        "this usage of '", "using", "' cannot be translated " +
-                                                        "faithfully to C#, because a cast requires boxing but '",
-                                                        "using", "' does not. "))),
-                                                srcLoc));
-                                        }
+                                            // Log a warning whenever we elide a boxing conversion, because
+                                            // regular C# typically can't do that.
+                                            var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
+                                            if (usingCastWarn.UseWarning(Scope.Log.Options))
+                                            {
+                                                Scope.Log.LogWarning(new LogEntry(
+                                                    "EC# extension",
+                                                    usingCastWarn.CreateMessage(
+                                                        new MarkupNode("#group", NodeHelpers.HighlightEven(
+                                                            "this usage of '", "using", "' cannot be translated " +
+                                                            "faithfully to C#, because a cast requires boxing but '",
+                                                            "using", "' does not. "))),
+                                                    srcLoc));
+                                            }
 
                                             targetExpr = usingBoxExpr.Value;
-                                    }
+                                        }
 
-                                    return new GetMethodExpression(method, targetExpr);
-                                });
+                                        return new GetMethodExpression(method, targetExpr);
+                                    });
                         }
                     });
             }
@@ -591,17 +596,17 @@ namespace Flame.Ecs
             GlobalScope Scope, SourceLocation Location)
         {
             return Types.Select(item =>
-            {
-                if (CheckGenericConstraints(item, TypeArguments, Scope, Location))
                 {
-                    return item.MakeGenericType(TypeArguments);
-                }
-                else
-                {
-                    LogGenericArityMismatch(item, TypeArguments.Count, Scope, Location);
-                    return item.MakeGenericType(item.GenericParameters);
-                }
-            });
+                    if (CheckGenericConstraints(item, TypeArguments, Scope, Location))
+                    {
+                        return item.MakeGenericType(TypeArguments);
+                    }
+                    else
+                    {
+                        LogGenericArityMismatch(item, TypeArguments.Count, Scope, Location);
+                        return item.MakeGenericType(item.GenericParameters);
+                    }
+                });
         }
 
         private static TypeOrExpression ConvertMemberAccess(
@@ -653,6 +658,11 @@ namespace Flame.Ecs
                 // encountered a method, but it was not given
                 // the right amount of type arguments.
                 LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
+                // Add the error-type expression to the set, to
+                // keep the node converter from logging a diagnostic
+                // about the fact that the expression returned here is
+                // not a value.
+                exprSet.Add(new ExpressionValue(ErrorTypeExpression));
             }
 
             var expr = IntersectionValue.Create(exprSet);
@@ -681,11 +691,11 @@ namespace Flame.Ecs
                 if (ty is INamespace)
                 {
                     typeSet.UnionWith(((INamespace)ty).Types.Where(item =>
-                    {
-                        var itemName = item.Name as SimpleName;
-                        return itemName.Name == MemberName
-                        && itemName.TypeParameterCount == TypeArguments.Count;
-                    }));
+                        {
+                            var itemName = item.Name as SimpleName;
+                            return itemName.Name == MemberName
+                                && itemName.TypeParameterCount == TypeArguments.Count;
+                        }));
                 }
             }
             if (Target.IsNamespace)
@@ -874,7 +884,7 @@ namespace Flame.Ecs
                     return new InitializedArrayExpression(
                         elemType, elems.Select(expr =>
                             globalScope.ConvertImplicit(
-                        expr.Item1, elemType, expr.Item2)).ToArray());
+                                expr.Item1, elemType, expr.Item2)).ToArray());
                 }
             }
 
@@ -890,14 +900,14 @@ namespace Flame.Ecs
                 var initializerExprs = initializerList
                     .Select(n =>
                         globalScope.ConvertImplicit(
-                                           Converter.ConvertExpression(n, Scope),
-                                           arrTy.ElementType,
-                                           loc))
+                            Converter.ConvertExpression(n, Scope),
+                            arrTy.ElementType,
+                            loc))
                     .ToArray();
                 var arrDims = ctorArgs
                     .Select(item =>
                         Scope.Function.Global.ConvertImplicit(
-                                  item.Item1, PrimitiveTypes.Int32, item.Item2))
+                            item.Item1, PrimitiveTypes.Int32, item.Item2))
                     .ToArray();
 
                 if (arrDims.Length == 0)
@@ -1010,8 +1020,8 @@ namespace Flame.Ecs
             else
             {
                 var newInstExpr = OverloadResolution.CreateCheckedNewObject(
-                                      ctorType.GetConstructors().Where(item => !item.IsStatic),
-                                      ctorArgs, Scope.Function.Global, loc);
+                    ctorType.GetConstructors().Where(item => !item.IsStatic),
+                    ctorArgs, Scope.Function.Global, loc);
 
                 if (initializerList.Count == 0)
                     // Empty initializer list. Easy.
@@ -1033,13 +1043,13 @@ namespace Flame.Ecs
 
                 var initMembers = new HashSet<string>();
                 var init = new IStatement[]
-                {
-                    tmp.CreateSetStatement(newInstExpr),
-                }.Concat(initializerList.Select(n =>
-                    ConvertInitializerNode(
-                               constructedObjExpr, constructedObjTy,
-                               addDelegates, n, Scope, Converter,
-                               initMembers)));
+                    {
+                        tmp.CreateSetStatement(newInstExpr),
+                    }.Concat(initializerList.Select(n =>
+                        ConvertInitializerNode(
+                            constructedObjExpr, constructedObjTy,
+                            addDelegates, n, Scope, Converter,
+                            initMembers)));
 
                 return new InitializedExpression(
                     new BlockStatement(init.ToArray()),
@@ -1084,9 +1094,9 @@ namespace Flame.Ecs
 
             // Create a new type to instantiate.
             var anonTy = new DescribedType(
-                             new SimpleName(
-                                 "__anonymous_type$" + tyIndex, genericParams.Length),
-                             (INamespace)declTy);
+                new SimpleName(
+                    "__anonymous_type$" + tyIndex, genericParams.Length),
+                (INamespace)declTy);
             foreach (var tParam in GenericExtensions.CloneGenericParameters(genericParams, anonTy))
             {
                 anonTy.AddGenericParameter(tParam);
@@ -1143,12 +1153,12 @@ namespace Flame.Ecs
                     // anonymous type's (parameterless) constructor.
                     var anonThisExpr = new ThisVariable(anonGenericTyInst).CreateGetExpression();
                     ctor.Body = new BlockStatement(new IStatement[]
-                    {
-                        new ExpressionStatement(new InvocationExpression(
-                            baseCtor, anonThisExpr,
-                            Enumerable.Empty<IExpression>())),
-                        new ReturnStatement()
-                    });
+                        {
+                            new ExpressionStatement(new InvocationExpression(
+                                baseCtor, anonThisExpr,
+                                Enumerable.Empty<IExpression>())),
+                            new ReturnStatement()
+                        });
                 }
             }
             anonTy.AddMethod(ctor);
@@ -1218,17 +1228,17 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "anonymous type member '", fieldName,
                             "' is declared more than once.").Concat(new MarkupNode[]
-                        {
-                            loc.CreateDiagnosticsNode(),
-                            fieldDecls[fieldName].GetSourceLocation()
-                                    .CreateRemarkDiagnosticsNode("previous declaration: ")
-                        })));
+                                {
+                                    loc.CreateDiagnosticsNode(),
+                                    fieldDecls[fieldName].GetSourceLocation()
+                                        .CreateRemarkDiagnosticsNode("previous declaration: ")
+                                    })));
                     continue;
                 }
 
                 var field = new DescribedField(
-                                new SimpleName(fieldName), anonTy,
-                                genericParamConv.Convert(val.Type));
+                    new SimpleName(fieldName), anonTy,
+                    genericParamConv.Convert(val.Type));
                 field.IsStatic = false;
                 field.AddAttribute(new AccessAttribute(AccessModifier.Public));
                 anonTy.AddField(field);
@@ -1364,8 +1374,8 @@ namespace Flame.Ecs
                     .OfType<IMethod>()
                     .Where(item =>
                         !item.Parameters.Any()
-                && !item.GenericParameters.Any()
-                && PrimitiveTypes.String.Equals(item.ReturnType))
+                        && !item.GenericParameters.Any()
+                        && PrimitiveTypes.String.Equals(item.ReturnType))
                     .ToArray();
 
             // The existence of a 'ToString' method is dependent on
@@ -1403,7 +1413,7 @@ namespace Flame.Ecs
             return new InvocationExpression(
                 toStringMethods[0], 
                 AsTargetValue(Value, Scope, Location, true)
-                    .ResultOrLog(fScope.Global.Log), 
+                .ResultOrLog(fScope.Global.Log), 
                 new IExpression[0]);
         }
 
@@ -1452,10 +1462,10 @@ namespace Flame.Ecs
                 && (PrimitiveTypes.String.Equals(lTy) || PrimitiveTypes.String.Equals(rTy)))
             {
                 return new ConcatExpression(new IExpression[]
-                {
-                    ValueToString(Left, Scope, LeftLocation),
-                    ValueToString(Right, Scope, RightLocation)
-                });
+                    {
+                        ValueToString(Left, Scope, LeftLocation),
+                        ValueToString(Right, Scope, RightLocation)
+                    });
             }
 
             var lExpr = Left.CreateGetExpressionOrError(Scope, LeftLocation);
@@ -1486,7 +1496,7 @@ namespace Flame.Ecs
             // Enum operators
             IType underlyingTy;
             if (BinaryOperatorResolution.TryGetEnumOperatorType(
-                    Op, lTy, rTy, out underlyingTy, out opTy))
+                Op, lTy, rTy, out underlyingTy, out opTy))
             {
                 var lConv = TryConvertEnumOperand(lExpr, underlyingTy, Scope.Global);
 
@@ -1497,7 +1507,7 @@ namespace Flame.Ecs
                     if (rConv != null)
                     {
                         var binOp = DirectBinaryExpression.Instance.Create(
-                                        lConv, Op, rConv);
+                            lConv, Op, rConv);
 
                         if (binOp.Type.Equals(opTy))
                             return binOp;
@@ -1653,8 +1663,8 @@ namespace Flame.Ecs
         public static bool IsLocalVariable(IVariable Variable)
         {
             return Variable is LocalVariableBase
-            || Variable is ArgumentVariable
-            || Variable is ThisVariable;
+                || Variable is ArgumentVariable
+                || Variable is ThisVariable;
         }
 
         /// <summary>
@@ -1733,7 +1743,7 @@ namespace Flame.Ecs
                 var rightLoc = NodeHelpers.ToSourceLocation(node.Args[1].Range);
 
                 var result = CreateBinary(
-                                 Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
+                    Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
 
                 return CreateUncheckedAssignment(
                     lhs, scope.Function.Global.ConvertImplicit(
@@ -1800,7 +1810,7 @@ namespace Flame.Ecs
 
                 string localName = nameNode.Name.Name;
                 var varMember = new DescribedVariableMember(
-                                    localName, isVar ? val.Type : varTy);
+                    localName, isVar ? val.Type : varTy);
                 varMember.AddAttribute(new SourceLocationAttribute(srcLoc));
                 var local = Scope.DeclareLocal(localName, varMember);
                 if (val != null)
@@ -1898,8 +1908,8 @@ namespace Flame.Ecs
             }
 
             var baseExpr = new ReinterpretCastExpression(
-                               thisVar.CreateGetExpression(),
-                               ThisVariable.GetThisType(baseType));
+                thisVar.CreateGetExpression(),
+                ThisVariable.GetThisType(baseType));
 
             if (Node.IsId)
             {
@@ -1937,8 +1947,8 @@ namespace Flame.Ecs
             var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
             var ifExpr = Converter.ConvertScopedStatement(Node.Args[1], Scope);
             var elseExpr = Node.ArgCount == 3
-                ? Converter.ConvertScopedStatement(Node.Args[2], Scope)
-                : EmptyStatement.Instance;
+                    ? Converter.ConvertScopedStatement(Node.Args[2], Scope)
+                    : EmptyStatement.Instance;
 
             return ToExpression(new IfElseStatement(cond, ifExpr, elseExpr));
         }
@@ -1961,19 +1971,19 @@ namespace Flame.Ecs
             var ifType = ifExpr.Type;
             var elseType = elseExpr.Type;
 
-            if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
-            {
-                ifExpr = globalScope.ConvertImplicit(
-                    ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
-            }
-            else
-            {
-                elseExpr = globalScope.ConvertImplicit(
-                    elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
-            }
+                    if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
+                    {
+                        ifExpr = globalScope.ConvertImplicit(
+                            ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+                    }
+                    else
+                    {
+                        elseExpr = globalScope.ConvertImplicit(
+                            elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
+                    }
 
-            return new SelectExpression(cond, ifExpr, elseExpr);
-        }
+                    return new SelectExpression(cond, ifExpr, elseExpr);
+            }
 
         /// <summary>
         /// Converts a break-statement (type #break), and
@@ -2232,7 +2242,7 @@ namespace Flame.Ecs
                         EcsWarnings.RedundantAsWarning.CreateMessage(new MarkupNode("#group",
                             NodeHelpers.HighlightEven(
                                 "this '", "as", "' is redundant, " +
-                            "and can be replaced by a cast. "))),
+                                "and can be replaced by a cast. "))),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
@@ -2307,7 +2317,7 @@ namespace Flame.Ecs
                         warn.CreateMessage(new MarkupNode("#group",
                             NodeHelpers.HighlightEven(
                                 "the '", "is", "' operator is equivalent to a null check here. " +
-                            "Replacing '", "is", "' by an explicit null check may be clearer. "))),
+                                "Replacing '", "is", "' by an explicit null check may be clearer. "))),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
             }
@@ -2356,7 +2366,7 @@ namespace Flame.Ecs
             var ty = Converter.ConvertType(Node.Args[1], Scope);
 
             var implConv = Scope.Function.Global.GetImplicitConversion(
-                               op, ty, NodeHelpers.ToSourceLocation(Node.Range));
+                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
 
             if (implConv.IsBoxing)
                 // Create a special using-box expression node here,
@@ -2383,9 +2393,9 @@ namespace Flame.Ecs
 
             // Resolve System.Threading.Monitor
             var monitor = Scope.Function.Global.Binder.BindType(
-                              new QualifiedName("Monitor").Qualify(
-                                  new QualifiedName("Threading").Qualify(
-                                      "System")));
+                new QualifiedName("Monitor").Qualify(
+                    new QualifiedName("Threading").Qualify(
+                        "System")));
 
             if (monitor == null)
             {
@@ -2415,9 +2425,9 @@ namespace Flame.Ecs
 
             // Find the Enter(object, out bool) method
             var enterMethod = monitor.GetMethod(
-                                  new SimpleName("Enter"), true, PrimitiveTypes.Void, 
-                                  new IType[] { rootTy, PrimitiveTypes.Boolean.MakePointerType(PointerKind.ReferencePointer) });
-                
+                new SimpleName("Enter"), true, PrimitiveTypes.Void, 
+                new IType[] { rootTy, PrimitiveTypes.Boolean.MakePointerType(PointerKind.ReferencePointer) });
+
             if (enterMethod == null)
             {
                 Scope.Log.LogError(new LogEntry(
@@ -2433,8 +2443,8 @@ namespace Flame.Ecs
 
             // Find the Exit(object) method
             var exitMethod = monitor.GetMethod(
-                                 new SimpleName("Exit"), true, PrimitiveTypes.Void, 
-                                 new IType[] { rootTy });
+                new SimpleName("Exit"), true, PrimitiveTypes.Void, 
+                new IType[] { rootTy });
 
             if (exitMethod == null)
             {
@@ -2482,19 +2492,19 @@ namespace Flame.Ecs
             var hasEnteredFlag = new LocalVariable("hasEntered", PrimitiveTypes.Boolean);
             stmts.Add(hasEnteredFlag.CreateSetStatement(new BooleanExpression(false)));
             var lockeeObj = new ReinterpretCastExpression(
-                                lockeeVar.CreateGetExpression(), rootTy);
+                lockeeVar.CreateGetExpression(), rootTy);
             stmts.Add(new TryStatement(
                 new BlockStatement(new IStatement[]
-                {
-                    new ExpressionStatement(new InvocationExpression(
-                        enterMethod, null,
-                        new IExpression[]
-                        { 
-                            lockeeObj,
-                            hasEnteredFlag.CreateAddressOfExpression() 
-                        })),
-                    lockBody
-                }),
+                    {
+                        new ExpressionStatement(new InvocationExpression(
+                            enterMethod, null,
+                            new IExpression[]
+                            { 
+                                lockeeObj,
+                                hasEnteredFlag.CreateAddressOfExpression() 
+                            })),
+                        lockBody
+                    }),
                 new IfElseStatement(
                     hasEnteredFlag.CreateGetExpression(), 
                     new ExpressionStatement(new InvocationExpression(
@@ -2556,11 +2566,11 @@ namespace Flame.Ecs
                             continue;
 
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
-                                                varCall.Args[0], Scope);
+                            varCall.Args[0], Scope);
 
                         var exceptionVarName = varCall.Args[1].Name.Name;
                         var exceptionVarDesc = new DescribedVariableMember(
-                                                   exceptionVarName, exceptionType);
+                            exceptionVarName, exceptionType);
 
                         resultClause = new CatchClause(exceptionVarDesc);
                         clauseScope = new LocalScope(Scope);
@@ -2571,7 +2581,7 @@ namespace Flame.Ecs
                     else
                     {
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
-                                                clause.Args[0], Scope);
+                            clause.Args[0], Scope);
                         resultClause = new CatchClause(new DescribedVariableMember(
                             "exception", exceptionType));
                         clauseScope = Scope;
@@ -2659,7 +2669,7 @@ namespace Flame.Ecs
                 // 'null'. 
                 Expression = new ConversionDescription(
                     ConversionKind.ImplicitBoxingConversion, null)
-                        .Convert(Expression, FindAnyRefTypeAncestor(exprTy, Scope));
+                    .Convert(Expression, FindAnyRefTypeAncestor(exprTy, Scope));
             }
             // Reference types.
             return new EqualityExpression(
@@ -2674,10 +2684,10 @@ namespace Flame.Ecs
             LocalScope Scope, SourceLocation Location)
         {
             var method = ConvertMemberAccess(
-                             Target, "Dispose", 
-                             new IType[] { },
-                             Scope, Location); 
-            
+                Target, "Dispose", 
+                new IType[] { },
+                Scope, Location); 
+
             if (!method.IsExpression)
             {
                 Scope.Log.LogError(CreateUsingDisposeError(
@@ -2686,7 +2696,7 @@ namespace Flame.Ecs
             }
 
             var inter = IntersectionExpression.GetIntersectedExpressions(
-                    method.Expression.CreateGetExpressionOrError(Scope, Location))
+                method.Expression.CreateGetExpressionOrError(Scope, Location))
                 .ToArray();
 
             if (inter.Length == 0)
@@ -2697,9 +2707,9 @@ namespace Flame.Ecs
             }
 
             var resolvedCall = OverloadResolution.CreateUncheckedInvocation(
-                                   inter, new Tuple<IExpression, SourceLocation>[] { },
-                                   Scope.Function.Global);
-                
+                inter, new Tuple<IExpression, SourceLocation>[] { },
+                Scope.Function.Global);
+
             if (resolvedCall == null)
             {
                 Scope.Log.LogError(CreateUsingDisposeError(
@@ -2736,7 +2746,7 @@ namespace Flame.Ecs
             if (Node.Args[0].Calls(CodeSymbols.Var))
             {
                 var declPair = ConvertVariableDeclaration(
-                                   Node.Args[0], childScope, Converter);
+                    Node.Args[0], childScope, Converter);
                 initStmt = declPair.Item1;
                 var disposeActions = new List<IStatement>();
                 var srcLoc = NodeHelpers.ToSourceLocation(Node.Args[0].Range);
@@ -2751,14 +2761,14 @@ namespace Flame.Ecs
             else
             {
                 var usedExpr = Converter.ConvertExpression(
-                                   Node.Args[0], childScope);
+                    Node.Args[0], childScope);
                 var local = new LocalVariable("usingTemp", usedExpr.Type);
                 initStmt = local.CreateSetStatement(usedExpr);
                 disposeStmt = CreateUsingDisposeStatement(
                     new TypeOrExpression(new VariableValue(local)),
                     Scope, NodeHelpers.ToSourceLocation(Node.Args[0].Range));
             }
-            
+
             var usingBody = Converter.ConvertScopedStatement(Node.Args[1], childScope);
 
             // Now, build an IR tree that is equivalent to like this:
