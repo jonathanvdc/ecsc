@@ -37,5 +37,9 @@ public static class Program
         {
             Console.WriteLine(x);
         }
+        foreach (var x in items.Concat<int>(new int[] { 40, 50 }))
+        {
+            Console.WriteLine(x);
+        }
     }
 }
