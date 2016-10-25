@@ -205,13 +205,24 @@ namespace Flame.Ecs
             var matches = target.GetMethodGroup();
             var namer = Scope.TypeNamer;
 
-            var retType = matches.Any() ? matches.First().ReturnType : PrimitiveTypes.Void;
+            var retType = matches.Any() ? matches.First().ReturnType : ErrorType.Instance;
             var expectedSig = CreateExpectedSignatureDescription(namer, retType, ArgumentTypes);
 
             // Create an inner expression that consists of the invocation's target and arguments,
             // whose values are calculated and then popped. Said expression will return an 
             // unknown value of the return type.
             var innerExpr = CreateFailedOverloadExpression(target, Arguments, retType);
+
+            if (ErrorType.Instance.Equals(target.Type)
+                || ArgumentTypes.Contains(ErrorType.Instance))
+            {
+                // Don't log any diagnostics if either the target
+                // type or one of the argument types is the error
+                // type, because that means that an error has already been logged.
+                // Printing another error on top of that would hide the real
+                // problem.
+                return innerExpr;
+            }
 
             var log = Scope.Log;
             if (matches.Any())
@@ -232,6 +243,9 @@ namespace Flame.Ecs
             }
             else
             {
+                // Print an error message if we try to call a non-error expression.
+                // Printing error messages for error expression is not that useful, because
+                // this may confuse the user about the real error.
                 log.LogError(new LogEntry(
                     FunctionType + " resolution",
                     NodeHelpers.HighlightEven(
