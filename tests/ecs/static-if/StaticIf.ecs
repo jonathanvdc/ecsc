@@ -1,0 +1,17 @@
+using System;
+
+public static class Program
+{
+    public const int x = 10;
+
+    public static void Main()
+    {
+        static if (x == 10)
+            Console.WriteLine("Hello everybody");
+        else
+            Console.WriteLine("Nope");
+
+        static if (x == 10)
+            Console.WriteLine("Bye");
+    }
+}

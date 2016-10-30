@@ -1,0 +1,34 @@
+// A compare-test test description.
+// This test using EC#-specific features, so it can only compare ecsc
+// with itself.
+
+build
+{
+    $(compiler) $(Filename).ecs $(Flags);
+}
+
+run
+{
+    return = @($(net-runtime) $(Executable) $(Args));
+}
+
+configs
+{
+    Og
+    {
+        Flags = -Og -platform clr -fno-whole-program -o $(Executable);
+    }
+    O3
+    {
+        Flags = -O3 -platform clr -fno-whole-program -o $(Executable);
+    }
+}
+
+init
+{
+    compiler = $ecsc;
+    Filename = StaticIf;
+    Executable = bin/$(Filename).exe;
+    Args = ;
+    return = @($echo "Hello everybody")@($echo "Bye");
+}

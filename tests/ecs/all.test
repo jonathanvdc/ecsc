@@ -1,5 +1,6 @@
 
 tests
 {
+    static-if/StaticIf.test;
     using-cast/UsingCast.test;
 }
