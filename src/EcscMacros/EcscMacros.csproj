@@ -46,6 +46,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiredMacros.cs" />
     <Compile Include="EcscSymbols.cs" />
+    <Compile Include="RedefinedMacros.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
