@@ -97,6 +97,20 @@ namespace Flame.Ecs
         /// <value>The environment.</value>
         public IEnvironment Environment { get { return Binder.Binder.Environment; } }
 
+        /// <summary>
+        /// Creates a local scope that is enclosed by
+        /// this global scope. The resulting local scope
+        /// has no enclosing function, enclosing type
+        /// or parameter list.
+        /// </summary>
+        /// <returns>A new local scope.</returns>
+        public LocalScope CreateLocalScope()
+        {
+            return new LocalScope(new FunctionScope(
+                    this, null, null, null, 
+                    new Dictionary<string, IVariable>()));
+        }
+
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
         {
             return new GlobalScope(

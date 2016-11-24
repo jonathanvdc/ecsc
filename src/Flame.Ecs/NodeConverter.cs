@@ -31,10 +31,12 @@ namespace Flame.Ecs
     {
         public NodeConverter(
             Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
-            ExpressionConverter CallConverter)
+            ExpressionConverter CallConverter,
+            AttributeConverter CustomAttributeConverter)
         {
             this.LookupUnqualifiedName = LookupUnqualifiedName;
             this.CallConverter = CallConverter;
+            this.CustomAttributeConverter = CustomAttributeConverter;
             this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
             this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
             this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
@@ -51,6 +53,7 @@ namespace Flame.Ecs
         public Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
 
         public ExpressionConverter CallConverter { get; private set; }
+        public AttributeConverter CustomAttributeConverter { get; private set; }
 
         /// <summary>
         /// Tries to get the appropriate converter for the given
@@ -124,9 +127,7 @@ namespace Flame.Ecs
         public IType ConvertType(
             LNode Node, GlobalScope Scope)
         {
-            return ConvertType(Node, new LocalScope(new FunctionScope(
-                        Scope, null, null, null, 
-                        new Dictionary<string, IVariable>())));
+            return ConvertType(Node, Scope.CreateLocalScope());
         }
 
         /// <summary>
@@ -214,8 +215,7 @@ namespace Flame.Ecs
             var conv = GetConverterOrDefault(attrConverters, Node);
             if (conv == null)
             {
-                LogCannotConvert(Node, Scope.Log);
-                return null;
+                return CustomAttributeConverter(Node, Scope, this);
             }
             else
             {
@@ -627,7 +627,8 @@ namespace Flame.Ecs
             {
                 var result = new NodeConverter(
                                  ExpressionConverters.LookupUnqualifiedName,
-                                 ExpressionConverters.ConvertCall);
+                                 ExpressionConverters.ConvertCall,
+                                 AttributeConverters.ConvertCustomAttribute);
 
                 // Global entities
                 result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);

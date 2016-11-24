@@ -74,6 +74,7 @@ namespace Flame.Ecs
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.extensionMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.staticMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
+            this.instanceCtorCache = new Dictionary<IType, IMethod[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
 
@@ -161,6 +162,7 @@ namespace Flame.Ecs
         private Dictionary<Tuple<IType, string>, ITypeMember[]> extensionMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> staticMemberCache;
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
+        private Dictionary<IType, IMethod[]> instanceCtorCache;
         private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
 
         private ITypeMember[] GetMembers(
@@ -221,6 +223,30 @@ namespace Flame.Ecs
                         !p.IsStatic && CanAccess(p))
                     .ToArray();
                 instanceIndexerCache[Type] = result;
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Gets all accessible constructors that can be used to
+        /// create an instance of the given type.
+        /// </summary>
+        /// <returns>The list instance constructors.</returns>
+        /// <param name="Type">The type to construct.</param>
+        public IEnumerable<IMethod> GetInstanceConstructors(IType Type)
+        {
+            IMethod[] result;
+            if (instanceCtorCache.TryGetValue(Type, out result))
+            {
+                return result;
+            }
+            else
+            {
+                result = Type.GetConstructors()
+                    .Where(p => 
+                        !p.IsStatic && CanAccess(p))
+                    .ToArray();
+                instanceCtorCache[Type] = result;
                 return result;
             }
         }

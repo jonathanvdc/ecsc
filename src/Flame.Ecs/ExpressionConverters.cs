@@ -1020,7 +1020,7 @@ namespace Flame.Ecs
             else
             {
                 var newInstExpr = OverloadResolution.CreateCheckedNewObject(
-                    ctorType.GetConstructors().Where(item => !item.IsStatic),
+                    Scope.Function.GetInstanceConstructors(ctorType),
                     ctorArgs, Scope.Function.Global, loc);
 
                 if (initializerList.Count == 0)
