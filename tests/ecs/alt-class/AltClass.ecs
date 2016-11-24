@@ -1,0 +1,38 @@
+using System;
+using LeMP;
+
+public abstract alt class Option
+{
+    public alt None()
+    {
+        public override string ToString()
+        {
+            return "None";
+        }
+    }
+
+    public alt Some(int Value)
+    {
+        public override string ToString()
+        {
+            return "Some " + Value.ToString();
+        }
+    }
+}
+
+public static class Program
+{
+    private static Option[] options = new Option[]
+    {
+        new None(),
+        new Some(42),
+        new Some(24),
+        new None()
+    };
+
+    public static void Main()
+    {
+        foreach (var opt in options)
+            Console.WriteLine(opt.ToString());
+    }
+}

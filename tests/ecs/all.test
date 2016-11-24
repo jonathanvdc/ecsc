@@ -1,6 +1,7 @@
 
 tests
 {
+    alt-class/AltClass.test;
     static-if/StaticIf.test;
     using-cast/UsingCast.test;
 }
