@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Flame.Compiler.Variables;
 using Pixie;
 using Flame.Ecs.Semantics;
+using Loyc;
 
 namespace Flame.Ecs
 {
@@ -261,15 +262,15 @@ namespace Flame.Ecs
             IMethod Method, GlobalScope Scope)
         {
             var thisTy = ThisVariable.GetThisType(Method.DeclaringType);
-            var paramVarDict = new Dictionary<string, IVariable>();
+            var paramVarDict = new Dictionary<Symbol, IVariable>();
             if (!Method.IsStatic)
             {
-                paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
+                paramVarDict[CodeSymbols.This] = ThisReferenceVariable.Instance.Create(thisTy);
             }
             int paramIndex = 0;
             foreach (var parameter in Method.Parameters)
             {
-                paramVarDict[parameter.Name.ToString()] = CreateArgumentVariable(parameter, paramIndex);
+                paramVarDict[GSymbol.Get(parameter.Name.ToString())] = CreateArgumentVariable(parameter, paramIndex);
                 paramIndex++;
             }
             return new FunctionScope(Scope, thisTy, Method, Method.ReturnType, paramVarDict);
@@ -297,7 +298,7 @@ namespace Flame.Ecs
         {
             return new FunctionScope(
                 Scope, ThisVariable.GetThisType(Member.DeclaringType), 
-                null, ReturnType, new Dictionary<string, IVariable>());
+                null, ReturnType, new Dictionary<Symbol, IVariable>());
         }
 
         private static void LogStaticVirtualMethodError(

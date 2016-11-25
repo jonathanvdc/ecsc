@@ -6,6 +6,7 @@ using Flame.Compiler;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
 using Pixie;
+using Loyc;
 
 namespace Flame.Ecs
 {
@@ -40,12 +41,12 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        IEnumerable<string> VariableNames { get; }
+        IEnumerable<Symbol> VariableNames { get; }
 
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        IVariable GetVariable(string Name);
+        IVariable GetVariable(Symbol Name);
 
         /// <summary>
         /// Gets the stashed variable with the given name,
@@ -55,7 +56,7 @@ namespace Flame.Ecs
         /// <returns>The stashed variable.</returns>
         /// <param name="Name">The stashed variable's name.</param>
         /// <param name="StackDepth">The stack depth of the variable in the stash.</param>
-        IVariable GetStashedVariable(string Name, int StackDepth);
+        IVariable GetStashedVariable(Symbol Name, int StackDepth);
     }
 
     /// <summary>
@@ -69,7 +70,7 @@ namespace Flame.Ecs
         public FunctionScope(
             GlobalScope Global, IType CurrentType, 
             IMethod CurrentMethod, IType ReturnType,
-            IReadOnlyDictionary<string, IVariable> ParameterVariables)
+            IReadOnlyDictionary<Symbol, IVariable> ParameterVariables)
         {
             this.instanceMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
             this.extensionMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
@@ -124,7 +125,7 @@ namespace Flame.Ecs
         /// to parameter variables.
         /// </summary>
         /// <value>The parameter variables dictionary.</value>
-        public IReadOnlyDictionary<string, IVariable> ParameterVariables { get; private set; }
+        public IReadOnlyDictionary<Symbol, IVariable> ParameterVariables { get; private set; }
 
         /// <summary>
         /// Gets this local scope's function scope.
@@ -138,12 +139,12 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames { get { return ParameterVariables.Keys; } }
+        public IEnumerable<Symbol> VariableNames { get { return ParameterVariables.Keys; } }
 
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        public IVariable GetVariable(string Name)
+        public IVariable GetVariable(Symbol Name)
         {
             IVariable result;
             if (ParameterVariables.TryGetValue(Name, out result))
@@ -153,7 +154,7 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public IVariable GetStashedVariable(string Name, int StackDepth)
+        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
         {
             return null;
         }
@@ -379,15 +380,15 @@ namespace Flame.Ecs
         public LocalScope(ILocalScope Parent)
             : this(
                 Parent, new List<IVariable>(), 
-                new Dictionary<string, IVariable>(),
-                new Dictionary<string, IVariableMember>())
+                new Dictionary<Symbol, IVariable>(),
+                new Dictionary<Symbol, IVariableMember>())
         {
         }
 
         private LocalScope(
             ILocalScope Parent, List<IVariable> OrderedVars,
-            Dictionary<string, IVariable> Locals,
-            Dictionary<string, IVariableMember> LocalMembers)
+            Dictionary<Symbol, IVariable> Locals,
+            Dictionary<Symbol, IVariableMember> LocalMembers)
         {
             this.Parent = Parent;
             this.orderedVars = OrderedVars;
@@ -396,8 +397,8 @@ namespace Flame.Ecs
         }
 
         private List<IVariable> orderedVars;
-        private Dictionary<string, IVariable> locals;
-        private Dictionary<string, IVariableMember> localMembers;
+        private Dictionary<Symbol, IVariable> locals;
+        private Dictionary<Symbol, IVariableMember> localMembers;
 
         /// <summary>
         /// Gets this local scope's parent scope.
@@ -430,7 +431,7 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames 
+        public IEnumerable<Symbol> VariableNames 
         { 
             get 
             { 
@@ -442,7 +443,7 @@ namespace Flame.Ecs
         /// Gets the set of locally defined variable identifiers
         /// for this scope.
         /// </summary>
-        public IEnumerable<string> LocalVariableNames 
+        public IEnumerable<Symbol> LocalVariableNames 
         { 
             get { return locals.Keys; } 
         }
@@ -463,16 +464,16 @@ namespace Flame.Ecs
         /// Declares a local variable with the given
         /// name and signature.
         /// </summary>
-        public IVariable DeclareLocal(string Name, IVariableMember Member)
+        public IVariable DeclareLocal(Symbol Name, IVariableMember Member)
         {
-            return DeclareLocal(Name, Member, new LocalVariable(Member, new UniqueTag(Name)));
+            return DeclareLocal(Name, Member, new LocalVariable(Member, new UniqueTag(Name.Name)));
         }
 
         /// <summary>
         /// Declares a local variable with the given
         /// name and signature.
         /// </summary>
-        public IVariable DeclareLocal(string Name, IVariableMember Member, IVariable Variable)
+        public IVariable DeclareLocal(Symbol Name, IVariableMember Member, IVariable Variable)
         {
             if (locals.ContainsKey(Name))
             {
@@ -482,7 +483,7 @@ namespace Flame.Ecs
                     "variable redefinition",
                     new MarkupNode[]
                     {
-                        new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name, "' is defined more than once in the same scope.")),
+                        new MarkupNode("#group", NodeHelpers.HighlightEven("variable '", Name.Name, "' is defined more than once in the same scope.")),
                         Member.GetSourceLocation().CreateDiagnosticsNode(),
                         localMembers[Name].GetSourceLocation().CreateRemarkDiagnosticsNode("previous declaration: ")
                     }));
@@ -497,7 +498,7 @@ namespace Flame.Ecs
                 nodes.Add(Warnings.Instance.Shadow.CreateMessage(
                     new MarkupNode("#group", 
                         NodeHelpers.HighlightEven(
-                            "variable '", Name, 
+                            "variable '", Name.Name, 
                             "' is defined more than once in the same scope. "))));
                 nodes.Add(Member.GetSourceLocation().CreateDiagnosticsNode());
                 if (shadowedVar != null)
@@ -519,7 +520,7 @@ namespace Flame.Ecs
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        public IVariable GetVariable(string Name)
+        public IVariable GetVariable(Symbol Name)
         {
             IVariable result;
             if (locals.TryGetValue(Name, out result))
@@ -529,7 +530,7 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public IVariable GetStashedVariable(string Name, int StackDepth)
+        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
         {
             return Parent.GetStashedVariable(Name, StackDepth);
         }
@@ -578,18 +579,18 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames { get { return Parent.VariableNames; } }
+        public IEnumerable<Symbol> VariableNames { get { return Parent.VariableNames; } }
 
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        public IVariable GetVariable(string Name)
+        public IVariable GetVariable(Symbol Name)
         {
             return Parent.GetVariable(Name);
         }
 
         /// <inheritdoc/>
-        public IVariable GetStashedVariable(string Name, int StackDepth)
+        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
         {
             return Parent.GetStashedVariable(Name, StackDepth);
         }
@@ -602,13 +603,13 @@ namespace Flame.Ecs
     public sealed class StashScope : ILocalScope
     {
         public StashScope(
-            ILocalScope Parent, IEnumerable<string> StashedNames)
+            ILocalScope Parent, IEnumerable<Symbol> StashedNames)
         {
             this.Parent = Parent;
-            this.stashedNameSet = new HashSet<string>(StashedNames);
+            this.stashedNameSet = new HashSet<Symbol>(StashedNames);
         }
 
-        private HashSet<string> stashedNameSet;
+        private HashSet<Symbol> stashedNameSet;
 
         /// <summary>
         /// Gets this local scope's parent scope.
@@ -641,12 +642,12 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames { get { return Parent.VariableNames.Except(stashedNameSet); } }
+        public IEnumerable<Symbol> VariableNames { get { return Parent.VariableNames.Except(stashedNameSet); } }
 
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        public IVariable GetVariable(string Name)
+        public IVariable GetVariable(Symbol Name)
         {
             if (stashedNameSet.Contains(Name))
                 return null;
@@ -655,7 +656,7 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public IVariable GetStashedVariable(string Name, int StackDepth)
+        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
         {
             if (!stashedNameSet.Contains(Name))
                 return Parent.GetStashedVariable(Name, StackDepth);
@@ -673,13 +674,13 @@ namespace Flame.Ecs
     public sealed class RestoreScope : ILocalScope
     {
         public RestoreScope(
-            ILocalScope Parent, IEnumerable<string> RestoredNames)
+            ILocalScope Parent, IEnumerable<Symbol> RestoredNames)
         {
             this.Parent = Parent;
-            this.restoredNameSet = new HashSet<string>(RestoredNames);
+            this.restoredNameSet = new HashSet<Symbol>(RestoredNames);
         }
 
-        private HashSet<string> restoredNameSet;
+        private HashSet<Symbol> restoredNameSet;
 
         /// <summary>
         /// Gets this local scope's parent scope.
@@ -712,12 +713,12 @@ namespace Flame.Ecs
         /// Gets the set of all local variable identifiers
         /// that are defined in this scope.
         /// </summary>
-        public IEnumerable<string> VariableNames { get { return Parent.VariableNames.Union(restoredNameSet); } }
+        public IEnumerable<Symbol> VariableNames { get { return Parent.VariableNames.Union(restoredNameSet); } }
 
         /// <summary>
         /// Gets the variable with the given name.
         /// </summary>
-        public IVariable GetVariable(string Name)
+        public IVariable GetVariable(Symbol Name)
         {
             if (restoredNameSet.Contains(Name))
                 return Parent.GetStashedVariable(Name, 0);
@@ -726,7 +727,7 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public IVariable GetStashedVariable(string Name, int StackDepth)
+        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
         {
             if (restoredNameSet.Contains(Name))
                 // Stashed variables are stored in a stack of sorts.

@@ -30,7 +30,7 @@ namespace Flame.Ecs
     public sealed class NodeConverter
     {
         public NodeConverter(
-            Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
+            Func<Symbol, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
             ExpressionConverter CallConverter,
             AttributeConverter CustomAttributeConverter)
         {
@@ -50,7 +50,7 @@ namespace Flame.Ecs
         private Dictionary<Symbol, TypeOrExpressionConverter> exprConverters;
         private Dictionary<Type, LiteralConverter> literalConverters;
 
-        public Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
+        public Func<Symbol, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
 
         public ExpressionConverter CallConverter { get; private set; }
         public AttributeConverter CustomAttributeConverter { get; private set; }
@@ -420,7 +420,7 @@ namespace Flame.Ecs
                 {
                     if (Node.IsId)
                     {
-                        var result = LookupUnqualifiedName(Node.Name.Name, Scope);
+                        var result = LookupUnqualifiedName(Node.Name, Scope);
                         return result.WithSourceLocation(
                             NodeHelpers.ToSourceLocation(Node.Range));
                     }

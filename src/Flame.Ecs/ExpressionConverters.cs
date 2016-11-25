@@ -39,11 +39,11 @@ namespace Flame.Ecs
         /// </summary>
         public static IVariable GetThisVariable(ILocalScope Scope)
         {
-            return Scope.GetVariable(CodeSymbols.This.Name);
+            return Scope.GetVariable(CodeSymbols.This);
         }
 
         private static IValue LookupUnqualifiedNameExpression(
-            string Name, ILocalScope Scope)
+            Symbol Name, ILocalScope Scope)
         {
             // Early-out for local variables.
             var local = Scope.GetVariable(Name);
@@ -54,7 +54,7 @@ namespace Flame.Ecs
 
             // Create a set of potential results.
             var exprSet = new HashSet<IValue>();
-            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name))
+            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name.Name))
             {
                 var acc = AccessMember(null, item, Scope.Function.Global);
                 if (acc != null)
@@ -68,7 +68,7 @@ namespace Flame.Ecs
                 var thisVar = GetThisVariable(Scope);
                 if (thisVar != null)
                 {
-                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name))
+                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name.Name))
                     {
                         var acc = AccessMember(
                             new VariableValue(thisVar), 
@@ -187,9 +187,9 @@ namespace Flame.Ecs
             return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
         }
 
-        public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+        public static TypeOrExpression LookupUnqualifiedName(Symbol Name, ILocalScope Scope)
         {
-            var qualName = new QualifiedName(Name);
+            var qualName = new QualifiedName(Name.Name);
             return new TypeOrExpression(
                 LookupUnqualifiedNameExpression(Name, Scope),
                 LookupUnqualifiedNameTypes(qualName, Scope),
@@ -1808,9 +1808,9 @@ namespace Flame.Ecs
                     continue;
                 }
 
-                string localName = nameNode.Name.Name;
+                Symbol localName = nameNode.Name;
                 var varMember = new DescribedVariableMember(
-                    localName, isVar ? val.Type : varTy);
+                    localName.Name, isVar ? val.Type : varTy);
                 varMember.AddAttribute(new SourceLocationAttribute(srcLoc));
                 var local = Scope.DeclareLocal(localName, varMember);
                 if (val != null)
@@ -2568,9 +2568,9 @@ namespace Flame.Ecs
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
                             varCall.Args[0], Scope);
 
-                        var exceptionVarName = varCall.Args[1].Name.Name;
+                        var exceptionVarName = varCall.Args[1].Name;
                         var exceptionVarDesc = new DescribedVariableMember(
-                            exceptionVarName, exceptionType);
+                            exceptionVarName.Name, exceptionType);
 
                         resultClause = new CatchClause(exceptionVarDesc);
                         clauseScope = new LocalScope(Scope);
@@ -2896,14 +2896,14 @@ namespace Flame.Ecs
             return expr.Type;
         }
 
-        private static HashSet<string> ToSymbolSet(IEnumerable<LNode> Nodes, LocalScope Scope)
+        private static HashSet<Symbol> ToSymbolSet(IEnumerable<LNode> Nodes, LocalScope Scope)
         {
-            var results = new HashSet<string>();
+            var results = new HashSet<Symbol>();
             foreach (var item in Nodes)
             {
                 if (item.IsId)
                 {
-                    results.Add(item.Name.Name);
+                    results.Add(item.Name);
                 }
                 else
                 {

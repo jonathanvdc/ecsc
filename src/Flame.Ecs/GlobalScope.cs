@@ -6,6 +6,7 @@ using Flame.Build;
 using Flame.Compiler.Expressions;
 using Pixie;
 using Flame.Ecs.Semantics;
+using Loyc;
 
 namespace Flame.Ecs
 {
@@ -108,7 +109,7 @@ namespace Flame.Ecs
         {
             return new LocalScope(new FunctionScope(
                     this, null, null, null, 
-                    new Dictionary<string, IVariable>()));
+                    new Dictionary<Symbol, IVariable>()));
         }
 
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
