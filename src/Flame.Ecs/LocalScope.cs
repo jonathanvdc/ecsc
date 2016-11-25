@@ -47,16 +47,6 @@ namespace Flame.Ecs
         /// Gets the variable with the given name.
         /// </summary>
         IVariable GetVariable(Symbol Name);
-
-        /// <summary>
-        /// Gets the stashed variable with the given name,
-        /// at the given stash-stack depth. Null is returned
-        /// if there is no such variable.
-        /// </summary>
-        /// <returns>The stashed variable.</returns>
-        /// <param name="Name">The stashed variable's name.</param>
-        /// <param name="StackDepth">The stack depth of the variable in the stash.</param>
-        IVariable GetStashedVariable(Symbol Name, int StackDepth);
     }
 
     /// <summary>
@@ -151,12 +141,6 @@ namespace Flame.Ecs
                 return result;
             else
                 return null;
-        }
-
-        /// <inheritdoc/>
-        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
-        {
-            return null;
         }
 
         private Dictionary<Tuple<IType, string>, ITypeMember[]> instanceMemberCache;
@@ -528,12 +512,6 @@ namespace Flame.Ecs
             else
                 return Parent.GetVariable(Name);
         }
-
-        /// <inheritdoc/>
-        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
-        {
-            return Parent.GetStashedVariable(Name, StackDepth);
-        }
     }
 
     /// <summary>
@@ -587,12 +565,6 @@ namespace Flame.Ecs
         public IVariable GetVariable(Symbol Name)
         {
             return Parent.GetVariable(Name);
-        }
-
-        /// <inheritdoc/>
-        public IVariable GetStashedVariable(Symbol Name, int StackDepth)
-        {
-            return Parent.GetStashedVariable(Name, StackDepth);
         }
     }
 }
