@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Flame.Build;
 using Flame.Build.Lazy;
+using System.Collections.Concurrent;
 
 namespace Flame.Ecs
 {
@@ -18,6 +19,13 @@ namespace Flame.Ecs
         IType DefineType(
             UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody);
 
+        /// <summary>
+        /// Defines a child mutable namespace of this namespace.
+        /// If a child namespace with the given namespace already
+        /// exists, then that namespace is returned.
+        /// </summary>
+        /// <returns>The child namespace.</returns>
+        /// <param name="Name">The child namespace's name.</param>
         IMutableNamespace DefineNamespace(string Name);
     }
 
@@ -29,7 +37,7 @@ namespace Flame.Ecs
         public MutableNamespaceBase()
         {
             this.types = new List<IType>();
-            this.nsBranches = new List<INamespaceBranch>();
+            this.nsBranches = new ConcurrentDictionary<string, ChildNamespace>();
         }
 
         public abstract IAssembly DeclaringAssembly { get; }
@@ -41,35 +49,24 @@ namespace Flame.Ecs
         public abstract UnqualifiedName Name { get; }
 
         private List<IType> types;
-        private List<INamespaceBranch> nsBranches;
+        private ConcurrentDictionary<string, ChildNamespace> nsBranches;
 
         public IEnumerable<IType> Types { get { return types; } }
 
-        public IEnumerable<INamespaceBranch> Namespaces { get { return nsBranches; } }
-
-        public void AddType(IType Type)
-        {
-            types.Add(Type);
-        }
-
-        public void AddNamespace(INamespaceBranch Namespace)
-        {
-            nsBranches.Add(Namespace);
-        }
+        public IEnumerable<INamespaceBranch> Namespaces { get { return nsBranches.Values; } }
 
         public IType DefineType(
             UnqualifiedName Name, Action<LazyDescribedType> AnalyzeBody)
         {
             var result = new LazyDescribedType(Name, this, AnalyzeBody);
-            AddType(result);
+            types.Add(result);
             return result;
         }
 
         public IMutableNamespace DefineNamespace(string Name)
         {
-            var result = new ChildNamespace(new SimpleName(Name), this);
-            AddNamespace(result);
-            return result;
+            return nsBranches.GetOrAdd(
+                Name, name => new ChildNamespace(new SimpleName(name), this));
         }
     }
 
