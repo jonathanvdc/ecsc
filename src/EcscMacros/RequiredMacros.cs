@@ -30,57 +30,47 @@ namespace EcscMacros
         {
             // Produce a Loyc tree that looks like this:
             //
-            //     #builtin_stash_locals(col, colLen, i, {
-            //         var col = #builtin_restore_locals(col, colLen, i, <collection>);
-            //         var colLen = col.Length;
-            //         for (#builtin_decltype(colLen) i = 0; i < colLen; i++)
-            //         {
-            //             #var(<type>, <name> = col[i]);
-            //             #builtin_restore_locals(col, colLen, i, <body>);
-            //         }
-            //     });
+            //     var col = <collection>;
+            //     var colLen = col.Length;
+            //     for (#builtin_decltype(colLen) i = 0; i < colLen; i++)
+            //     {
+            //         #var(<type>, <name> = col[i]);
+            //         <body>;
+            //     }
             //
-            var colName = (Symbol)"col";
-            var colLenName = (Symbol)"colLen";
-            var iName = (Symbol)"i";
-            return F.Call(
-                EcscSymbols.BuiltinStashLocals, 
-                F.Id(colName), F.Id(colLenName), F.Id(iName), 
-                F.Braces(
-                    F.Var(
-                        F.Id(GSymbol.Empty), 
-                        colName, 
+            var pool = new SymbolPool();
+            var colName = pool.Get("col");
+            var colLenName = pool.Get("colLen");
+            var iName = pool.Get("i");
+            return F.Braces(
+                F.Var(
+                    F.Id(GSymbol.Empty), 
+                    colName, 
+                    Collection),
+                F.Var(
+                    F.Id(GSymbol.Empty), 
+                    colLenName, 
+                    F.Dot(colName, GSymbol.Get("Length"))),
+                F.Call(
+                    CodeSymbols.For,
+                    F.Tuple(F.Var(
                         F.Call(
-                            EcscSymbols.BuiltinRestoreLocals,
-                            F.Id(colName), F.Id(colLenName), F.Id(iName), 
-                            Collection)),
-                    F.Var(
-                        F.Id(GSymbol.Empty), 
-                        colLenName, 
-                        F.Dot(colName, (Symbol)"Length")),
+                            EcscSymbols.BuiltinDecltype, 
+                            F.Id(colLenName)),
+                        iName, 
+                        F.Literal(0))),
                     F.Call(
-                        CodeSymbols.For,
-                        F.Tuple(F.Var(
-                            F.Call(
-                                EcscSymbols.BuiltinDecltype, 
-                                F.Id(colLenName)),
-                            iName, 
-                            F.Literal(0))),
-                        F.Call(
-                            CodeSymbols.LT, 
-                            F.Id(iName), F.Id(colLenName)),
-                        F.Tuple(F.Call(
-                            CodeSymbols.PostInc,
-                            F.Id(iName))),
-                        F.Braces(
-                            F.Var(
-                                InductionType,
-                                InductionName,
-                                F.Call(CodeSymbols.IndexBracks, F.Id(colName), F.Id(iName))),
-                            F.Call(
-                                EcscSymbols.BuiltinRestoreLocals,
-                                F.Id(colName), F.Id(colLenName), F.Id(iName),
-                                Body)))));
+                        CodeSymbols.LT, 
+                        F.Id(iName), F.Id(colLenName)),
+                    F.Tuple(F.Call(
+                        CodeSymbols.PostInc,
+                        F.Id(iName))),
+                    F.Braces(
+                        F.Var(
+                            InductionType,
+                            InductionName,
+                            F.Call(CodeSymbols.IndexBracks, F.Id(colName), F.Id(iName))),
+                        Body)));
         }
 
         private static LNode ExpandDefaultForeach(
@@ -89,58 +79,48 @@ namespace EcscMacros
         {
             // Produce a Loyc tree that looks like this:
             //
-            //     #builtin_stash_locals(enumerator, {
-            //         var enumerator = #builtin_restore_locals(enumerator, <collection>).GetEnumerator();
-            //         try
+            //    var enumerator = <collection>.GetEnumerator();
+            //    try
+            //    {
+            //         while (enumerator.MoveNext())
             //         {
-            //             while (enumerator.MoveNext())
-            //             {
-            //                 #var(<type>, <name> = enumerator.Current);
-            //                 #builtin_restore_locals(enumerator, <body>);
-            //             }
+            //             #var(<type>, <name> = enumerator.Current);
+            //             <body>;
             //         }
-            //         finally
-            //         {
-            //             #dispose_local(enumerator);
-            //         }
-            //     });
+            //     }
+            //     finally
+            //     {
+            //         #dispose_local(enumerator);
+            //     }
             //
-            var enumeratorName = (Symbol)"enumerator";
+            var pool = new SymbolPool();
+            var enumeratorName = pool.Get("enumerator");
 
-            return F.Call(
-                EcscSymbols.BuiltinStashLocals,
-                F.Id(enumeratorName),
-                F.Braces(
-                    F.Var(
-                        F.Id(GSymbol.Empty), 
-                        enumeratorName, 
-                        F.Call(F.Dot(
-                            F.Call(
-                                EcscSymbols.BuiltinRestoreLocals,
-                                F.Id(enumeratorName),
-                                Collection), 
-                            (Symbol)"GetEnumerator"))),
+            return F.Braces(
+                F.Var(
+                    F.Id(GSymbol.Empty), 
+                    enumeratorName, 
+                    F.Call(F.Dot(
+                        Collection, 
+                        GSymbol.Get("GetEnumerator")))),
+                F.Call(
+                    CodeSymbols.Try,
+                    F.Braces(
+                        F.Call(
+                            CodeSymbols.While,
+                            F.Call(F.Dot(enumeratorName, GSymbol.Get("MoveNext"))),
+                            F.Braces(
+                                F.Var(
+                                    InductionType, 
+                                    InductionName, 
+                                    F.Dot(enumeratorName, GSymbol.Get("Current"))),
+                                Body))),
                     F.Call(
-                        CodeSymbols.Try,
+                        CodeSymbols.Finally,
                         F.Braces(
                             F.Call(
-                                CodeSymbols.While,
-                                F.Call(F.Dot(enumeratorName, (Symbol)"MoveNext")),
-                                F.Braces(
-                                    F.Var(
-                                        InductionType, 
-                                        InductionName, 
-                                        F.Dot(enumeratorName, (Symbol)"Current")),
-                                    F.Call(
-                                        EcscSymbols.BuiltinRestoreLocals,
-                                        F.Id(enumeratorName),
-                                        Body)))),
-                        F.Call(
-                            CodeSymbols.Finally,
-                            F.Braces(
-                                F.Call(
-                                    EcscSymbols.DisposeLocal, 
-                                    F.Id(enumeratorName)))))));
+                                EcscSymbols.DisposeLocal, 
+                                F.Id(enumeratorName))))));
         }
 
         [LexicalMacro("foreach (type name in collection) body;", "macro-expanded instead of implemented directly", "#foreach")]
@@ -202,13 +182,11 @@ namespace EcscMacros
                 return Reject(Sink, Node, "'#dispose_value' nodes must take exactly one argument.");
 
             var value = Node.Args[0];
-            var tempName = (Symbol)"temp";
-            return F.Call(
-                EcscSymbols.BuiltinStashLocals,
-                F.Id(tempName),
-                F.Braces(
-                    F.Var(F.Id(GSymbol.Empty), tempName, value),
-                    F.Call(EcscSymbols.DisposeLocal, F.Id(tempName))));
+            var pool = new SymbolPool();
+            var tempName = pool.Get("temp");
+            return F.Braces(
+                F.Var(F.Id(GSymbol.Empty), tempName, value),
+                F.Call(EcscSymbols.DisposeLocal, F.Id(tempName)));
         }
 
         [LexicalMacro("#dispose_local(value);", "disposes a local variable if it implements IDisposable", "#dispose_local")]
@@ -244,7 +222,7 @@ namespace EcscMacros
                             CodeSymbols.Cast,
                             value,
                             idisposableNode),
-                        (Symbol)"Dispose")));
+                        GSymbol.Get("Dispose"))));
         }
     }
 }

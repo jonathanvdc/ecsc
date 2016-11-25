@@ -46,22 +46,6 @@ namespace EcscMacros
         public static readonly Symbol BuiltinStaticIsArray = GSymbol.Get("#builtin_static_is_array");
 
         /// <summary>
-        /// Stashes a number of names in the local context of a node. 
-        /// </summary>
-        /// <remarks>
-        /// Usage: #builtin_stash_locals(x, y, z, expr);
-        /// </remarks>
-        public static readonly Symbol BuiltinStashLocals = GSymbol.Get("#builtin_stash_locals");
-
-        /// <summary>
-        /// Restores stashed names from the local context of a node.
-        /// </summary>
-        /// <remarks>
-        /// Usage: #builtin_restore_locals(x, y, z, expr);
-        /// </remarks>
-        public static readonly Symbol BuiltinRestoreLocals = GSymbol.Get("#builtin_restore_locals");
-
-        /// <summary>
         /// Disposes a local variable, if it implements IDisposable.
         /// </summary>
         public static readonly Symbol DisposeLocal = GSymbol.Get("#dispose_local");
