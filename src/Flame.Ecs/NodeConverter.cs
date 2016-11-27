@@ -604,17 +604,14 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts an entire compilation unit.
         /// </summary>
-        public INamespaceBranch ConvertCompilationUnit(GlobalScope Scope, IAssembly DeclaringAssembly, IEnumerable<LNode> Nodes)
+        public void ConvertCompilationUnit(
+            GlobalScope Scope, IMutableNamespace DeclaringNamespace, IEnumerable<LNode> Nodes)
         {
-            var rootNs = new RootNamespace(DeclaringAssembly);
-
             var state = Scope;
             foreach (var item in Nodes)
             {
-                state = ConvertGlobal(item, rootNs, state);
+                state = ConvertGlobal(item, DeclaringNamespace, state);
             }
-
-            return rootNs;
         }
 
         /// <summary>

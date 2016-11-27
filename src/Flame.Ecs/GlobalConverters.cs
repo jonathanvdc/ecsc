@@ -155,6 +155,14 @@ namespace Flame.Ecs
                     }
                 }, Scope);
 
+                if (!isRedefinition)
+                {
+                    descTy.AddAttribute(TypeKind);
+                }              
+                foreach (var item in convAttrs)
+                {
+                    descTy.AddAttribute(item);
+                }
                 if (isRedefinition && !isPartial)
                 {
                     Scope.Log.LogError(new LogEntry(
@@ -167,13 +175,7 @@ namespace Flame.Ecs
                             NodeHelpers.ToSourceLocation(Node.Args[0].Range),
                             descTy.GetSourceLocation())));
                 }
-
-                descTy.AddAttribute(TypeKind);
                 descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
-                foreach (var item in convAttrs)
-                {
-                    descTy.AddAttribute(item);
-                }
 
                 descTy.RemoveAttributes(PrimitiveAttributes.Instance.VirtualAttribute.AttributeType);
                 if (isVirtual)
