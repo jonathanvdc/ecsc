@@ -176,15 +176,16 @@ namespace Flame.Ecs
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
-            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(Name));
+            var genericName = new SimpleName(Name, TypeArguments.Count);
+            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
             if (ty == null)
             {
-                var genericName = new SimpleName(Name, TypeArguments.Count);
-                ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
-                if (ty == null)
-                    return Enumerable.Empty<IType>();
+                return Enumerable.Empty<IType>();
             }
-            return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
+            else
+            {
+                return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
+            }
         }
 
         public static TypeOrExpression LookupUnqualifiedName(Symbol Name, ILocalScope Scope)
@@ -1369,8 +1370,16 @@ namespace Flame.Ecs
                 return Value.CreateGetExpressionOrError(Scope, Location);
 
             var fScope = Scope.Function;
+            var targetVal = AsTargetValue(Value, Scope, Location, true);
+            if (targetVal.IsError)
+            {
+                fScope.Global.Log.LogError(targetVal.Error);
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+
+            var valTy = Value.Type;
             var toStringMethods =
-                fScope.GetInstanceMembers(Value.Type, "ToString")
+                fScope.GetInstanceMembers(valTy, "ToString")
                     .OfType<IMethod>()
                     .Where(item =>
                         !item.Parameters.Any()
@@ -1385,13 +1394,14 @@ namespace Flame.Ecs
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(Value.Type),
-                        "' could not be converted to type '",
+                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "' cannot not be converted to type '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "', because it did not have a parameterless, non-generic '",
+                        "', because it does not have a parameterless, non-generic '",
                         "ToString", "' method that returns a '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "' instance.")));
+                        "' instance."),
+                    Location));
                 return new UnknownExpression(PrimitiveTypes.String);
             }
             else if (toStringMethods.Length > 1)
@@ -1400,20 +1410,20 @@ namespace Flame.Ecs
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(Value.Type),
-                        "' could not be converted to type '",
+                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "' cannot not be converted to type '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "', there was more than one parameterless, non-generic '",
+                        "', there is more than one parameterless, non-generic '",
                         "ToString", "' method that returns a '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "' instance.")));
+                        "' instance."),
+                    Location));
                 return new UnknownExpression(PrimitiveTypes.String);
             }
 
             return new InvocationExpression(
                 toStringMethods[0], 
-                AsTargetValue(Value, Scope, Location, true)
-                .ResultOrLog(fScope.Global.Log), 
+                targetVal.Result, 
                 new IExpression[0]);
         }
 
