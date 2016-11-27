@@ -198,7 +198,7 @@ namespace Flame.Ecs
                 foreach (var item in Node.Args[1].Args)
                 {
                     // Convert the base types.
-                    var innerTy = Converter.ConvertType(item, Scope);
+                    var innerTy = Converter.ConvertType(item, innerScope);
                     if (innerTy == null)
                     {
                         Scope.Log.LogError(new LogEntry(
