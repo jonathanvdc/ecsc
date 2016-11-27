@@ -58,6 +58,28 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Creates a list of markup nodes that speak of
+        /// of a redefinition. A message, the new definition
+        /// and the original definition are presented.
+        /// </summary>
+        /// <returns>The redefinition message.</returns>
+        /// <param name="Message">The message to log.</param>
+        /// <param name="NewDefinition">The location of the new definition.</param>
+        /// <param name="OriginalDefinition">The location of the original definition.</param>
+        public static MarkupNode[] CreateRedefinitionMessage(
+            IEnumerable<MarkupNode> Message, 
+            SourceLocation NewDefinition, 
+            SourceLocation OriginalDefinition)
+        {
+            return new MarkupNode[]
+            {
+                new MarkupNode("#group", Message),
+                OriginalDefinition.CreateDiagnosticsNode(),
+                NewDefinition.CreateRemarkDiagnosticsNode("previous declaration: ")
+            };
+        }
+
+        /// <summary>
         /// Checks that the given node is an id node.
         /// </summary>
         public static bool CheckId(LNode Node, ICompilerLog Log)

@@ -104,8 +104,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Converts a type member node. A tuple is returned
-        /// that represents a potential
+        /// Converts a type member node.
         /// </summary>
         public GlobalScope ConvertTypeMember(
             LNode Node, LazyDescribedType DeclaringType, GlobalScope Scope)

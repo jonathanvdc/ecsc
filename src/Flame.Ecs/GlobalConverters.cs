@@ -89,26 +89,53 @@ namespace Flame.Ecs
 
             // Convert the type's name.
             var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
-            Namespace.DefineType(name.Item1, descTy =>
+            Namespace.DefineType(name.Item1, (descTy, isRedefinition) =>
             {
                 var innerScope = Scope;
-                foreach (var item in name.Item2(descTy))
+                if (isRedefinition)
                 {
-                    // Create generic parameters.
-                    descTy.AddGenericParameter(item);
-                    innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+                    // Don't add the generic parameters twice if we're dealing
+                    // with a redefinition. Just re-use the old ones instead.
+                    innerScope = TypeMemberConverters.CreateGenericScope(descTy, Scope);
+                }
+                else
+                {
+                    foreach (var item in name.Item2(descTy))
+                    {
+                        // Create generic parameters.
+                        descTy.AddGenericParameter(item);
+                        innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
+                    }
+                }
+
+                if (isRedefinition && !descTy.HasAttribute(TypeKind.AttributeType))
+                {
+                    // Partial type definitions must consistently be labeled
+                    // 'class', 'struct' or 'interface'.
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.CreateRedefinitionMessage(
+                            NodeHelpers.HighlightEven(
+                                "'", "partial", "' type '", descTy.Name.ToString(), 
+                                "' is not consistently a '", "class", "', '", "struct", 
+                                "', or '", "interface", "'."),
+                            NodeHelpers.ToSourceLocation(Node.Args[0].Range),
+                            descTy.GetSourceLocation())));
                 }
 
                 // Analyze the attribute list.
                 bool isClass = TypeKind.AttributeType.Equals(
                                    PrimitiveAttributes.Instance.ReferenceTypeAttribute.AttributeType);
                 bool isVirtual = isClass;
+                bool isPartial = false;
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
                                     Node.Attrs, AccessModifier.Assembly, node =>
                 {
                     if (node.IsIdNamed(CodeSymbols.Static))
                     {
-                        descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
+                        if (!descTy.HasAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute.AttributeType))
+                            descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
+                        
                         isVirtual = false;
                         return true;
                     }
@@ -117,17 +144,38 @@ namespace Flame.Ecs
                         isVirtual = false;
                         return true;
                     }
+                    else if (node.IsIdNamed(CodeSymbols.Partial))
+                    {
+                        isPartial = true;
+                        return true;
+                    }
                     else
                     {
                         return false;
                     }
                 }, Scope);
+
+                if (isRedefinition && !isPartial)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type redefinition",
+                        NodeHelpers.CreateRedefinitionMessage(
+                            NodeHelpers.HighlightEven(
+                                "type '", descTy.Name.ToString(), 
+                                "' is defined more than once, and is not '", 
+                                "partial", "'."),
+                            NodeHelpers.ToSourceLocation(Node.Args[0].Range),
+                            descTy.GetSourceLocation())));
+                }
+
                 descTy.AddAttribute(TypeKind);
                 descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 foreach (var item in convAttrs)
                 {
                     descTy.AddAttribute(item);
                 }
+
+                descTy.RemoveAttributes(PrimitiveAttributes.Instance.VirtualAttribute.AttributeType);
                 if (isVirtual)
                 {
                     descTy.AddAttribute(PrimitiveAttributes.Instance.VirtualAttribute);
@@ -136,13 +184,15 @@ namespace Flame.Ecs
                 // Check if the type defines any extension methods 
                 // before proceeding.
                 if (descTy.GetIsStaticType()
-                    && Node.Args[2].Args.Any(NodeHelpers.IsExtensionMethod))
+                    && Node.Args[2].Args.Any(NodeHelpers.IsExtensionMethod)
+                    && !descTy.HasAttribute(
+                        PrimitiveAttributes.Instance.ExtensionAttribute.AttributeType))
                 {
                     descTy.AddAttribute(PrimitiveAttributes.Instance.ExtensionAttribute);
                 }
 
                 // Remember the base class.
-                IType baseClass = null;
+                IType baseClass = descTy.GetParent();
                 foreach (var item in Node.Args[1].Args)
                 {
                     // Convert the base types.
@@ -202,14 +252,18 @@ namespace Flame.Ecs
                         descTy.AddBaseType(innerTy);
                     }
                 }
-
-                if (baseClass == null && !descTy.GetIsInterface())
+                return innerScope;
+            }, (descTy, innerScope) =>
+            {
+                if (!descTy.GetIsInterface() && descTy.GetParent() == null)
                 {
                     var rootType = Scope.Binder.Environment.RootType;
                     if (rootType != null)
                         descTy.AddBaseType(rootType);
                 }
-
+                return innerScope;
+            }, (descTy, innerScope) =>
+            {
                 foreach (var item in Node.Args[2].Args)
                 {
                     // Convert the type definition's members.
@@ -271,8 +325,22 @@ namespace Flame.Ecs
                         "'", "enum", "' types can't have type parameters."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
             }
-            Namespace.DefineType(name.Item1, descTy =>
+            Namespace.DefineType(name.Item1, (descTy, isRedefinition) =>
             {
+                if (isRedefinition)
+                {
+                    // Don't allow 'enum' redefinitions.
+                    Scope.Log.LogError(new LogEntry(
+                        "type redefinition", 
+                        NodeHelpers.CreateRedefinitionMessage(
+                            NodeHelpers.HighlightEven(
+                                "type '", "enum " + descTy.Name.ToString() + 
+                                "' is defined more than once."),
+                            NodeHelpers.ToSourceLocation(Node.Args[0].Range), 
+                            descTy.GetSourceLocation())));
+                    return;
+                }
+
                 // Analyze the attribute list.
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
                                     Node.Attrs, AccessModifier.Assembly, node => false, Scope);
