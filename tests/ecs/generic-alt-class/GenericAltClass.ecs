@@ -1,0 +1,33 @@
+using System;
+using LeMP;
+
+public abstract alt class Option<T>
+{
+    public alt None<T>();
+    public alt Some<T>(T Value);
+}
+
+public static class Program
+{
+    private static Option<int>[] options = new Option<int>[]
+    {
+        new None<int>(),
+        new Some<int>(42),
+        new Some<int>(24),
+        new None<int>()
+    };
+
+    private static void Write(Option<int> Value)
+    {
+        if (Value is None<int>)
+            Console.WriteLine("None");
+        else
+            Console.WriteLine("Some " + ((Some<int>)Value).Value);
+    }
+
+    public static void Main()
+    {
+        foreach (var opt in options)
+            Write(opt);
+    }
+}
