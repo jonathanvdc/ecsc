@@ -5,6 +5,8 @@ using Flame.Build;
 using Flame.Build.Lazy;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using Flame.Ecs.Syntax;
+using System.Collections.Generic;
 
 namespace Flame.Ecs
 {
@@ -77,6 +79,50 @@ namespace Flame.Ecs
             return Scope;
         }
 
+        public static GlobalScope ConvertGenericParameterDefs(
+            IReadOnlyList<GenericParameterDef> Defs, 
+            IGenericMember DeclaringMember,
+            GlobalScope Scope, NodeConverter Converter,
+            Func<SimpleName, IGenericParameter> AddGenericParameter,
+            Action<IGenericParameter, IGenericConstraint> AddConstraint)
+        {
+            if (Defs.Count == 0)
+                // Early-out here in the common case.
+                return Scope;
+
+            // First, retrieve all existing generic parameters.
+            var genParameters = DeclaringMember.GenericParameters.ToList();
+
+            // If we have more generic parameter definitions than
+            // actual generic parameters, then we should convert 
+            // those additional generic definitions into parameters. 
+            for (int i = genParameters.Count; i < Defs.Count; i++)
+            {
+                genParameters.Add(AddGenericParameter(Defs[i].Name));
+            }
+
+            // Now, build a new global scope.
+            var innerScope = Scope;
+            for (int i = 0; i < Defs.Count; i++)
+            {
+                innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(
+                    Defs[i].Name, genParameters[i]));
+            }
+
+            // And use that to convert generic parameters.
+            for (int i = 0; i < Defs.Count; i++)
+            {
+                foreach (var constraintNode in Defs[i].Constraints)
+                {
+                    var constraint = constraintNode.Analyze(innerScope, Converter);
+                    AddConstraint(genParameters[i], constraint);
+                }
+            }
+
+            // Return the global scope.
+            return innerScope;
+        }
+
         /// <summary>
         /// Converts a type.
         /// </summary>
@@ -88,25 +134,21 @@ namespace Flame.Ecs
                 return Scope;
 
             // Convert the type's name.
-            var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
-            Namespace.DefineType(name.Item1, (descTy, isRedefinition) =>
+            var name = NameNodeHelpers.ToGenericMemberName(Node.Args[0], Scope);
+            Namespace.DefineType(name.Name, (descTy, isRedefinition) =>
             {
-                var innerScope = Scope;
-                if (isRedefinition)
-                {
-                    // Don't add the generic parameters twice if we're dealing
-                    // with a redefinition. Just re-use the old ones instead.
-                    innerScope = TypeMemberConverters.CreateGenericScope(descTy, Scope);
-                }
-                else
-                {
-                    foreach (var item in name.Item2(descTy))
+                var innerScope = ConvertGenericParameterDefs(
+                    name.GenericParameters, descTy, Scope, Converter, 
+                    genParamName => 
                     {
-                        // Create generic parameters.
-                        descTy.AddGenericParameter(item);
-                        innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-                    }
-                }
+                        var genParam = new DescribedGenericParameter(genParamName, descTy);
+                        descTy.AddGenericParameter(genParam);
+                        return genParam;
+                    },
+                    (genParam, constraint) => 
+                    {
+                        ((DescribedGenericParameter)genParam).AddConstraint(constraint);
+                    });
 
                 if (isRedefinition && !descTy.HasAttribute(TypeKind.AttributeType))
                 {
@@ -158,7 +200,7 @@ namespace Flame.Ecs
                 if (!isRedefinition)
                 {
                     descTy.AddAttribute(TypeKind);
-                }              
+                }
                 foreach (var item in convAttrs)
                 {
                     descTy.AddAttribute(item);
@@ -206,7 +248,7 @@ namespace Flame.Ecs
                             NodeHelpers.HighlightEven(
                                 "could not resolve base type '", 
                                 item.ToString(), "' for '", 
-                                name.Item1.ToString(), "'."),
+                                name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));
                     }
                     else
@@ -318,8 +360,8 @@ namespace Flame.Ecs
                 return Scope;
 
             // Convert the type's name.
-            var name = NodeHelpers.ToUnqualifiedName(Node.Args[0], Scope);
-            if (name.Item1.TypeParameterCount > 0)
+            var name = NameNodeHelpers.ToGenericMemberName(Node.Args[0], Scope);
+            if (name.GenericParameters.Count > 0)
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
@@ -327,7 +369,7 @@ namespace Flame.Ecs
                         "'", "enum", "' types can't have type parameters."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
             }
-            Namespace.DefineType(name.Item1, (descTy, isRedefinition) =>
+            Namespace.DefineType(name.Name, (descTy, isRedefinition) =>
             {
                 if (isRedefinition)
                 {
@@ -377,7 +419,7 @@ namespace Flame.Ecs
                             NodeHelpers.HighlightEven(
                                 "could not resolve underlying type type '", 
                                 item.ToString(), "' for '", 
-                                name.Item1.ToString(), "'."),
+                                name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));
                     }
                     else
