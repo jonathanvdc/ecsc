@@ -79,9 +79,9 @@ namespace Flame.Ecs
             Log.LogError(new LogEntry(
                     "unknown node",
                     NodeHelpers.HighlightEven(
-                        "syntax node '", Node.Name.Name, 
-                        "' could not be converted because its node type was not recognized " +
-                        "as a known node type. (in this context)"),
+                        "syntax node '", Node.Name.Name,
+                        "' cannot be analyzed because its node type is unknown. " +
+                        "(in this context)"),
                     NodeHelpers.ToSourceLocation(Node.Range)));
         }
 
@@ -131,7 +131,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and null is returned.
         /// </summary>
@@ -152,7 +152,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and the void type is returned.
         /// </summary>
@@ -174,7 +174,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and null is returned.
         /// </summary>
@@ -195,7 +195,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and the void type is returned.
         /// </summary>
@@ -224,14 +224,14 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeList(
-            IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial, 
+            IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial,
             GlobalScope Scope)
         {
             foreach (var item in Attributes)
@@ -247,16 +247,16 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated by a separate
         /// function.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
-            IEnumerable<LNode> Attributes, 
+            IEnumerable<LNode> Attributes,
             Func<IEnumerable<LNode>,  GlobalScope, AccessModifier> HandleAccess,
             Func<LNode, bool> HandleSpecial, GlobalScope Scope)
         {
@@ -278,11 +278,11 @@ namespace Flame.Ecs
         /// </param>
         /// <param name="Scope">The global scope.</param>
         /// <param name="DefaultAccess">
-        /// The default access modifier, which is returned if 
+        /// The default access modifier, which is returned if
         /// the set of access modifier nodes was empty.
         /// </param>
         public AccessModifier ConvertAccessModifiersDefault(
-            IEnumerable<LNode> Modifiers, GlobalScope Scope, 
+            IEnumerable<LNode> Modifiers, GlobalScope Scope,
             AccessModifier DefaultAccess)
         {
             var accModSet = new HashSet<Symbol>();
@@ -337,7 +337,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Always returns the 'public' access modifier, and 
+        /// Always returns the 'public' access modifier, and
         /// flags all explicit access modifiers as errors.
         /// </summary>
         /// <returns>The 'public' access modifier.</returns>
@@ -351,7 +351,7 @@ namespace Flame.Ecs
             foreach (var item in Modifiers)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "syntax error", 
+                    "syntax error",
                     NodeHelpers.HighlightEven(
                         "modifier '", item.Name.Name, "' is not valid on this item, " +
                         "because '", "interface", "' members cannot have access modifiers."),
@@ -362,11 +362,11 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated separately.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
@@ -374,24 +374,24 @@ namespace Flame.Ecs
             Func<LNode, bool> HandleSpecial, GlobalScope Scope)
         {
             return ConvertAttributeListWithAccess(
-                Attributes, 
-                (nodes, s) => 
-                    ConvertAccessModifiersDefault(nodes, s, DefaultAccess), 
+                Attributes,
+                (nodes, s) =>
+                    ConvertAccessModifiersDefault(nodes, s, DefaultAccess),
                 HandleSpecial, Scope);
         }
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated separately.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
             IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
-            bool IsInterface, Func<LNode, bool> HandleSpecial, 
+            bool IsInterface, Func<LNode, bool> HandleSpecial,
             GlobalScope Scope)
         {
             if (IsInterface)
@@ -428,7 +428,7 @@ namespace Flame.Ecs
                         return new TypeOrExpression(
                             new ExpressionValue(
                                 SourceExpression.Create(
-                                    CallConverter(Node, Scope, this), 
+                                    CallConverter(Node, Scope, this),
                                     NodeHelpers.ToSourceLocation(Node.Range))));
                     }
                     else if (Node.IsLiteral)
@@ -437,7 +437,7 @@ namespace Flame.Ecs
                         if (val == null)
                             return new TypeOrExpression(
                                 new ExpressionValue(NullExpression.Instance));
-                        
+
                         LiteralConverter litConv;
                         if (literalConverters.TryGetValue(val.GetType(), out litConv))
                         {
@@ -518,9 +518,9 @@ namespace Flame.Ecs
         /// </summary>
         public void AddTypeConverter(Symbol Symbol, TypeConverter Converter)
         {
-            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
+            AddTypeOrExprConverter(Symbol, (node, scope, self) =>
 				new TypeOrExpression(new IType[]
-                    { 
+                    {
                         Converter(node, scope.Function.Global, self)
                     }));
         }
@@ -530,9 +530,9 @@ namespace Flame.Ecs
         /// </summary>
         public void AddTypeConverter(Symbol Symbol, LocalTypeConverter Converter)
         {
-            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
+            AddTypeOrExprConverter(Symbol, (node, scope, self) =>
                 new TypeOrExpression(new IType[]
-                    { 
+                    {
                         Converter(node, scope, self)
                     }));
         }
@@ -781,4 +781,3 @@ namespace Flame.Ecs
         }
     }
 }
-
