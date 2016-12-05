@@ -571,14 +571,29 @@ namespace Flame.Ecs
                 return false;
             }
 
+            // First, build a dictionary that maps type parameters
+            // to type arguments.
+            var tMap = new Dictionary<IType, IType>();
             for (int i = 0; i < genericParamArr.Length; i++)
             {
                 var tParam = genericParamArr[i];
                 var tArg = TypeArguments[i];
-                if (!tParam.Constraint.Satisfies(tArg))
+                tMap[tParam] = tArg;
+            }
+            // Create a type mapping converter to convert generic
+            // parameters to arguments.
+            var conv = new TypeMappingConverter(tMap);
+
+            // Then iterate over the type parameters, and check that
+            // their constraints are satisfied.
+            for (int i = 0; i < genericParamArr.Length; i++)
+            {
+                var tParam = genericParamArr[i];
+                var tArg = TypeArguments[i];
+                if (!tParam.Constraint.Transform(conv).Satisfies(tArg))
                 {
                     // Check that this type argument is okay for
-                    // the parameter's constraints.
+                    // the parameter's (transformed) constraints.
                     Scope.Log.LogError(new LogEntry(
                         "generic constraint",
                         NodeHelpers.HighlightEven(
