@@ -466,10 +466,11 @@ namespace Flame.Ecs
 
         private static Operator ParseOperatorName(string Name)
         {
-            if (Name == UnaryOperatorResolution.BitwiseComplement.Name)
-                return UnaryOperatorResolution.BitwiseComplement;
+            // Operators are prefixed by `'` by convention.
+            if (Name.StartsWith("'"))
+                return Operator.Register(Name.Substring("'".Length));
             else
-                return Operator.GetOperator(Name);
+                return Operator.Undefined;
         }
 
         /// <summary>
