@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using Flame.Compiler.Variables;
 using Pixie;
 using Flame.Ecs.Semantics;
+using Loyc;
+using Flame.Ecs.Syntax;
 
 namespace Flame.Ecs
 {
@@ -23,7 +25,7 @@ namespace Flame.Ecs
         public static Tuple<IParameter, LNode> ConvertParameter(
             LNode Node, GlobalScope Scope, NodeConverter Converter)
         {
-            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
+            var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope);
             var paramTy = Converter.ConvertType(Node.Args[0], Scope);
             if (paramTy == null)
             {
@@ -31,7 +33,7 @@ namespace Flame.Ecs
                     "type resolution",
                     NodeHelpers.HighlightEven(
                         "could not resolve parameter type '", Node.Args[0].ToString(), 
-                        "' for parameter '", name.Item1.ToString(), "'."),
+                        "' for parameter '", name.ToString(), "'."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 paramTy = PrimitiveTypes.Void;
             }
@@ -60,7 +62,7 @@ namespace Flame.Ecs
                     return false;
                 }
             }, Scope).ToArray();
-            var descParam = new DescribedParameter(name.Item1, paramTy);
+            var descParam = new DescribedParameter(name, paramTy);
             foreach (var item in attrs)
             {
                 descParam.AddAttribute(item);
@@ -261,15 +263,15 @@ namespace Flame.Ecs
             IMethod Method, GlobalScope Scope)
         {
             var thisTy = ThisVariable.GetThisType(Method.DeclaringType);
-            var paramVarDict = new Dictionary<string, IVariable>();
+            var paramVarDict = new Dictionary<Symbol, IVariable>();
             if (!Method.IsStatic)
             {
-                paramVarDict[CodeSymbols.This.Name] = ThisReferenceVariable.Instance.Create(thisTy);
+                paramVarDict[CodeSymbols.This] = ThisReferenceVariable.Instance.Create(thisTy);
             }
             int paramIndex = 0;
             foreach (var parameter in Method.Parameters)
             {
-                paramVarDict[parameter.Name.ToString()] = CreateArgumentVariable(parameter, paramIndex);
+                paramVarDict[GSymbol.Get(parameter.Name.ToString())] = CreateArgumentVariable(parameter, paramIndex);
                 paramIndex++;
             }
             return new FunctionScope(Scope, thisTy, Method, Method.ReturnType, paramVarDict);
@@ -297,7 +299,7 @@ namespace Flame.Ecs
         {
             return new FunctionScope(
                 Scope, ThisVariable.GetThisType(Member.DeclaringType), 
-                null, ReturnType, new Dictionary<string, IVariable>());
+                null, ReturnType, new Dictionary<Symbol, IVariable>());
         }
 
         private static void LogStaticVirtualMethodError(
@@ -482,19 +484,24 @@ namespace Flame.Ecs
                 return Scope;
 
             // Handle the function's name first.
-            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
-            var op = ParseOperatorName(name.Item1.Name);
+            var name = NameNodeHelpers.ToGenericMemberName(Node.Args[1], Scope);
+            var op = ParseOperatorName(name.Name.Name);
             Tuple<LNode, LNode> attrNodePair = null;
-            var def = new LazyDescribedMethod(new SimpleName(name.Item1.Name), DeclaringType, methodDef =>
+            var def = new LazyDescribedMethod(new SimpleName(name.Name.Name), DeclaringType, methodDef =>
             {
                 // Take care of the generic parameters next.
-                var innerScope = Scope;
-                foreach (var item in name.Item2(methodDef))
-                {
-                    // Create generic parameters.
-                    methodDef.AddGenericParameter(item);
-                    innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-                }
+                var innerScope = GlobalConverters.ConvertGenericParameterDefs(
+                    name.GenericParameters, methodDef, Scope, Converter,
+                    genParamName => 
+                    {
+                        var genParam = new DescribedGenericParameter(genParamName, methodDef);
+                        methodDef.AddGenericParameter(genParam);
+                        return genParam;
+                    },
+                    (genParam, constraint) => 
+                    {
+                        ((DescribedGenericParameter)genParam).AddConstraint(constraint);
+                    });
 
                 // Attributes next. override, abstract, virtual, sealed
                 // and new are specific to methods, so we'll handle those here.
@@ -508,7 +515,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "user-defined operator '", name.Item1.Name, "' must be declared '", 
+                                "user-defined operator '", name.Name.Name, "' must be declared '", 
                                 "static", "' and '", "public", "'."),
                             methodDef.GetSourceLocation()));
                     }
@@ -525,7 +532,7 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "could not resolve return type '", 
                             Node.Args[0].ToString(), "' for method '", 
-                            name.Item1.ToString(), "'."),
+                            name.Name.Name, "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                     retType = PrimitiveTypes.Void;
                 }
@@ -548,7 +555,7 @@ namespace Flame.Ecs
                             "user-defined operator",
                             NodeHelpers.HighlightEven(
                                 "at least one of the parameters of user-defined operator '", 
-                                name.Item1.Name,
+                                name.Name.Name,
                                 "' must be the containing type."),
                             methodDef.GetSourceLocation()));
                     }
@@ -566,7 +573,7 @@ namespace Flame.Ecs
                     var parentTy = DeclaringType.GetParent();
                     if (parentTy != null)
                     {
-                        var baseMethods = funScope.GetInstanceMembers(parentTy, name.Item1.Name)
+                        var baseMethods = funScope.GetInstanceMembers(parentTy, name.Name.Name)
                             .OfType<IMethod>()
                             .Where(m => m.HasSameCallSignature(methodDef))
                             .ToArray();
@@ -668,7 +675,7 @@ namespace Flame.Ecs
                     // no keywords are involved.
                     foreach (var inter in DeclaringType.GetInterfaces())
                     {
-                        var baseMethods = funScope.GetInstanceMembers(inter, name.Item1.Name)
+                        var baseMethods = funScope.GetInstanceMembers(inter, name.Name.Name)
                             .OfType<IMethod>()
                             .Where(m => m.HasSameSignature(methodDef));
 
@@ -748,20 +755,13 @@ namespace Flame.Ecs
                 return Scope;
 
             // Handle the constructor's name first.
-            var name = NodeHelpers.ToUnqualifiedName(Node.Args[1], Scope);
-            var def = new LazyDescribedMethod(name.Item1, DeclaringType, methodDef =>
+            var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope);
+            var def = new LazyDescribedMethod(name, DeclaringType, methodDef =>
             {
                 methodDef.IsConstructor = true;
                 methodDef.ReturnType = PrimitiveTypes.Void;
 
-                // Take care of the generic parameters next.
                 var innerScope = Scope;
-                foreach (var item in name.Item2(methodDef))
-                {
-                    // Create generic parameters.
-                    methodDef.AddGenericParameter(item);
-                    innerScope = innerScope.WithBinder(innerScope.Binder.AliasType(item.Name, item));
-                }
 
                 // Attributes next.
                 UpdateTypeMemberAttributes(Node.Attrs, methodDef, innerScope, Converter);
@@ -920,7 +920,7 @@ namespace Flame.Ecs
 
             bool isIndexer = Node.Args[2].ArgCount > 0;
             // Handle the parameter's name first.
-            var name = NodeHelpers.ToSimpleName(Node.Args[1], Scope);
+            var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope);
 
             // Analyze the propert's type here, because we may want
             // to share this with an optional backing field.

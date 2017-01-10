@@ -30,11 +30,13 @@ namespace Flame.Ecs
     public sealed class NodeConverter
     {
         public NodeConverter(
-            Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
-            ExpressionConverter CallConverter)
+            Func<Symbol, ILocalScope, TypeOrExpression> LookupUnqualifiedName,
+            ExpressionConverter CallConverter,
+            AttributeConverter CustomAttributeConverter)
         {
             this.LookupUnqualifiedName = LookupUnqualifiedName;
             this.CallConverter = CallConverter;
+            this.CustomAttributeConverter = CustomAttributeConverter;
             this.globalConverters = new Dictionary<Symbol, GlobalConverter>();
             this.typeMemberConverters = new Dictionary<Symbol, TypeMemberConverter>();
             this.attrConverters = new Dictionary<Symbol, AttributeConverter>();
@@ -48,9 +50,10 @@ namespace Flame.Ecs
         private Dictionary<Symbol, TypeOrExpressionConverter> exprConverters;
         private Dictionary<Type, LiteralConverter> literalConverters;
 
-        public Func<string, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
+        public Func<Symbol, ILocalScope, TypeOrExpression> LookupUnqualifiedName { get; private set; }
 
         public ExpressionConverter CallConverter { get; private set; }
+        public AttributeConverter CustomAttributeConverter { get; private set; }
 
         /// <summary>
         /// Tries to get the appropriate converter for the given
@@ -86,8 +89,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Converts a type member node. A tuple is returned
-        /// that represents a potential
+        /// Converts a type member node.
         /// </summary>
         public GlobalScope ConvertTypeMember(
             LNode Node, LazyDescribedType DeclaringType, GlobalScope Scope)
@@ -109,14 +111,12 @@ namespace Flame.Ecs
         public IType ConvertType(
             LNode Node, GlobalScope Scope)
         {
-            return ConvertType(Node, new LocalScope(new FunctionScope(
-                        Scope, null, null, null, 
-                        new Dictionary<string, IVariable>())));
+            return ConvertType(Node, Scope.CreateLocalScope());
         }
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and null is returned.
         /// </summary>
@@ -137,7 +137,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and the void type is returned.
         /// </summary>
@@ -159,7 +159,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and null is returned.
         /// </summary>
@@ -180,7 +180,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given type reference node.
-        /// If the type it describes cannot be resolved 
+        /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
         /// and the void type is returned.
         /// </summary>
@@ -199,9 +199,10 @@ namespace Flame.Ecs
             var conv = GetConverterOrDefault(attrConverters, Node);
             if (conv == null)
             {
-                if (!Node.IsTrivia)
-                    NodeHelpers.LogCannotConvertAttribute(Node, Scope.Log);
-                return null;
+                if (Node.IsTrivia)
+                    return null;
+                else
+                    return CustomAttributeConverter(Node, Scope, this);
             }
             else
             {
@@ -211,14 +212,14 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeList(
-            IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial, 
+            IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial,
             GlobalScope Scope)
         {
             foreach (var item in Attributes)
@@ -234,16 +235,16 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated by a separate
         /// function.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
-            IEnumerable<LNode> Attributes, 
+            IEnumerable<LNode> Attributes,
             Func<IEnumerable<LNode>,  GlobalScope, AccessModifier> HandleAccess,
             Func<LNode, bool> HandleSpecial, GlobalScope Scope)
         {
@@ -265,11 +266,11 @@ namespace Flame.Ecs
         /// </param>
         /// <param name="Scope">The global scope.</param>
         /// <param name="DefaultAccess">
-        /// The default access modifier, which is returned if 
+        /// The default access modifier, which is returned if
         /// the set of access modifier nodes was empty.
         /// </param>
         public AccessModifier ConvertAccessModifiersDefault(
-            IEnumerable<LNode> Modifiers, GlobalScope Scope, 
+            IEnumerable<LNode> Modifiers, GlobalScope Scope,
             AccessModifier DefaultAccess)
         {
             var accModSet = new HashSet<Symbol>();
@@ -324,7 +325,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Always returns the 'public' access modifier, and 
+        /// Always returns the 'public' access modifier, and
         /// flags all explicit access modifiers as errors.
         /// </summary>
         /// <returns>The 'public' access modifier.</returns>
@@ -338,7 +339,7 @@ namespace Flame.Ecs
             foreach (var item in Modifiers)
             {
                 Scope.Log.LogError(new LogEntry(
-                    "syntax error", 
+                    "syntax error",
                     NodeHelpers.HighlightEven(
                         "modifier '", item.Name.Name, "' is not valid on this item, " +
                         "because '", "interface", "' members cannot have access modifiers."),
@@ -349,11 +350,11 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated separately.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
@@ -361,24 +362,24 @@ namespace Flame.Ecs
             Func<LNode, bool> HandleSpecial, GlobalScope Scope)
         {
             return ConvertAttributeListWithAccess(
-                Attributes, 
-                (nodes, s) => 
-                    ConvertAccessModifiersDefault(nodes, s, DefaultAccess), 
+                Attributes,
+                (nodes, s) =>
+                    ConvertAccessModifiersDefault(nodes, s, DefaultAccess),
                 HandleSpecial, Scope);
         }
 
         /// <summary>
         /// Converts the given sequence of attribute nodes.
-        /// A function is given that can be used to handle 
-        /// special cases. If such a special case has been 
+        /// A function is given that can be used to handle
+        /// special cases. If such a special case has been
         /// handled, the function returns 'true'. Only nodes
-        /// for which the special case function returns 
-        /// 'false', are directly converted by this node converter. 
+        /// for which the special case function returns
+        /// 'false', are directly converted by this node converter.
         /// Additionally, access modifiers are treated separately.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
             IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
-            bool IsInterface, Func<LNode, bool> HandleSpecial, 
+            bool IsInterface, Func<LNode, bool> HandleSpecial,
             GlobalScope Scope)
         {
             if (IsInterface)
@@ -406,7 +407,7 @@ namespace Flame.Ecs
                 {
                     if (Node.IsId)
                     {
-                        var result = LookupUnqualifiedName(Node.Name.Name, Scope);
+                        var result = LookupUnqualifiedName(Node.Name, Scope);
                         return result.WithSourceLocation(
                             NodeHelpers.ToSourceLocation(Node.Range));
                     }
@@ -415,7 +416,7 @@ namespace Flame.Ecs
                         return new TypeOrExpression(
                             new ExpressionValue(
                                 SourceExpression.Create(
-                                    CallConverter(Node, Scope, this), 
+                                    CallConverter(Node, Scope, this),
                                     NodeHelpers.ToSourceLocation(Node.Range))));
                     }
                     else if (Node.IsLiteral)
@@ -424,7 +425,7 @@ namespace Flame.Ecs
                         if (val == null)
                             return new TypeOrExpression(
                                 new ExpressionValue(NullExpression.Instance));
-                        
+
                         LiteralConverter litConv;
                         if (literalConverters.TryGetValue(val.GetType(), out litConv))
                         {
@@ -505,9 +506,9 @@ namespace Flame.Ecs
         /// </summary>
         public void AddTypeConverter(Symbol Symbol, TypeConverter Converter)
         {
-            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
+            AddTypeOrExprConverter(Symbol, (node, scope, self) =>
 				new TypeOrExpression(new IType[]
-                    { 
+                    {
                         Converter(node, scope.Function.Global, self)
                     }));
         }
@@ -517,9 +518,9 @@ namespace Flame.Ecs
         /// </summary>
         public void AddTypeConverter(Symbol Symbol, LocalTypeConverter Converter)
         {
-            AddTypeOrExprConverter(Symbol, (node, scope, self) => 
+            AddTypeOrExprConverter(Symbol, (node, scope, self) =>
                 new TypeOrExpression(new IType[]
-                    { 
+                    {
                         Converter(node, scope, self)
                     }));
         }
@@ -591,17 +592,14 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts an entire compilation unit.
         /// </summary>
-        public INamespaceBranch ConvertCompilationUnit(GlobalScope Scope, IAssembly DeclaringAssembly, IEnumerable<LNode> Nodes)
+        public void ConvertCompilationUnit(
+            GlobalScope Scope, IMutableNamespace DeclaringNamespace, IEnumerable<LNode> Nodes)
         {
-            var rootNs = new RootNamespace(DeclaringAssembly);
-
             var state = Scope;
             foreach (var item in Nodes)
             {
-                state = ConvertGlobal(item, rootNs, state);
+                state = ConvertGlobal(item, DeclaringNamespace, state);
             }
-
-            return rootNs;
         }
 
         /// <summary>
@@ -613,7 +611,8 @@ namespace Flame.Ecs
             {
                 var result = new NodeConverter(
                                  ExpressionConverters.LookupUnqualifiedName,
-                                 ExpressionConverters.ConvertCall);
+                                 ExpressionConverters.ConvertCall,
+                                 AttributeConverters.ConvertCustomAttribute);
 
                 // Global entities
                 result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);
@@ -671,8 +670,6 @@ namespace Flame.Ecs
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIf, ExpressionConverters.ConvertBuiltinStaticIfExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
                 result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDecltype, ExpressionConverters.ConvertBuiltinDecltype);
-                result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinStashLocals, ExpressionConverters.ConvertBuiltinStashLocals);
-                result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinRestoreLocals, ExpressionConverters.ConvertBuiltinRestoreLocals);
 
                 // Operators
                 // - Ternary operators
@@ -772,4 +769,3 @@ namespace Flame.Ecs
         }
     }
 }
-

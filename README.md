@@ -6,7 +6,7 @@ Linux | Windows
 
 # ecsc
 
-`ecsc` is an [Enhanced C#](http://ecsharp.net/) compiler that uses Flame as its back-end. It can be used to compile both C# and EC# source code files, and ships with the following features:
+`ecsc` is an [Enhanced C#](http://ecsharp.net/) compiler that uses [Flame](https://github.com/jonathanvdc/Flame) as its back-end. It can be used to compile both C# and EC# source code files, and ships with the following features:
 * EC#'s [lexical macro processor (LeMP)](http://ecsharp.net/lemp/)
 * EC# language extensions, such as the `using` cast.
 * Aggressive ahead-of-time [compiler optimizations](https://github.com/jonathanvdc/ecsc/wiki/Optimization-options)

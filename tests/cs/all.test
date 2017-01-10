@@ -17,6 +17,7 @@ tests
     flow/Flow.test;
     foreach/Foreach.test;
     fractal/Fractal.test;
+    generic-constraints/GenericConstraints.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
     inc-dec/IncDec.test;
@@ -27,6 +28,7 @@ tests
     logical-ops/LogicalOps.test;
     null/Null.test;
     overrides/Overrides.test;
+    partial/Partial.test;
     prop-init/PropInit.test;
     properties/Properties.test;
     readonly-fields/ReadOnlyFields.test;

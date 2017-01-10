@@ -196,6 +196,14 @@
     <Compile Include="TypeCache.cs" />
     <Compile Include="ExtensionMemberCache.cs" />
     <Compile Include="MemberCacheBase.cs" />
+    <Compile Include="Syntax\GenericMemberName.cs" />
+    <Compile Include="Syntax\GenericParameterDef.cs" />
+    <Compile Include="Syntax\IGenericConstraintNode.cs" />
+    <Compile Include="Syntax\ClassConstraintNode.cs" />
+    <Compile Include="Syntax\NameNodeHelpers.cs" />
+    <Compile Include="Syntax\StructConstraintNode.cs" />
+    <Compile Include="Syntax\EnumConstraintNode.cs" />
+    <Compile Include="Syntax\TypeConstraintNode.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -205,6 +213,7 @@
     <Folder Include="Passes\" />
     <Folder Include="Semantics\" />
     <Folder Include="Values\" />
+    <Folder Include="Syntax\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">

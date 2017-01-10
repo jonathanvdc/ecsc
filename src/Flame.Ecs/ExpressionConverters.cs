@@ -39,11 +39,11 @@ namespace Flame.Ecs
         /// </summary>
         public static IVariable GetThisVariable(ILocalScope Scope)
         {
-            return Scope.GetVariable(CodeSymbols.This.Name);
+            return Scope.GetVariable(CodeSymbols.This);
         }
 
         private static IValue LookupUnqualifiedNameExpression(
-            string Name, ILocalScope Scope)
+            Symbol Name, ILocalScope Scope)
         {
             // Early-out for local variables.
             var local = Scope.GetVariable(Name);
@@ -54,7 +54,7 @@ namespace Flame.Ecs
 
             // Create a set of potential results.
             var exprSet = new HashSet<IValue>();
-            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name))
+            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name.Name))
             {
                 var acc = AccessMember(null, item, Scope.Function.Global);
                 if (acc != null)
@@ -68,7 +68,7 @@ namespace Flame.Ecs
                 var thisVar = GetThisVariable(Scope);
                 if (thisVar != null)
                 {
-                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name))
+                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name.Name))
                     {
                         var acc = AccessMember(
                             new VariableValue(thisVar), 
@@ -176,20 +176,21 @@ namespace Flame.Ecs
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
-            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(Name));
+            var genericName = new SimpleName(Name, TypeArguments.Count);
+            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
             if (ty == null)
             {
-                var genericName = new SimpleName(Name, TypeArguments.Count);
-                ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
-                if (ty == null)
-                    return Enumerable.Empty<IType>();
+                return Enumerable.Empty<IType>();
             }
-            return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
+            else
+            {
+                return InstantiateTypes(new IType[] { ty }, TypeArguments, Scope.Function.Global, Location);
+            }
         }
 
-        public static TypeOrExpression LookupUnqualifiedName(string Name, ILocalScope Scope)
+        public static TypeOrExpression LookupUnqualifiedName(Symbol Name, ILocalScope Scope)
         {
-            var qualName = new QualifiedName(Name);
+            var qualName = new QualifiedName(Name.Name);
             return new TypeOrExpression(
                 LookupUnqualifiedNameExpression(Name, Scope),
                 LookupUnqualifiedNameTypes(qualName, Scope),
@@ -570,14 +571,29 @@ namespace Flame.Ecs
                 return false;
             }
 
+            // First, build a dictionary that maps type parameters
+            // to type arguments.
+            var tMap = new Dictionary<IType, IType>();
             for (int i = 0; i < genericParamArr.Length; i++)
             {
                 var tParam = genericParamArr[i];
                 var tArg = TypeArguments[i];
-                if (!tParam.Constraint.Satisfies(tArg))
+                tMap[tParam] = tArg;
+            }
+            // Create a type mapping converter to convert generic
+            // parameters to arguments.
+            var conv = new TypeMappingConverter(tMap);
+
+            // Then iterate over the type parameters, and check that
+            // their constraints are satisfied.
+            for (int i = 0; i < genericParamArr.Length; i++)
+            {
+                var tParam = genericParamArr[i];
+                var tArg = TypeArguments[i];
+                if (!tParam.Constraint.Transform(conv).Satisfies(tArg))
                 {
                     // Check that this type argument is okay for
-                    // the parameter's constraints.
+                    // the parameter's (transformed) constraints.
                     Scope.Log.LogError(new LogEntry(
                         "generic constraint",
                         NodeHelpers.HighlightEven(
@@ -1034,7 +1050,7 @@ namespace Flame.Ecs
             else
             {
                 var newInstExpr = OverloadResolution.CreateCheckedNewObject(
-                    ctorType.GetConstructors().Where(item => !item.IsStatic),
+                    Scope.Function.GetInstanceConstructors(ctorType),
                     ctorArgs, Scope.Function.Global, loc);
 
                 if (initializerList.Count == 0)
@@ -1383,8 +1399,16 @@ namespace Flame.Ecs
                 return Value.CreateGetExpressionOrError(Scope, Location);
 
             var fScope = Scope.Function;
+            var targetVal = AsTargetValue(Value, Scope, Location, true);
+            if (targetVal.IsError)
+            {
+                fScope.Global.Log.LogError(targetVal.Error);
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+
+            var valTy = Value.Type;
             var toStringMethods =
-                fScope.GetInstanceMembers(Value.Type, "ToString")
+                fScope.GetInstanceMembers(valTy, "ToString")
                     .OfType<IMethod>()
                     .Where(item =>
                         !item.Parameters.Any()
@@ -1399,13 +1423,14 @@ namespace Flame.Ecs
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(Value.Type),
-                        "' could not be converted to type '",
+                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "' cannot not be converted to type '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "', because it did not have a parameterless, non-generic '",
+                        "', because it does not have a parameterless, non-generic '",
                         "ToString", "' method that returns a '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "' instance.")));
+                        "' instance."),
+                    Location));
                 return new UnknownExpression(PrimitiveTypes.String);
             }
             else if (toStringMethods.Length > 1)
@@ -1414,20 +1439,20 @@ namespace Flame.Ecs
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(Value.Type),
-                        "' could not be converted to type '",
+                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "' cannot not be converted to type '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "', there was more than one parameterless, non-generic '",
+                        "', there is more than one parameterless, non-generic '",
                         "ToString", "' method that returns a '",
                         fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
-                        "' instance.")));
+                        "' instance."),
+                    Location));
                 return new UnknownExpression(PrimitiveTypes.String);
             }
 
             return new InvocationExpression(
                 toStringMethods[0], 
-                AsTargetValue(Value, Scope, Location, true)
-                .ResultOrLog(fScope.Global.Log), 
+                targetVal.Result, 
                 new IExpression[0]);
         }
 
@@ -1822,9 +1847,9 @@ namespace Flame.Ecs
                     continue;
                 }
 
-                string localName = nameNode.Name.Name;
+                Symbol localName = nameNode.Name;
                 var varMember = new DescribedVariableMember(
-                    localName, isVar ? val.Type : varTy);
+                    localName.Name, isVar ? val.Type : varTy);
                 varMember.AddAttribute(new SourceLocationAttribute(srcLoc));
                 var local = Scope.DeclareLocal(localName, varMember);
                 if (val != null)
@@ -2582,9 +2607,9 @@ namespace Flame.Ecs
                         var exceptionType = Converter.ConvertCheckedTypeOrError(
                             varCall.Args[0], Scope);
 
-                        var exceptionVarName = varCall.Args[1].Name.Name;
+                        var exceptionVarName = varCall.Args[1].Name;
                         var exceptionVarDesc = new DescribedVariableMember(
-                            exceptionVarName, exceptionType);
+                            exceptionVarName.Name, exceptionType);
 
                         resultClause = new CatchClause(exceptionVarDesc);
                         clauseScope = new LocalScope(Scope);
@@ -2908,57 +2933,6 @@ namespace Flame.Ecs
 
             var expr = Converter.ConvertExpression(Node.Args[0], Scope);
             return expr.Type;
-        }
-
-        private static HashSet<string> ToSymbolSet(IEnumerable<LNode> Nodes, LocalScope Scope)
-        {
-            var results = new HashSet<string>();
-            foreach (var item in Nodes)
-            {
-                if (item.IsId)
-                {
-                    results.Add(item.Name.Name);
-                }
-                else
-                {
-                    Scope.Log.LogError(new LogEntry(
-                        "syntax error",
-                        NodeHelpers.HighlightEven(
-                            "found '", item.ToString(), 
-                            "', but expected an identifier."),
-                        NodeHelpers.ToSourceLocation(item.Range)));
-                }
-            }
-            return results;
-        }
-
-        /// <summary>
-        /// Converts a builtin stash-locals node (type #builtin_stash_locals).
-        /// </summary>
-        public static TypeOrExpression ConvertBuiltinStashLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
-        {
-            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return TypeOrExpression.Error;
-
-            var varNames = ToSymbolSet(Node.Args.Slice(0, Node.ArgCount - 1), Scope);
-            return Converter.ConvertScopedTypeOrExpression(
-                Node.Args[Node.ArgCount - 1], 
-                new StashScope(Scope, varNames));
-        }
-
-        /// <summary>
-        /// Converts a builtin restore-locals node (type #builtin_restore_locals).
-        /// </summary>
-        public static TypeOrExpression ConvertBuiltinRestoreLocals(LNode Node, LocalScope Scope, NodeConverter Converter)
-        {
-            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
-                return TypeOrExpression.Error;
-
-            var nameNodes = Node.Args.Slice(0, Node.ArgCount - 1);
-            var varNames = ToSymbolSet(nameNodes, Scope);
-            return Converter.ConvertScopedTypeOrExpression(
-                Node.Args[Node.ArgCount - 1], 
-                new RestoreScope(Scope, varNames));
         }
     }
 }

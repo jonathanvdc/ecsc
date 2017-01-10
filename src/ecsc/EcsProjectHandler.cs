@@ -68,17 +68,13 @@ namespace ecsc
 
 			var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
 
-			foreach (var item in await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm))
-			{
-				asm.AddNamespace(item);
-			}
-
+            asm.AddNamespace(await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm));
 			asm.EntryPoint = EntryPointHelpers.InferEntryPoint(asm, Parameters.Log);
 
 			return asm;
 		}
 
-		public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
+		public static Task<INamespaceBranch> ParseCompilationUnitsAsync(
 			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
 			IBinder Binder, IAssembly DeclaringAssembly)
 		{
@@ -95,20 +91,24 @@ namespace ecsc
 				DeclaringAssembly, converter, processor, sink);
 		}
 
-		public static Task<INamespaceBranch[]> ParseCompilationUnitsAsync(
+		public static Task<INamespaceBranch> ParseCompilationUnitsAsync(
 			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
 			IBinder Binder, IAssembly DeclaringAssembly,
             NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
 		{
-			var units = new Task<INamespaceBranch>[SourceItems.Count];
+			var units = new Task[SourceItems.Count];
+            var declaringNs = new RootNamespace(DeclaringAssembly);
 			for (int i = 0; i < units.Length; i++)
 			{
 				var item = SourceItems[i];
 				units[i] = ParseCompilationUnitAsync(
-					item, Parameters, Binder, DeclaringAssembly,
+                    item, Parameters, Binder, declaringNs,
 					Converter, Processor, Sink);
 			}
-			return Task.WhenAll(units);
+            return Task.WhenAll(units).ContinueWith<INamespaceBranch>(_ =>
+            {
+                return declaringNs;
+            });
 		}
 
         private static ILNodePrinter GetParsingService(ICompilerOptions Options, string Key, ILNodePrinter Default)
@@ -130,16 +130,16 @@ namespace ecsc
 			}
 		}
 
-		public static Task<INamespaceBranch> ParseCompilationUnitAsync(
+		public static Task ParseCompilationUnitAsync(
 			IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
-            IAssembly DeclaringAssembly, NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
+            IMutableNamespace DeclaringNamespace, NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
 		{
 			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
-            Func<INamespaceBranch> doParse = () =>
+            Action doParse = () =>
 				{
 					var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
 					if (code == null)
-						return null;
+						return;
 
                     Sink.DocumentCache.Add(code);
 
@@ -159,13 +159,13 @@ namespace ecsc
 						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
 					}
 
-					var unit = ParseCompilationUnit(nodes, globalScope, DeclaringAssembly, Converter);
+                    ParseCompilationUnit(nodes, globalScope, DeclaringNamespace, Converter);
 					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
-					return unit;
                 };
             // TODO: re-enable this when race condition bug in Loyc is solved
             // return Task.Run(doParse);
-            return Task.FromResult(doParse());
+            doParse();
+            return Task.FromResult(true);
 		}
 
 		public static IEnumerable<LNode> ParseNodes(
@@ -181,11 +181,12 @@ namespace ecsc
                     nodes)));
 		}
 
-		public static INamespaceBranch ParseCompilationUnit(
-			IEnumerable<LNode> Nodes, GlobalScope Scope, IAssembly DeclaringAssembly,
+		public static void ParseCompilationUnit(
+			IEnumerable<LNode> Nodes, GlobalScope Scope, 
+            IMutableNamespace DeclaringNamespace,
 			NodeConverter Converter)
 		{
-			return Converter.ConvertCompilationUnit(Scope, DeclaringAssembly, Nodes);
+            Converter.ConvertCompilationUnit(Scope, DeclaringNamespace, Nodes);
 		}
 
 		public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)

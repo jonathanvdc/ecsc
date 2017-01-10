@@ -31,8 +31,8 @@ namespace Flame.Ecs
             {
                 var left = ToQualifiedName(Node.Args[0]);
                 var right = ToQualifiedName(Node.Args[1]);
-                return left.IsEmpty || right.IsEmpty 
-                    ? default(QualifiedName) 
+                return left.IsEmpty || right.IsEmpty
+                    ? default(QualifiedName)
                     : right.Qualify(left);
             }
             else if (Node.IsId)
@@ -42,7 +42,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Produces an array of markup nodes, where the 
+        /// Produces an array of markup nodes, where the
         /// even arguments are highlighted.
         /// </summary>
         public static MarkupNode[] HighlightEven(params string[] Text)
@@ -58,6 +58,28 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Creates a list of markup nodes that speak of
+        /// of a redefinition. A message, the new definition
+        /// and the original definition are presented.
+        /// </summary>
+        /// <returns>The redefinition message.</returns>
+        /// <param name="Message">The message to log.</param>
+        /// <param name="NewDefinition">The location of the new definition.</param>
+        /// <param name="OriginalDefinition">The location of the original definition.</param>
+        public static MarkupNode[] CreateRedefinitionMessage(
+            IEnumerable<MarkupNode> Message,
+            SourceLocation NewDefinition,
+            SourceLocation OriginalDefinition)
+        {
+            return new MarkupNode[]
+            {
+                new MarkupNode("#group", Message),
+                OriginalDefinition.CreateDiagnosticsNode(),
+                NewDefinition.CreateRemarkDiagnosticsNode("previous declaration: ")
+            };
+        }
+
+        /// <summary>
         /// Checks that the given node is an id node.
         /// </summary>
         public static bool CheckId(LNode Node, ICompilerLog Log)
@@ -65,9 +87,9 @@ namespace Flame.Ecs
             if (!Node.IsId)
             {
                 Log.LogError(new LogEntry(
-                    "unexpected node type", 
+                    "unexpected node type",
                     HighlightEven(
-                        "syntax node '", Node.Name.Name, "' was not an ", 
+                        "syntax node '", Node.Name.Name, "' was not an ",
                         "identifier", " node, expected an identifier node."),
                     ToSourceLocation(Node.Range)));
                 return false;
@@ -86,9 +108,9 @@ namespace Flame.Ecs
             if (!Node.IsCall)
             {
                 Log.LogError(new LogEntry(
-                    "unexpected node type", 
+                    "unexpected node type",
                     HighlightEven(
-                        "syntax node '", Node.Name.Name, "' was not a ", 
+                        "syntax node '", Node.Name.Name, "' was not a ",
                         "call", " node, expected a call node."),
                     ToSourceLocation(Node.Range)));
                 return false;
@@ -107,9 +129,9 @@ namespace Flame.Ecs
             if (Node.ArgCount != Arity)
             {
                 Log.LogError(new LogEntry(
-                    "unexpected node arity", 
+                    "unexpected node arity",
                     HighlightEven(
-                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        "syntax node '", Node.Name.Name, "' had an argument count of '",
                         Node.ArgCount.ToString(), "', expected: '", Arity.ToString(), "'."),
                     ToSourceLocation(Node.Range)));
                 return false;
@@ -128,9 +150,9 @@ namespace Flame.Ecs
             if (Node.ArgCount < MinArity)
             {
                 Log.LogError(new LogEntry(
-                    "unexpected node arity", 
+                    "unexpected node arity",
                     HighlightEven(
-                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        "syntax node '", Node.Name.Name, "' had an argument count of '",
                         Node.ArgCount.ToString(), "'. Expected: at least '", MinArity.ToString(), "'."),
                     ToSourceLocation(Node.Range)));
                 return false;
@@ -149,9 +171,9 @@ namespace Flame.Ecs
             if (Node.ArgCount > MaxArity)
             {
                 Log.LogError(new LogEntry(
-                    "unexpected node arity", 
+                    "unexpected node arity",
                     HighlightEven(
-                        "syntax node '", Node.Name.Name, "' had an argument count of '", 
+                        "syntax node '", Node.Name.Name, "' had an argument count of '",
                         Node.ArgCount.ToString(), "'. Expected: no more than '", MaxArity.ToString(), "'."),
                     ToSourceLocation(Node.Range)));
                 return false;
@@ -173,7 +195,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Logs a diagnostic informing the user that the 
+        /// Logs a diagnostic informing the user that the
         /// given attribute node cannot be converted.
         /// </summary>
         /// <param name="Attribute">The attribute to convert.</param>
@@ -184,7 +206,7 @@ namespace Flame.Ecs
             Log.LogError(new LogEntry(
                 "unexpected attribute",
                 HighlightEven(
-                    "attribute node '", Attribute.Name.ToString(), 
+                    "attribute node '", Attribute.Name.ToString(),
                     "' was unexpected here."),
                 ToSourceLocation(Attribute.Range)));
         }
@@ -196,22 +218,22 @@ namespace Flame.Ecs
         public static void LogCannotConvertNode(LNode Node, ICompilerLog Log)
         {
             Log.LogError(new LogEntry(
-                "unknown node",
-                NodeHelpers.HighlightEven(
-                    "syntax node '", Node.Name.Name, 
-                    "' could not be converted because its node type was not recognized " +
-                    "as a known node type. (in this context)"),
-                NodeHelpers.ToSourceLocation(Node.Range)));
+                    "unknown node",
+                    NodeHelpers.HighlightEven(
+                        "syntax node '", Node.Name.Name,
+                        "' cannot be analyzed because its node type is unknown. " +
+                        "(in this context)"),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
         }
 
         /// <summary>
         /// Uses the given conversion delegate to convert
         /// the given sequence of attributes. Unsuccessful
         /// conversions, which are indicated by a 'false' return
-        /// value on conversion, are reported as errors. 
+        /// value on conversion, are reported as errors.
         /// </summary>
         public static void ConvertAttributes(
-            IEnumerable<LNode> Attributes, ICompilerLog Log, 
+            IEnumerable<LNode> Attributes, ICompilerLog Log,
             Func<LNode, bool> Converter)
         {
             foreach (var item in Attributes)
@@ -227,79 +249,13 @@ namespace Flame.Ecs
         /// Uses the given conversion delegate to convert
         /// all attributes belonging to the given node. Unsuccessful
         /// conversions, which are indicated by a 'false' return
-        /// value on conversion, are reported as errors. 
+        /// value on conversion, are reported as errors.
         /// </summary>
         public static void ConvertAttributes(
-            LNode Node, ICompilerLog Log, 
+            LNode Node, ICompilerLog Log,
             Func<LNode, bool> Converter)
         {
             ConvertAttributes(Node.Attrs, Log, Converter);
-        }
-
-        public static IGenericParameter ToGenericParameter(
-            LNode Node, IGenericMember Parent, GlobalScope Scope)
-        {
-            if (!Node.IsId)
-            {
-                Scope.Log.LogError(new LogEntry(
-                    "syntax error",
-                    "generic parameters must defined by a simple identifier.",
-                    ToSourceLocation(Node.Range)));
-                return null;
-            }
-
-            var name = Node.Name.Name;
-            return new DescribedGenericParameter(name, Parent);
-        }
-
-        public static Tuple<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>> ToUnqualifiedName(
-            LNode Node, GlobalScope Scope)
-        {
-            var name = Node.Name;
-            if (name == CodeSymbols.Of)
-            {
-                var innerResults = ToUnqualifiedName(Node.Args[0], Scope);
-
-                return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
-                    new SimpleName(
-                        innerResults.Item1.Name, 
-                        innerResults.Item1.TypeParameterCount + Node.Args.Count - 1), 
-                    parent =>
-                    {
-                        var genParams = new List<IGenericParameter>(innerResults.Item2(parent));
-                        foreach (var item in Node.Args.Slice(1))
-                        {
-                            var genParam = ToGenericParameter(item, parent, Scope);
-                            if (genParam != null)
-                                genParams.Add(genParam);
-                        }
-                        return genParams;
-                    });
-            }
-            else if (!Node.IsId)
-            {
-                Scope.Log.LogError(new LogEntry(
-                    "syntax error",
-                    NodeHelpers.HighlightEven(
-                        "node '", Node.ToString(), 
-                        "' could not be interpreted as an unqualified name."),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
-            }
-            return Tuple.Create<SimpleName, Func<IGenericMember, IEnumerable<IGenericParameter>>>(
-                new SimpleName(name.Name), _ => Enumerable.Empty<IGenericParameter>());
-        }
-
-        public static SimpleName ToSimpleName(LNode Node, GlobalScope Scope)
-        {
-            var qualName = ToUnqualifiedName(Node, Scope);
-            if (qualName.Item1.TypeParameterCount > 0)
-            {
-                Scope.Log.LogError(new LogEntry(
-                    "syntax error",
-                    "simple names cannot have generic parameters in this context",
-                    NodeHelpers.ToSourceLocation(Node.Range)));
-            }
-            return qualName.Item1;
         }
 
         /// <summary>
@@ -365,7 +321,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Partition the specified sequence based on 
+        /// Partition the specified sequence based on
         /// the given predicate.
         /// </summary>
         public static Tuple<IEnumerable<T>, IEnumerable<T>> Partition<T>(
@@ -443,7 +399,7 @@ namespace Flame.Ecs
         /// Determines if the given node is an extension method.
         /// </summary>
         /// <remarks>
-        /// This function can be used to detect if a class 
+        /// This function can be used to detect if a class
         /// contains extension methods before attempting to
         /// analyze the members.
         /// </remarks>
@@ -453,10 +409,9 @@ namespace Flame.Ecs
                 return false;
 
             var paramList = Node.Args[2].Args;
-            return paramList.Any(item => 
-                item.Attrs.Any(attr => 
+            return paramList.Any(item =>
+                item.Attrs.Any(attr =>
                     attr.IsIdNamed(CodeSymbols.This)));
         }
     }
 }
-
