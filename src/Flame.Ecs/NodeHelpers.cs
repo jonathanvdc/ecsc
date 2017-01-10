@@ -173,6 +173,38 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Logs a diagnostic informing the user that the 
+        /// given attribute node cannot be converted.
+        /// </summary>
+        /// <param name="Attribute">The attribute to convert.</param>
+        /// <param name="Log">The log.</param>
+        public static void LogCannotConvertAttribute(
+            LNode Attribute, ICompilerLog Log)
+        {
+            Log.LogError(new LogEntry(
+                "unexpected attribute",
+                HighlightEven(
+                    "attribute node '", Attribute.Name.ToString(), 
+                    "' was unexpected here."),
+                ToSourceLocation(Attribute.Range)));
+        }
+
+        /// <summary>
+        /// Logs an error message that states that a node could not
+        /// be converted.
+        /// </summary>
+        public static void LogCannotConvertNode(LNode Node, ICompilerLog Log)
+        {
+            Log.LogError(new LogEntry(
+                "unknown node",
+                NodeHelpers.HighlightEven(
+                    "syntax node '", Node.Name.Name, 
+                    "' could not be converted because its node type was not recognized " +
+                    "as a known node type. (in this context)"),
+                NodeHelpers.ToSourceLocation(Node.Range)));
+        }
+
+        /// <summary>
         /// Uses the given conversion delegate to convert
         /// the given sequence of attributes. Unsuccessful
         /// conversions, which are indicated by a 'false' return
@@ -184,14 +216,9 @@ namespace Flame.Ecs
         {
             foreach (var item in Attributes)
             {
-                if (!Converter(item))
+                if (!Converter(item) && !item.IsTrivia)
                 {
-                    Log.LogError(new LogEntry(
-                        "unexpected attribute",
-                        HighlightEven(
-                            "attribute node '", item.Name.ToString(), 
-                            "' was unexpected here."),
-                        ToSourceLocation(item.Range)));
+                    LogCannotConvertAttribute(item, Log);
                 }
             }
         }

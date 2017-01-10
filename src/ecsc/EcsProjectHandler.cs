@@ -85,7 +85,7 @@ namespace ecsc
 			var converter = NodeConverter.DefaultNodeConverter;
 			NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var sink = new CompilerLogMessageSink(Parameters.Log, new SourceDocumentCache());
-			var processor = new MacroProcessor(typeof(LeMP.Prelude.BuiltinMacros), sink);
+            var processor = new MacroProcessor(sink, typeof(LeMP.Prelude.BuiltinMacros));
 
 			processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
 			processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
@@ -111,12 +111,16 @@ namespace ecsc
 			return Task.WhenAll(units);
 		}
 
-		private static IParsingService GetParsingService(ICompilerOptions Options, string Key, IParsingService Default)
+        private static ILNodePrinter GetParsingService(ICompilerOptions Options, string Key, ILNodePrinter Default)
 		{
 			switch (Options.GetOption<string>(Key, "").ToLower())
 			{
 				case "les":
 					return LesLanguageService.Value;
+                case "les2":
+                    return Les2LanguageService.Value;
+                case "les3":
+                    return Les3LanguageService.Value;
 				case "ecs":
 					return EcsLanguageService.Value;
 				case "cs":
@@ -146,8 +150,12 @@ namespace ecsc
 
 					if (Parameters.Log.Options.GetOption<bool>("E", false))
 					{
-						var outputService = GetParsingService(Parameters.Log.Options, "syntax-format", service);
-						string newFile = outputService.Print(nodes, Sink, indentString: new string(' ', 4));
+                        var outputService = GetParsingService(
+                            Parameters.Log.Options, "syntax-format", 
+                            isLes ? (ILNodePrinter)LesLanguageService.Value : EcsLanguageService.Value);
+                        string newFile = outputService.Print(
+                            nodes, Sink, options: new LNodePrinterOptions() 
+                            { IndentString = new string(' ', 4) });
 						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
 					}
 

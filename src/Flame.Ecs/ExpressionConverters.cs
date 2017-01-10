@@ -724,18 +724,32 @@ namespace Flame.Ecs
             var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
             var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
 
-            if (!Node.Args[1].IsId)
+            var rhs = Node.Args[1];
+
+            string ident;
+            IType[] tArgs;
+            if (rhs.CallsMin(CodeSymbols.Of, 1))
+            {
+                ident = rhs.Args[0].Name.Name;
+                tArgs = rhs.Slice(1).Select(item =>
+                    Converter.ConvertCheckedTypeOrError(item, Scope)).ToArray();
+            }
+            else if (rhs.IsId)
+            {
+                ident = rhs.Name.Name;
+                tArgs = new IType[] { };
+            }
+            else
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
-                    "expected an identifier on the right-hand side of a member access expression.",
+                    "expected an identifier or a generic instantiation " +
+                    "on the right-hand side of a member access expression.",
                     srcLoc));
                 return TypeOrExpression.Empty;
             }
 
-            var ident = Node.Args[1].Name.Name;
-
-            return ConvertMemberAccess(target, ident, new IType[] { }, Scope, srcLoc);
+            return ConvertMemberAccess(target, ident, tArgs, Scope, srcLoc);
         }
 
         public static TypeOrExpression ConvertInstantiation(

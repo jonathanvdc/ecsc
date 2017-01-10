@@ -68,21 +68,6 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Logs an error message that states that a node could not
-        /// be converted.
-        /// </summary>
-        private static void LogCannotConvert(LNode Node, ICompilerLog Log)
-        {
-            Log.LogError(new LogEntry(
-                    "unknown node",
-                    NodeHelpers.HighlightEven(
-                        "syntax node '", Node.Name.Name, 
-                        "' could not be converted because its node type was not recognized " +
-                        "as a known node type. (in this context)"),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
-        }
-
-        /// <summary>
         /// Converts a global node.
         /// </summary>
         public GlobalScope ConvertGlobal(
@@ -91,7 +76,7 @@ namespace Flame.Ecs
             var conv = GetConverterOrDefault(globalConverters, Node);
             if (conv == null)
             {
-                LogCannotConvert(Node, Scope.Log);
+                NodeHelpers.LogCannotConvertNode(Node, Scope.Log);
                 return Scope;
             }
             else
@@ -214,7 +199,8 @@ namespace Flame.Ecs
             var conv = GetConverterOrDefault(attrConverters, Node);
             if (conv == null)
             {
-                LogCannotConvert(Node, Scope.Log);
+                if (!Node.IsTrivia)
+                    NodeHelpers.LogCannotConvertAttribute(Node, Scope.Log);
                 return null;
             }
             else
@@ -460,7 +446,7 @@ namespace Flame.Ecs
                         }
                     }
                 }
-                LogCannotConvert(Node, Scope.Function.Global.Log);
+                NodeHelpers.LogCannotConvertNode(Node, Scope.Function.Global.Log);
                 return TypeOrExpression.Empty;
             }
             else
@@ -725,16 +711,16 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
 
                 // - Compound assignment operators
-                result.AddExprConverter(CodeSymbols.AddSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Add));
-                result.AddExprConverter(CodeSymbols.SubSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Subtract));
-                result.AddExprConverter(CodeSymbols.MulSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Multiply));
-                result.AddExprConverter(CodeSymbols.DivSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Divide));
-                result.AddExprConverter(CodeSymbols.ModSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Remainder));
-                result.AddExprConverter(CodeSymbols.ShlSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.LeftShift));
-                result.AddExprConverter(CodeSymbols.ShrSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.RightShift));
-                result.AddExprConverter(CodeSymbols.AndBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.And));
-                result.AddExprConverter(CodeSymbols.OrBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Or));
-                result.AddExprConverter(CodeSymbols.XorBitsSet, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
+                result.AddExprConverter(CodeSymbols.AddAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Add));
+                result.AddExprConverter(CodeSymbols.SubAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Subtract));
+                result.AddExprConverter(CodeSymbols.MulAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Multiply));
+                result.AddExprConverter(CodeSymbols.DivAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Divide));
+                result.AddExprConverter(CodeSymbols.ModAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Remainder));
+                result.AddExprConverter(CodeSymbols.ShlAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.LeftShift));
+                result.AddExprConverter(CodeSymbols.ShrAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.RightShift));
+                result.AddExprConverter(CodeSymbols.AndBitsAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.And));
+                result.AddExprConverter(CodeSymbols.OrBitsAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Or));
+                result.AddExprConverter(CodeSymbols.XorBitsAssign, ExpressionConverters.CreateCompoundAssignmentConverter(Operator.Xor));
 
                 // Literals
                 result.AddLiteralConverter<sbyte>(val => new IntegerExpression(val));
