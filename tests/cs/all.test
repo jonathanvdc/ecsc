@@ -20,6 +20,7 @@ tests
     generic-constraints/GenericConstraints.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
+    in-place-construction/InPlaceConstruction.test;
     inc-dec/IncDec.test;
     interface/Interface.test;
     internal/Internal.test;
