@@ -10,8 +10,8 @@ using Pixie;
 
 namespace ecsc
 {
-	public static class Program
-	{
+    public static class Program
+    {
         private static Version LoycVersion
         {
             get
@@ -29,13 +29,13 @@ namespace ecsc
             }
         }
 
-		public static void Main(string[] args)
-		{
-			ProjectHandlers.RegisterHandler(new EcsProjectHandler());
-			var compiler = new ConsoleCompiler(CompilerName.Create(
+        public static void Main(string[] args)
+        {
+            ProjectHandlers.RegisterHandler(new EcsProjectHandler());
+            var compiler = new ConsoleCompiler(CompilerName.Create(
                 "ecsc", "the EC# compiler", "https://github.com/jonathanvdc/ecsc/releases",
                 new Lazy<IEnumerable<MarkupNode>>(() => new[] { FormattedLoycVersion })));
-			Environment.Exit(compiler.Compile(args));
-		}
-	}
+            Environment.Exit(compiler.Compile(args));
+        }
+    }
 }
