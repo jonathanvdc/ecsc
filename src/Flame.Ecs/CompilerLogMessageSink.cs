@@ -5,6 +5,7 @@ using Flame.Compiler;
 using Pixie;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Flame.Ecs
 {
@@ -17,9 +18,11 @@ namespace Flame.Ecs
         public SourceDocumentCache()
         {
             this.docs = new Dictionary<string, ISourceDocument>();
+            this.rwLock = new ReaderWriterLockSlim();
         }
 
         private Dictionary<string, ISourceDocument> docs;
+        private ReaderWriterLockSlim rwLock;
 
         /// <summary>
         /// Gets the <see cref="Flame.Ecs.SourceDocumentCache"/> with the specified name.
@@ -27,7 +30,20 @@ namespace Flame.Ecs
         /// <param name="Name">The name of the document to retrieve.</param>
         public ISourceDocument this[string Name]
         {
-            get { return docs[Name]; }
+            get 
+            {
+                ISourceDocument result;
+                rwLock.EnterReadLock();
+                try
+                {
+                    result = docs[Name]; 
+                }
+                finally
+                {
+                    rwLock.ExitReadLock();
+                }
+                return result;
+            }
         }
 
         /// <summary>
@@ -38,7 +54,17 @@ namespace Flame.Ecs
         /// <param name="Result">The location to store the resulting source document in.</param>
         public bool TryGetDocument(string Name, out ISourceDocument Result)
         {
-            return docs.TryGetValue(Name, out Result);
+            bool result;
+            rwLock.EnterReadLock();
+            try
+            {
+                result = docs.TryGetValue(Name, out Result);
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
+            return result;
         }
 
         /// <summary>
@@ -46,7 +72,15 @@ namespace Flame.Ecs
         /// </summary>
         public void Add(ISourceDocument Document)
         {
-            docs[Document.Identifier] = Document;
+            rwLock.EnterWriteLock();
+            try
+            {
+                docs[Document.Identifier] = Document;
+            }
+            finally
+            {
+                rwLock.ExitWriteLock();
+            }
         }
     }
 
