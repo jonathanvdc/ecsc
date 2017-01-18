@@ -143,7 +143,7 @@ namespace ecsc
             IProjectSourceItem SourceItem, CompilationParameters Parameters,
             MacroProcessor Processor, CompilerLogMessageSink Sink)
         {
-            Parameters.Log.LogEvent(new LogEntry("Status", "parsing " + SourceItem.SourceIdentifier));
+            Parameters.Log.LogEvent(new LogEntry("Status", "parsing '" + SourceItem.SourceIdentifier + "'"));
 
             // Retrieve the source code.
             var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
@@ -167,7 +167,7 @@ namespace ecsc
                 Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
             }
 
-            Parameters.Log.LogEvent(new LogEntry("Status", "parsed " + SourceItem.SourceIdentifier));
+            Parameters.Log.LogEvent(new LogEntry("Status", "parsed '" + SourceItem.SourceIdentifier + "'"));
 
             return parsedDoc;
         }
