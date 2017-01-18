@@ -31,6 +31,7 @@ using Flame.Build;
 using Pixie;
 using Flame.Front.Passes;
 using Flame.Build.Lazy;
+using Flame.Ecs.Parsing;
 
 namespace ecsc
 {
@@ -146,12 +147,10 @@ namespace ecsc
 					if (code == null)
 						return;
 
-                    Sink.DocumentCache.Add(code);
-
 					var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
 					bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
 					var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
-					var nodes = ParseNodes(code.Source, SourceItem.SourceIdentifier, service, Processor, Sink);
+                    var parsedDoc = SourceHelpers.ExpandMacros(SourceHelpers.RegisterAndParse(code, service, Sink), Processor);
 
 					if (Parameters.Log.Options.GetOption<bool>("E", false))
 					{
@@ -159,31 +158,18 @@ namespace ecsc
                             Parameters.Log.Options, "syntax-format", 
                             isLes ? (ILNodePrinter)LesLanguageService.Value : EcsLanguageService.Value);
                         string newFile = outputService.Print(
-                            nodes, Sink, options: new LNodePrinterOptions() 
+                            parsedDoc.Contents, Sink, options: new LNodePrinterOptions() 
                             { IndentString = new string(' ', 4) });
 						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
 					}
 
-                    ParseCompilationUnit(nodes, globalScope, DeclaringNamespace, Converter);
+                    ParseCompilationUnit(parsedDoc.Contents, globalScope, DeclaringNamespace, Converter);
 					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
                 };
             // TODO: re-enable this when race condition bug in Loyc is solved
             // return Task.Run(doParse);
             doParse();
             return Task.FromResult(true);
-		}
-
-		public static IEnumerable<LNode> ParseNodes(
-			string Text, string Identifier, IParsingService Service,
-			MacroProcessor Processor, IMessageSink Sink)
-		{
-			var lexer = Service.Tokenize(new UString(Text), Identifier, Sink);
-
-			var nodes = Service.Parse(lexer, Sink);
-
-            return Processor.ProcessSynchronously(new VList<LNode>(
-                new LNode[] {  EcscMacros.RequiredMacros.EcscPrologue }.Concat(
-                    nodes)));
 		}
 
 		public static void ParseCompilationUnit(

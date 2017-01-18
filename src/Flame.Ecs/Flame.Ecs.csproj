@@ -204,6 +204,8 @@
     <Compile Include="Syntax\StructConstraintNode.cs" />
     <Compile Include="Syntax\EnumConstraintNode.cs" />
     <Compile Include="Syntax\TypeConstraintNode.cs" />
+    <Compile Include="Parsing\ParsedDocument.cs" />
+    <Compile Include="Parsing\SourceHelpers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -214,6 +216,7 @@
     <Folder Include="Semantics\" />
     <Folder Include="Values\" />
     <Folder Include="Syntax\" />
+    <Folder Include="Parsing\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">
