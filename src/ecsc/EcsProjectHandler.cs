@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using Flame.Build;
 using Pixie;
 using Flame.Front.Passes;
+using Flame.Build.Lazy;
 
 namespace ecsc
 {
@@ -64,13 +65,17 @@ namespace ecsc
 		{
 			var name = Parameters.Log.GetAssemblyName(Project.AssemblyName ?? Project.Name ?? "");
 			var extBinder = await Parameters.BinderTask;
-			var asm = new DescribedAssembly(new SimpleName(name), extBinder.Environment);
 
-			var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
+            INamespaceBranch mainNs = null;
+            var asm = new LazyDescribedAssembly(new SimpleName(name), extBinder.Environment, descAsm =>
+            {
+                descAsm.AddNamespace(mainNs);
+                descAsm.EntryPoint = EntryPointHelpers.InferEntryPoint(descAsm, Parameters.Log);
+            });
 
-            asm.AddNamespace(await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm));
-			asm.EntryPoint = EntryPointHelpers.InferEntryPoint(asm, Parameters.Log);
-
+            var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
+            mainNs = await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm);
+            
 			return asm;
 		}
 
