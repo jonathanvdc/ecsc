@@ -35,10 +35,10 @@ using Flame.Ecs.Parsing;
 
 namespace ecsc
 {
-	public class EcsProjectHandler : IProjectHandler
-	{
+    public class EcsProjectHandler : IProjectHandler
+    {
         // Maps extensions to parsing services.
-        private static readonly Dictionary<string, IParsingService> parsers = 
+        private static readonly Dictionary<string, IParsingService> parsers =
             new Dictionary<string, IParsingService>(StringComparer.OrdinalIgnoreCase)
         {
             { "les", LesLanguageService.Value },
@@ -49,34 +49,34 @@ namespace ecsc
         };
 
         public IEnumerable<string> Extensions
-		{
+        {
             get { return new string[] { "ecsproj" }.Concat(parsers.Keys); }
-		}
+        }
 
-		public IProject Parse(ProjectPath Path, ICompilerLog Log)
-		{
-			if (Path.HasExtension("ecs") || Path.HasExtension("cs") || Path.HasExtension("les"))
-			{
-				return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
-			}
-			else
-			{
-				return DSProject.ReadProject(Path.Path.Path);
-			}
-		}
+        public IProject Parse(ProjectPath Path, ICompilerLog Log)
+        {
+            if (Path.HasExtension("ecs") || Path.HasExtension("cs") || Path.HasExtension("les"))
+            {
+                return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
+            }
+            else
+            {
+                return DSProject.ReadProject(Path.Path.Path);
+            }
+        }
 
-		public IProject MakeProject(IProject Project, ProjectPath Path, ICompilerLog Log)
-		{
-			var newPath = Path.Path.Parent.Combine(Project.Name).ChangeExtension("ecsproj");
-			var dsp = DSProject.FromProject(Project, newPath.AbsolutePath.Path);
-			dsp.WriteTo(newPath.Path);
-			return dsp;
-		}
+        public IProject MakeProject(IProject Project, ProjectPath Path, ICompilerLog Log)
+        {
+            var newPath = Path.Path.Parent.Combine(Project.Name).ChangeExtension("ecsproj");
+            var dsp = DSProject.FromProject(Project, newPath.AbsolutePath.Path);
+            dsp.WriteTo(newPath.Path);
+            return dsp;
+        }
 
-		public async Task<IAssembly> CompileAsync(IProject Project, CompilationParameters Parameters)
-		{
-			var name = Parameters.Log.GetAssemblyName(Project.AssemblyName ?? Project.Name ?? "");
-			var extBinder = await Parameters.BinderTask;
+        public async Task<IAssembly> CompileAsync(IProject Project, CompilationParameters Parameters)
+        {
+            var name = Parameters.Log.GetAssemblyName(Project.AssemblyName ?? Project.Name ?? "");
+            var extBinder = await Parameters.BinderTask;
 
             INamespaceBranch mainNs = null;
             var asm = new LazyDescribedAssembly(new SimpleName(name), extBinder.Environment, descAsm =>
@@ -87,24 +87,24 @@ namespace ecsc
 
             var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
             mainNs = await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm);
-            
-			return asm;
-		}
 
-		private static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
-			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-			IBinder Binder, IAssembly DeclaringAssembly)
-		{
+            return asm;
+        }
+
+        private static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
+            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
+            IBinder Binder, IAssembly DeclaringAssembly)
+        {
             var sink = new CompilerLogMessageSink(Parameters.Log, new SourceDocumentCache());
             var processor = new MacroProcessor(sink, typeof(LeMP.Prelude.BuiltinMacros));
 
-			processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
-			processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
+            processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
+            processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
 
             var parsed = await ParseCompilationUnitsAsync(
                 SourceItems, Parameters, processor, sink);
             return AnalyzeCompilationUnits(parsed, Binder, Parameters.Log, DeclaringAssembly);
-		}
+        }
 
         private static IParsingService GetParser(string Identifier)
         {
@@ -159,10 +159,10 @@ namespace ecsc
             {
                 var outputService = GetPrinter(
                     Parameters.Log.Options.GetOption(
-                        "syntax-format", 
+                        "syntax-format",
                         GetExtension(SourceItem.SourceIdentifier)));
                 string newFile = parsedDoc.GetExpandedSource(
-                    outputService, Sink, new LNodePrinterOptions() 
+                    outputService, Sink, new LNodePrinterOptions()
                     { IndentString = new string(' ', 4) });
                 Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
             }
@@ -180,24 +180,24 @@ namespace ecsc
             for (int i = 0; i < units.Length; i++)
             {
                 var item = SourceItems[i];
-                units[i] = Task.Run(() => 
+                units[i] = Task.Run(() =>
                     ParseCompilationUnit(
                         item, Parameters, Processor, Sink));
             }
-            return Task.WhenAll(units).ContinueWith(t => 
+            return Task.WhenAll(units).ContinueWith(t =>
                 t.Result.Where(x => !x.IsEmpty));
         }
 
         private static INamespaceBranch AnalyzeCompilationUnits(
-            IEnumerable<ParsedDocument> Units, IBinder Binder, 
+            IEnumerable<ParsedDocument> Units, IBinder Binder,
             ICompilerLog Log, IAssembly DeclaringAssembly)
         {
             var converter = NodeConverter.DefaultNodeConverter;
             NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var globalScope = new GlobalScope(
-                Binder, EcsConversionRules.Instance, 
+                Binder, EcsConversionRules.Instance,
                 Log, EcsTypeNamer.Instance);
-            
+
             var mainNs = new RootNamespace(DeclaringAssembly);
             foreach (var item in Units)
             {
@@ -206,48 +206,48 @@ namespace ecsc
             return mainNs;
         }
 
-		private static void ParseCompilationUnit(
-			IEnumerable<LNode> Nodes, GlobalScope Scope, 
+        private static void ParseCompilationUnit(
+            IEnumerable<LNode> Nodes, GlobalScope Scope,
             IMutableNamespace DeclaringNamespace,
-			NodeConverter Converter)
-		{
+            NodeConverter Converter)
+        {
             Converter.ConvertCompilationUnit(Scope, DeclaringNamespace, Nodes);
-		}
+        }
 
-		public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
-		{
-			return new ParsedProject[]
-			{
-				new ParsedProject(
-					Projects.First().CurrentPath,
-					UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray()))
-			};
-		}
+        public IEnumerable<ParsedProject> Partition(IEnumerable<ParsedProject> Projects)
+        {
+            return new ParsedProject[]
+            {
+                new ParsedProject(
+                    Projects.First().CurrentPath,
+                    UnionProject.CreateUnion(Projects.Select(item => item.Project).ToArray()))
+            };
+        }
 
-		public PassPreferences GetPassPreferences(ICompilerLog Log)
-		{
-			return new PassPreferences(new PassCondition[]
-				{
-					new PassCondition(AutoInitializationPass.AutoInitializationPassName, _ => true),
-					new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName,
-						optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
-					new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
-						optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
-				},
-				new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[]
-				{
-					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-						AnalysisPasses.ValueTypeDelegatePass,
-						ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
+        public PassPreferences GetPassPreferences(ICompilerLog Log)
+        {
+            return new PassPreferences(new PassCondition[]
+                {
+                    new PassCondition(AutoInitializationPass.AutoInitializationPassName, _ => true),
+                    new PassCondition(ValueTypeDelegateVisitor.ValueTypeDelegatePassName,
+                        optInfo => ValueTypeDelegateVisitor.ValueTypeDelegateWarning.UseWarning(optInfo.Log.Options)),
+                    new PassCondition(InfiniteRecursionPass.InfiniteRecursionPassName,
+                        optInfo => InfiniteRecursionPass.IsUseful(optInfo.Log)),
+                },
+                new PassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>[]
+                {
+                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                        AnalysisPasses.ValueTypeDelegatePass,
+                        ValueTypeDelegateVisitor.ValueTypeDelegatePassName),
 
-					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-						AutoInitializationPass.Instance,
-						AutoInitializationPass.AutoInitializationPassName),
+                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                        AutoInitializationPass.Instance,
+                        AutoInitializationPass.AutoInitializationPassName),
 
-					new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
-						InfiniteRecursionPass.Instance,
-						InfiniteRecursionPass.InfiniteRecursionPassName)
-				});
-		}
-	}
+                    new AtomicPassInfo<Tuple<IStatement, IMethod, ICompilerLog>, IStatement>(
+                        InfiniteRecursionPass.Instance,
+                        InfiniteRecursionPass.InfiniteRecursionPassName)
+                });
+        }
+    }
 }
