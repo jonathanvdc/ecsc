@@ -91,7 +91,7 @@ namespace ecsc
 			return asm;
 		}
 
-		public static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
+		private static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
 			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
 			IBinder Binder, IAssembly DeclaringAssembly)
 		{
@@ -206,7 +206,7 @@ namespace ecsc
             return mainNs;
         }
 
-		public static void ParseCompilationUnit(
+		private static void ParseCompilationUnit(
 			IEnumerable<LNode> Nodes, GlobalScope Scope, 
             IMutableNamespace DeclaringNamespace,
 			NodeConverter Converter)
