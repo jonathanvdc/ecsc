@@ -39,7 +39,7 @@ namespace ecsc
 	{
         public IEnumerable<string> Extensions
 		{
-			get { return new string[] { "ecsproj", "ecs", "cs", "les" }; }
+            get { return new string[] { "ecsproj" }.Concat(parsers.Keys); }
 		}
 
 		public IProject Parse(ProjectPath Path, ICompilerLog Log)
@@ -117,24 +117,60 @@ namespace ecsc
             });
 		}
 
-        private static ILNodePrinter GetParsingService(ICompilerOptions Options, string Key, ILNodePrinter Default)
-		{
-			switch (Options.GetOption<string>(Key, "").ToLower())
-			{
-				case "les":
-					return LesLanguageService.Value;
-                case "les2":
-                    return Les2LanguageService.Value;
-                case "les3":
-                    return Les3LanguageService.Value;
-				case "ecs":
-					return EcsLanguageService.Value;
-				case "cs":
-					return EcsLanguageService.WithPlainCSharpPrinter;
-				default:
-					return Default;
-			}
-		}
+        private static readonly Dictionary<string, IParsingService> parsers = 
+            new Dictionary<string, IParsingService>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "les", LesLanguageService.Value },
+            { "les2", Les2LanguageService.Value },
+            { "les3", Les3LanguageService.Value },
+            { "ecs", EcsLanguageService.Value },
+            { "cs", EcsLanguageService.WithPlainCSharpPrinter }
+        };
+
+        private static IParsingService GetParser(string Identifier)
+        {
+            IParsingService result;
+            if (parsers.TryGetValue(Identifier, out result))
+                return result;
+            else
+                return EcsLanguageService.Value;
+        }
+
+        private static IParsingService GetParser(IProjectSourceItem SourceItem)
+        {
+            return GetParser(GetExtension(SourceItem.SourceIdentifier));
+        }
+
+        private static ILNodePrinter GetPrinter(string Identifier)
+        {
+            IParsingService result;
+            if (parsers.TryGetValue(Identifier, out result))
+                return (ILNodePrinter)result;
+            else
+                return EcsLanguageService.Value;
+        }
+
+        private static ILNodePrinter GetPrinter(IProjectSourceItem SourceItem)
+        {
+            return GetPrinter(GetExtension(SourceItem.SourceIdentifier));
+        }
+
+        private static string GetExtension(string Identifier)
+        {
+            return Enumerable.Last(Identifier.Split('.'));
+        }
+
+        public static ParsedDocument ParseCompilationUnit(
+            IProjectSourceItem SourceItem, CompilationParameters Parameters,
+            MacroProcessor Processor, CompilerLogMessageSink Sink)
+        {
+            var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
+            if (code == null)
+                return ParsedDocument.Empty;
+
+            return SourceHelpers.RegisterAndParse(code, GetParser(SourceItem), Sink)
+                .ExpandMacros(Processor, EcscMacros.RequiredMacros.EcscPrologue);
+        }
 
 		public static Task ParseCompilationUnitAsync(
 			IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
@@ -143,27 +179,23 @@ namespace ecsc
 			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
             Action doParse = () =>
 				{
-					var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
-					if (code == null)
+                    var parsedDoc = ParseCompilationUnit(SourceItem, Parameters, Processor, Sink);
+                    if (parsedDoc.IsEmpty)
 						return;
-
-					var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
-					bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
-					var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
-                    var parsedDoc = SourceHelpers.RegisterAndParse(code, service, Sink)
-                        .ExpandMacros(Processor, EcscMacros.RequiredMacros.EcscPrologue);
 
 					if (Parameters.Log.Options.GetOption<bool>("E", false))
 					{
-                        var outputService = GetParsingService(
-                            Parameters.Log.Options, "syntax-format", 
-                            isLes ? (ILNodePrinter)LesLanguageService.Value : EcsLanguageService.Value);
-                        string newFile = outputService.Print(
-                            parsedDoc.Contents, Sink, options: new LNodePrinterOptions() 
+                        var outputService = GetPrinter(
+                            Parameters.Log.Options.GetOption(
+                                "syntax-format", 
+                                GetExtension(SourceItem.SourceIdentifier)));
+                        string newFile = parsedDoc.GetExpandedSource(
+                            outputService, Sink, new LNodePrinterOptions() 
                             { IndentString = new string(' ', 4) });
 						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
 					}
 
+                    var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
                     ParseCompilationUnit(parsedDoc.Contents, globalScope, DeclaringNamespace, Converter);
 					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
                 };
