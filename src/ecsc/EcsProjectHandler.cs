@@ -37,6 +37,17 @@ namespace ecsc
 {
 	public class EcsProjectHandler : IProjectHandler
 	{
+        // Maps extensions to parsing services.
+        private static readonly Dictionary<string, IParsingService> parsers = 
+            new Dictionary<string, IParsingService>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "les", LesLanguageService.Value },
+            { "les2", Les2LanguageService.Value },
+            { "les3", Les3LanguageService.Value },
+            { "ecs", EcsLanguageService.Value },
+            { "cs", EcsLanguageService.WithPlainCSharpPrinter }
+        };
+
         public IEnumerable<string> Extensions
 		{
             get { return new string[] { "ecsproj" }.Concat(parsers.Keys); }
@@ -80,52 +91,20 @@ namespace ecsc
 			return asm;
 		}
 
-		public static Task<INamespaceBranch> ParseCompilationUnitsAsync(
+		public static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
 			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
 			IBinder Binder, IAssembly DeclaringAssembly)
 		{
-			var converter = NodeConverter.DefaultNodeConverter;
-			NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var sink = new CompilerLogMessageSink(Parameters.Log, new SourceDocumentCache());
             var processor = new MacroProcessor(sink, typeof(LeMP.Prelude.BuiltinMacros));
 
 			processor.AddMacros(typeof(LeMP.StandardMacros).Assembly, false);
 			processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
 
-			return ParseCompilationUnitsAsync(
-				SourceItems, Parameters, Binder,
-				DeclaringAssembly, converter, processor, sink);
+            var parsed = await ParseCompilationUnitsAsync(
+                SourceItems, Parameters, processor, sink);
+            return AnalyzeCompilationUnits(parsed, Binder, Parameters.Log, DeclaringAssembly);
 		}
-
-		public static Task<INamespaceBranch> ParseCompilationUnitsAsync(
-			List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-			IBinder Binder, IAssembly DeclaringAssembly,
-            NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
-		{
-			var units = new Task[SourceItems.Count];
-            var declaringNs = new RootNamespace(DeclaringAssembly);
-			for (int i = 0; i < units.Length; i++)
-			{
-				var item = SourceItems[i];
-				units[i] = ParseCompilationUnitAsync(
-                    item, Parameters, Binder, declaringNs,
-					Converter, Processor, Sink);
-			}
-            return Task.WhenAll(units).ContinueWith<INamespaceBranch>(_ =>
-            {
-                return declaringNs;
-            });
-		}
-
-        private static readonly Dictionary<string, IParsingService> parsers = 
-            new Dictionary<string, IParsingService>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "les", LesLanguageService.Value },
-            { "les2", Les2LanguageService.Value },
-            { "les3", Les3LanguageService.Value },
-            { "ecs", EcsLanguageService.Value },
-            { "cs", EcsLanguageService.WithPlainCSharpPrinter }
-        };
 
         private static IParsingService GetParser(string Identifier)
         {
@@ -160,50 +139,72 @@ namespace ecsc
             return Enumerable.Last(Identifier.Split('.'));
         }
 
-        public static ParsedDocument ParseCompilationUnit(
+        private static ParsedDocument ParseCompilationUnit(
             IProjectSourceItem SourceItem, CompilationParameters Parameters,
             MacroProcessor Processor, CompilerLogMessageSink Sink)
         {
+            Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
+
+            // Retrieve the source code.
             var code = ProjectHandlerHelpers.GetSourceSafe(SourceItem, Parameters);
             if (code == null)
                 return ParsedDocument.Empty;
 
-            return SourceHelpers.RegisterAndParse(code, GetParser(SourceItem), Sink)
+            // Register, parse and expand macros.
+            var parsedDoc = SourceHelpers.RegisterAndParse(code, GetParser(SourceItem), Sink)
                 .ExpandMacros(Processor, EcscMacros.RequiredMacros.EcscPrologue);
+
+            // Optionally print expanded code.
+            if (Parameters.Log.Options.GetOption<bool>("E", false))
+            {
+                var outputService = GetPrinter(
+                    Parameters.Log.Options.GetOption(
+                        "syntax-format", 
+                        GetExtension(SourceItem.SourceIdentifier)));
+                string newFile = parsedDoc.GetExpandedSource(
+                    outputService, Sink, new LNodePrinterOptions() 
+                    { IndentString = new string(' ', 4) });
+                Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
+            }
+
+            Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
+
+            return parsedDoc;
         }
 
-		public static Task ParseCompilationUnitAsync(
-			IProjectSourceItem SourceItem, CompilationParameters Parameters, IBinder Binder,
-            IMutableNamespace DeclaringNamespace, NodeConverter Converter, MacroProcessor Processor, CompilerLogMessageSink Sink)
-		{
-			Parameters.Log.LogEvent(new LogEntry("Status", "Parsing " + SourceItem.SourceIdentifier));
-            Action doParse = () =>
-				{
-                    var parsedDoc = ParseCompilationUnit(SourceItem, Parameters, Processor, Sink);
-                    if (parsedDoc.IsEmpty)
-						return;
+        private static Task<IEnumerable<ParsedDocument>> ParseCompilationUnitsAsync(
+            IReadOnlyList<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
+            MacroProcessor Processor, CompilerLogMessageSink Sink)
+        {
+            var units = new Task<ParsedDocument>[SourceItems.Count];
+            for (int i = 0; i < units.Length; i++)
+            {
+                var item = SourceItems[i];
+                units[i] = Task.Run(() => 
+                    ParseCompilationUnit(
+                        item, Parameters, Processor, Sink));
+            }
+            return Task.WhenAll(units).ContinueWith(t => 
+                t.Result.Where(x => !x.IsEmpty));
+        }
 
-					if (Parameters.Log.Options.GetOption<bool>("E", false))
-					{
-                        var outputService = GetPrinter(
-                            Parameters.Log.Options.GetOption(
-                                "syntax-format", 
-                                GetExtension(SourceItem.SourceIdentifier)));
-                        string newFile = parsedDoc.GetExpandedSource(
-                            outputService, Sink, new LNodePrinterOptions() 
-                            { IndentString = new string(' ', 4) });
-						Parameters.Log.LogMessage(new LogEntry("'" + SourceItem.SourceIdentifier + "' after macro expansion", Environment.NewLine + newFile));
-					}
-
-                    var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
-                    ParseCompilationUnit(parsedDoc.Contents, globalScope, DeclaringNamespace, Converter);
-					Parameters.Log.LogEvent(new LogEntry("Status", "Parsed " + SourceItem.SourceIdentifier));
-                };
-            // TODO: re-enable this when race condition bug in Loyc is solved
-            // return Task.Run(doParse);
-            doParse();
-            return Task.FromResult(true);
-		}
+        private static INamespaceBranch AnalyzeCompilationUnits(
+            IEnumerable<ParsedDocument> Units, IBinder Binder, 
+            ICompilerLog Log, IAssembly DeclaringAssembly)
+        {
+            var converter = NodeConverter.DefaultNodeConverter;
+            NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
+            var globalScope = new GlobalScope(
+                Binder, EcsConversionRules.Instance, 
+                Log, EcsTypeNamer.Instance);
+            
+            var mainNs = new RootNamespace(DeclaringAssembly);
+            foreach (var item in Units)
+            {
+                converter.ConvertCompilationUnit(globalScope, mainNs, item.Contents);
+            }
+            return mainNs;
+        }
 
 		public static void ParseCompilationUnit(
 			IEnumerable<LNode> Nodes, GlobalScope Scope, 
