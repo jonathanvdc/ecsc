@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Loyc.Syntax;
 using Flame.Compiler;
+using LeMP;
 
 namespace Flame.Ecs.Parsing
 {
@@ -35,6 +36,28 @@ namespace Flame.Ecs.Parsing
         /// </summary>
         /// <value>The contents.</value>
         public IReadOnlyList<LNode> Contents { get; private set; }
+
+        /// <summary>
+        /// Expands all macros in this parsed document.
+        /// </summary>
+        /// <returns>A parsed document whose macros have been expanded.</returns>
+        /// <param name="Processor">The macro processor to use.</param>
+        public ParsedDocument ExpandMacros(MacroProcessor Processor)
+        {
+            return SourceHelpers.ExpandMacros(this, Processor);
+        }
+
+        /// <summary>
+        /// Expands all macros in this parsed document.
+        /// </summary>
+        /// <returns>A parsed document whose macros have been expanded.</returns>
+        /// <param name="Processor">The macro processor to use.</param>
+        /// <param name="Prologue"></param>
+        public ParsedDocument ExpandMacros(
+            MacroProcessor Processor, IEnumerable<LNode> Prologue)
+        {
+            return SourceHelpers.ExpandMacros(this, Processor, Prologue);
+        }
     }
 }
 

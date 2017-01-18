@@ -17,7 +17,7 @@ namespace Flame.Ecs.Parsing
     public static class SourceHelpers
     {
         /// <summary>
-        /// Use the given parsing service to parse a source document.
+        /// Uses the given parsing service to parse a source document.
         /// Diagnostics are logged to a sink.
         /// </summary>
         /// <returns>The parsed source document.</returns>
@@ -60,7 +60,7 @@ namespace Flame.Ecs.Parsing
         }
 
         /// <summary>
-        /// Expand all macros in the given sequence of nodes.
+        /// Expands all macros in the given sequence of nodes.
         /// </summary>
         /// <returns>The macro-expanded sequence of nodes.</returns>
         /// <param name="Nodes">The nodes to macro-expand.</param>
@@ -72,8 +72,8 @@ namespace Flame.Ecs.Parsing
         }
 
         /// <summary>
-        /// Prepend a prologue to a sequence of nodes, then 
-        /// expand all macros in the resulting node sequence.
+        /// Prepends a prologue to a sequence of nodes, then 
+        /// expands all macros in the resulting node sequence.
         /// </summary>
         /// <returns>The macro-expanded sequence of nodes.</returns>
         /// <param name="Nodes">The nodes to macro-expand.</param>
@@ -87,7 +87,7 @@ namespace Flame.Ecs.Parsing
         }
 
         /// <summary>
-        /// Expand all macros in a parsed document.
+        /// Expands all macros in a parsed document.
         /// </summary>
         /// <returns>The macro-expanded parsed document.</returns>
         /// <param name="Nodes">The document to macro-expand.</param>
@@ -101,8 +101,8 @@ namespace Flame.Ecs.Parsing
         }
 
         /// <summary>
-        /// Prepend a prologue to a document, then 
-        /// expand all macros in the resulting document.
+        /// Prepends a prologue to a document, then 
+        /// expands all macros in the resulting document.
         /// </summary>
         /// <returns>The macro-expanded parsed document.</returns>
         /// <param name="Nodes">The document to macro-expand.</param>

@@ -150,7 +150,8 @@ namespace ecsc
 					var globalScope = new GlobalScope(Binder, EcsConversionRules.Instance, Parameters.Log, EcsTypeNamer.Instance);
 					bool isLes = Enumerable.Last(SourceItem.SourceIdentifier.Split('.')).Equals("les", StringComparison.OrdinalIgnoreCase);
 					var service = isLes ? (IParsingService)LesLanguageService.Value : EcsLanguageService.Value;
-                    var parsedDoc = SourceHelpers.ExpandMacros(SourceHelpers.RegisterAndParse(code, service, Sink), Processor);
+                    var parsedDoc = SourceHelpers.RegisterAndParse(code, service, Sink)
+                        .ExpandMacros(Processor, EcscMacros.RequiredMacros.EcscPrologue);
 
 					if (Parameters.Log.Options.GetOption<bool>("E", false))
 					{

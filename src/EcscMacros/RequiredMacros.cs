@@ -2,6 +2,7 @@
 using LeMP;
 using Loyc.Syntax;
 using Loyc;
+using System.Collections.Generic;
 
 namespace EcscMacros
 {
@@ -14,9 +15,15 @@ namespace EcscMacros
 
         static LNodeFactory F = new LNodeFactory(new EmptySourceFile("RequiredMacros.cs"));
 
-        public static LNode EcscPrologue = F.Call(
-            GSymbol.Get("#importMacros"),
-            F.Id("EcscMacros"));
+        /// <summary>
+        /// Gets the sequence of prologue nodes for EC#.
+        /// </summary>
+        public static IEnumerable<LNode> EcscPrologue = new LNode[]
+        {
+            F.Call(
+                GSymbol.Get("#importMacros"),
+                F.Id("EcscMacros"))
+        };
 
         static LNode Reject(IMessageSink sink, LNode at, string msg)
         {
