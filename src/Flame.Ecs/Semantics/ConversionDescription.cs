@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using Flame.Collections;
 
 namespace Flame.Ecs.Semantics
 {
@@ -86,29 +88,19 @@ namespace Flame.Ecs.Semantics
     /// <summary>
     /// Describes a conversion.
     /// </summary>
-    public struct ConversionDescription
+    public abstract class ConversionDescription
     {
-        public ConversionDescription(ConversionKind Kind)
-            : this(Kind, null)
-        {
-        }
-
-        public ConversionDescription(ConversionKind Kind, IMethod ConversionMethod)
-        {
-            this.Kind = Kind;
-            this.ConversionMethod = ConversionMethod;
-        }
-
         /// <summary>
         /// Gets the kind of conversion that is performed.
         /// </summary>
-        public ConversionKind Kind { get; private set; }
+        public abstract ConversionKind Kind { get; }
 
         /// <summary>
-        /// Gets the method that is used to perform a user-defined
-        /// conversion, if any.
+        /// Uses the information captured by this conversion
+        /// description to convert the given expression to the
+        /// given type.
         /// </summary>
-        public IMethod ConversionMethod { get; private set; }
+        public abstract IExpression Convert(IExpression Value, IType TargetType);
 
         /// <summary>
         /// Gets a value indicating whether this conversion exists.
@@ -189,11 +181,38 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
-        /// Uses the information captured by this conversion
-        /// description to convert the given expression to the
-        /// given type.
+        /// Gets a conversion description for a non-existent conversion.
         /// </summary>
-        public IExpression Convert(IExpression Value, IType TargetType)
+        public static ConversionDescription None 
+        { 
+            get { return new SimpleConversionDescription(ConversionKind.None); } 
+        }
+    }
+
+    /// <summary>
+    /// A conversion description type for simple conversions, which
+    /// do not call methods.
+    /// </summary>
+    public sealed class SimpleConversionDescription : ConversionDescription
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Flame.Ecs.Semantics.SimpleConversionDescription"/> class.
+        /// </summary>
+        /// <param name="Kind">The kind of conversion to perform.</param>
+        public SimpleConversionDescription(ConversionKind Kind)
+        {
+            this.convKind = Kind;
+        }
+
+        private ConversionKind convKind;
+
+        /// <summary>
+        /// Gets the kind of conversion that is performed.
+        /// </summary>
+        public override ConversionKind Kind { get { return convKind; } }
+
+        /// <inheritdoc/>
+        public override IExpression Convert(IExpression Value, IType TargetType)
         {
             switch (Kind)
             {
@@ -228,30 +247,115 @@ namespace Flame.Ecs.Semantics
                         TargetType);
                 case ConversionKind.ReinterpretCast:
                     return new ReinterpretCastExpression(Value, TargetType);
-                case ConversionKind.ImplicitUserDefined:
-                case ConversionKind.ExplicitUserDefined:
-                    if (ConversionMethod.IsStatic)
-                        return new InvocationExpression(
-                            ConversionMethod, null, 
-                            new IExpression[] { Value });
-                    else
-                        return new InvocationExpression(
-                            ConversionMethod, 
-                            ExpressionConverters.AsTargetExpression(Value), 
-                            null);
                 case ConversionKind.None:
                 default:
                     throw new InvalidOperationException();
             }
         }
+    }
+
+    /// <summary>
+    /// A conversion description for user-defined conversions,
+    /// that is, conversions that rely on method invocations.
+    /// </summary>
+    public sealed class UserDefinedConversionDescription : ConversionDescription
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Flame.Ecs.Semantics.UserDefinedConversionDescription"/> class.
+        /// </summary>
+        /// <param name="Kind">
+        /// The kind of conversion to perform. This can either be 
+        /// an explicit user-defined conversion or an implicit 
+        /// user-defined conversion.
+        /// </param>
+        /// <param name="ConversionMethod">
+        /// The method that implements the user-defined conversion.
+        /// </param>
+        public UserDefinedConversionDescription(
+            ConversionKind Kind, IMethod ConversionMethod)
+        {
+            this.convKind = Kind;
+            this.ConversionMethod = ConversionMethod;
+        }
+
+        private ConversionKind convKind;
 
         /// <summary>
-        /// Gets a conversion description for a non-existant conversion.
+        /// Gets the kind of conversion that is performed.
         /// </summary>
-        public static ConversionDescription None 
-        { 
-            get { return new ConversionDescription(ConversionKind.None); } 
-        } 
+        public override ConversionKind Kind { get { return convKind; } }
+
+        /// <summary>
+        /// Gets the method that is used to perform the user-defined
+        /// conversion.
+        /// </summary>
+        public IMethod ConversionMethod { get; private set; }
+
+        /// <summary>
+        /// Gets the conversion that is used to make input values 
+        /// conform to the conversion method's parameter type. 
+        /// </summary>
+        /// <value>The pre-conversion.</value>
+        public ConversionDescription PreConversion { get; private set; }
+
+        /// <summary>
+        /// Gets the conversion that is used to make the conversion
+        /// method's return values conform to the conversion's 
+        /// target type.
+        /// </summary>
+        /// <value>The post-conversion.</value>
+        public ConversionDescription PostConversion { get; private set; }
+
+        /// <summary>
+        /// Gets the type of the conversion method parameter,
+        /// or the declaring type, whichever is applicable.
+        /// </summary>
+        /// <value>
+        /// The type of the conversion method parameter,
+        /// or the declaring type, whichever is applicable.
+        /// </value>
+        private IType ConversionMethodParameterType
+        {
+            get
+            {
+                if (ConversionMethod.IsStatic)
+                    return ConversionMethod.Parameters.Single().ParameterType;
+                else
+                    return ConversionMethod.DeclaringType;
+            }
+        }
+
+        /// <summary>
+        /// Creates an expression that invokes the user-defined
+        /// conversion method with the given expression as 
+        /// argument.
+        /// </summary>
+        /// <returns>The invocation-expression.</returns>
+        /// <param name="Value">The argument to the invocation.</param>
+        private IExpression CreateCall(IExpression Value)
+        {
+            if (ConversionMethod.IsStatic)
+                return new InvocationExpression(
+                    ConversionMethod, null, 
+                    new IExpression[] { Value });
+            else
+                return new InvocationExpression(
+                    ConversionMethod, 
+                    ExpressionConverters.AsTargetExpression(Value), 
+                    null);
+        }
+
+        /// <inheritdoc/>
+        public override IExpression Convert(
+            IExpression Value, IType TargetType)
+        {
+            return PostConversion.Convert(
+                CreateCall(
+                    PreConversion.Convert(
+                        Value, 
+                        ConversionMethodParameterType)), 
+                TargetType);
+        }
     }
 }
 

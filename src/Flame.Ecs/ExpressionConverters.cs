@@ -2706,8 +2706,8 @@ namespace Flame.Ecs
                 // Generic type parameters have to be boxed,
                 // and the result should then be compared to
                 // 'null'. 
-                Expression = new ConversionDescription(
-                    ConversionKind.ImplicitBoxingConversion, null)
+                Expression = new SimpleConversionDescription(
+                    ConversionKind.ImplicitBoxingConversion)
                     .Convert(Expression, FindAnyRefTypeAncestor(exprTy, Scope));
             }
             // Reference types.

@@ -68,7 +68,7 @@ namespace Flame.Ecs.Semantics
                 // The error type can be converted to any other type.
                 return new ConversionDescription[]
                 { 
-                    new ConversionDescription(ConversionKind.ReinterpretCast) 
+                    new SimpleConversionDescription(ConversionKind.ReinterpretCast) 
                 };
             }
             else
@@ -88,7 +88,7 @@ namespace Flame.Ecs.Semantics
                 // Identity conversion.
                 return new ConversionDescription[]
                 { 
-                    new ConversionDescription(ConversionKind.Identity) 
+                    new SimpleConversionDescription(ConversionKind.Identity) 
                 };
             }
             else if (PrimitiveTypes.Null.Equals(SourceType)
@@ -98,7 +98,7 @@ namespace Flame.Ecs.Semantics
                 // questions asked.
                 return new ConversionDescription[]
                 { 
-                    new ConversionDescription(ConversionKind.ReinterpretCast) 
+                    new SimpleConversionDescription(ConversionKind.ReinterpretCast) 
                 };
             }
 
@@ -115,7 +115,7 @@ namespace Flame.Ecs.Semantics
                 {
                     return new ConversionDescription[]
                     { 
-                        new ConversionDescription(kind)
+                        new SimpleConversionDescription(kind)
                     };
                 }
             }
@@ -125,7 +125,7 @@ namespace Flame.Ecs.Semantics
                 // enum-to-integer
                 return new ConversionDescription[]
                 {
-                    new ConversionDescription(ConversionKind.EnumToNumberStaticCast)
+                    new SimpleConversionDescription(ConversionKind.EnumToNumberStaticCast)
                 };
             }
             else if (TargetType.GetIsEnum() && IsNumberPrimitive(SourceType))
@@ -133,14 +133,14 @@ namespace Flame.Ecs.Semantics
                 // integer-to-enum
                 return new ConversionDescription[]
                 {
-                    new ConversionDescription(ConversionKind.NumberToEnumStaticCast)
+                    new SimpleConversionDescription(ConversionKind.NumberToEnumStaticCast)
                 };
             }
             else if (ConversionExpression.Instance.UseUnboxValue(SourceType, TargetType))
             {
                 return new ConversionDescription[]
                 { 
-                    new ConversionDescription(ConversionKind.UnboxValueConversion) 
+                    new SimpleConversionDescription(ConversionKind.UnboxValueConversion) 
                 };
             }
             else if (ConversionExpression.Instance.UseDynamicCast(SourceType, TargetType))
@@ -150,7 +150,7 @@ namespace Flame.Ecs.Semantics
                     // Upcast. 
                     return new ConversionDescription[]
                     { 
-                        new ConversionDescription(ConversionKind.ReinterpretCast) 
+                        new SimpleConversionDescription(ConversionKind.ReinterpretCast) 
                     };
                 }
                 else
@@ -158,7 +158,7 @@ namespace Flame.Ecs.Semantics
                     // Downcast. 
                     return new ConversionDescription[]
                     { 
-                        new ConversionDescription(ConversionKind.DynamicCast) 
+                        new SimpleConversionDescription(ConversionKind.DynamicCast) 
                     };
                 }
             }
@@ -167,7 +167,7 @@ namespace Flame.Ecs.Semantics
                 // Boxing conversion.
                 return new ConversionDescription[]
                 {
-                    new ConversionDescription(
+                    new SimpleConversionDescription(
                         SourceType.Is(TargetType)
                             ? ConversionKind.ImplicitBoxingConversion
                             : ConversionKind.ExplicitBoxingConversion)
