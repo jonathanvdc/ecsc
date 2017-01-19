@@ -720,7 +720,7 @@ namespace Flame.Ecs
                     var localScope = new LocalScope(funScope);
                     methodDef.Body = ExpressionConverters.AutoReturn(
                         methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);  
+                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);  
                 }
                 else
                 {
@@ -780,12 +780,12 @@ namespace Flame.Ecs
             }, _ => { }, methodDef =>
             {
                 var innerScope = CreateGenericScope(methodDef, Scope);
-                var funScope = CreateFunctionScope(methodDef, Scope);
+                var funScope = CreateFunctionScope(methodDef, innerScope);
                 // Analyze the function body.
                 var localScope = new LocalScope(funScope);
                 methodDef.Body = ExpressionConverters.AutoReturn(
                     methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), innerScope);  
+                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);  
             });
 
             // Finally, add the function to the declaring type.
@@ -1165,7 +1165,7 @@ namespace Flame.Ecs
                     getAcc.Body = ExpressionConverters.AutoReturn(
                         getAcc.ReturnType, 
                         Converter.ConvertExpression(Node.Args[3], localScope),
-                        locAttr.Location, Scope);
+                            locAttr.Location, localScope.Function);
                 }
             });
 
@@ -1407,7 +1407,7 @@ namespace Flame.Ecs
                     // Analyze the body.
                     accDef.Body = ExpressionConverters.AutoReturn(
                         accDef.ReturnType, Converter.ConvertExpression(Node.Args[0], localScope), 
-                        NodeHelpers.ToSourceLocation(Node.Args[0].Range), Scope);  
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range), localScope.Function);  
                 }
             });
 

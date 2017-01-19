@@ -20,13 +20,13 @@ namespace Flame.Ecs.Semantics
         /// Classifies a conversion of the given expression to the given type.
         /// </summary>
         public override IReadOnlyList<ConversionDescription> ClassifyConversion(
-            IExpression Source, IType Type)
+            IExpression Source, IType Type, FunctionScope Scope)
         {
             var srcType = Source.Type;
 
             // TODO: special cases for literals.
 
-            return ClassifyConversion(srcType, Type);
+            return ClassifyConversion(srcType, Type, Scope);
         }
 
         /// <summary>
@@ -81,7 +81,17 @@ namespace Flame.Ecs.Semantics
         /// Classifies a conversion of the given source type to the given target type.
         /// </summary>
         public override IReadOnlyList<ConversionDescription> ClassifyConversion(
-            IType SourceType, IType TargetType)
+            IType SourceType, IType TargetType, FunctionScope Scope)
+        {
+            return ClassifyConversion(SourceType, TargetType, Scope, true);
+        }
+
+        /// <summary>
+        /// Classifies a conversion of the given source type to the given target type.
+        /// A Boolean specifies if user-defined conversions are considered.
+        /// </summary>
+        private IReadOnlyList<ConversionDescription> ClassifyConversion(
+            IType SourceType, IType TargetType, FunctionScope Scope, bool ConsiderUserDefined)
         {
             if (SourceType.Equals(TargetType))
             {
@@ -176,6 +186,7 @@ namespace Flame.Ecs.Semantics
 
             // TODO: user-defined conversions
             // TODO: pointer conversions
+            // TODO: method group conversions
 
             // Didn't find any applicable conversions.
             return NoConversion(SourceType, TargetType);

@@ -99,7 +99,7 @@ namespace Flame.Ecs
 
             var result = OverloadResolution.CreateCheckedNewObject(
                 localScope.Function.GetInstanceConstructors(attrType),
-                ctorArgs, Scope, NodeHelpers.ToSourceLocation(Node.Range));
+                ctorArgs, localScope.Function, NodeHelpers.ToSourceLocation(Node.Range));
 
             // HACK: extract the method and arguments from the 
             //       new-object expression. This should be revisited

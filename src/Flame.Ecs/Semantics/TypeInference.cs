@@ -9,19 +9,19 @@ namespace Flame.Ecs
     /// </summary>
     public static class TypeInference
     {
-        public static IType GetBestType(IType Left, IType Right, GlobalScope Scope)
+        public static IType GetBestType(IType Left, IType Right, FunctionScope Scope)
         {
             if (Left == null || Right == null)
                 return null;
-            else if (Scope.ConversionRules.HasImplicitConversion(Left, Right))
+            else if (Scope.HasImplicitConversion(Left, Right))
                 return Right;
-            else if (Scope.ConversionRules.HasImplicitConversion(Right, Left))
+            else if (Scope.HasImplicitConversion(Right, Left))
                 return Left;
             else
                 return null;
         }
 
-        public static IType GetBestType(IEnumerable<IType> Types, GlobalScope Scope)
+        public static IType GetBestType(IEnumerable<IType> Types, FunctionScope Scope)
         {
             if (!Types.Any())
                 return null;

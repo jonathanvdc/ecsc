@@ -206,6 +206,7 @@
     <Compile Include="Syntax\TypeConstraintNode.cs" />
     <Compile Include="Parsing\ParsedDocument.cs" />
     <Compile Include="Parsing\SourceHelpers.cs" />
+    <Compile Include="FunctionScope.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

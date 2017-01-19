@@ -80,7 +80,7 @@ namespace Flame.Ecs
         public static IExpression CreateUncheckedInvocation(
             IEnumerable<IExpression> Candidates, 
             IReadOnlyList<Tuple<IExpression, SourceLocation>> Arguments,
-            GlobalScope Scope)
+            FunctionScope Scope)
         {
             return CreateUncheckedInvocation(
                 Candidates, Arguments, Scope, 
@@ -99,7 +99,7 @@ namespace Flame.Ecs
         internal static IExpression CreateUncheckedInvocation(
             IEnumerable<IExpression> Candidates, 
             IReadOnlyList<Tuple<IExpression, SourceLocation>> Arguments,
-            GlobalScope Scope,
+            FunctionScope Scope,
             IType[] ArgumentTypes)
         {
             // TODO: implement and use C#-specific overload resolution
@@ -267,7 +267,7 @@ namespace Flame.Ecs
         public static IExpression CreateCheckedInvocation(
             string InvocationType, IEnumerable<IExpression> Candidates, 
             IReadOnlyList<Tuple<IExpression, SourceLocation>> Arguments,
-            GlobalScope Scope, SourceLocation Location)
+            FunctionScope Scope, SourceLocation Location)
         {
             var argTypes = OverloadResolution.GetArgumentTypes(Arguments);
 
@@ -282,7 +282,7 @@ namespace Flame.Ecs
             {
                 // Something went wrong. Try to provide accurate diagnostics.
                 return OverloadResolution.LogFailedOverload(
-                    InvocationType, Candidates, Arguments, Scope, 
+                    InvocationType, Candidates, Arguments, Scope.Global, 
                     Location, argTypes);
             }
         }
@@ -307,7 +307,7 @@ namespace Flame.Ecs
         public static IExpression CreateCheckedNewObject(
             IEnumerable<IMethod> CandidateConstructors, 
             IReadOnlyList<Tuple<IExpression, SourceLocation>> Arguments,
-            GlobalScope Scope, SourceLocation Location)
+            FunctionScope Scope, SourceLocation Location)
         {
             var delegates = CandidateConstructors.Select(ToNewObjectDelegate).ToArray();
 

@@ -280,7 +280,7 @@ namespace Flame.Ecs
             this NodeConverter Converter, LNode Node, LocalScope Scope,
             IType Type)
         {
-            return Scope.Function.Global.ConvertImplicit(
+            return Scope.Function.ConvertImplicit(
                 Converter.ConvertExpression(Node, Scope),
                 Type, NodeHelpers.ToSourceLocation(Node.Range));
         }
@@ -359,7 +359,7 @@ namespace Flame.Ecs
         /// or `void`. Otherwise, the body expression's value is returned,
         /// provided that its return value is not 'void'.
         /// </summary>
-        public static IStatement AutoReturn(IType ReturnType, IExpression Body, SourceLocation Location, GlobalScope Scope)
+        public static IStatement AutoReturn(IType ReturnType, IExpression Body, SourceLocation Location, FunctionScope Scope)
         {
             if (ReturnType == null || ReturnType.Equals(PrimitiveTypes.Void))
                 return new BlockStatement(new[] { ToStatement(Body), new ReturnStatement() });
@@ -520,7 +520,7 @@ namespace Flame.Ecs
                 NodeHelpers.CheckArity(Node, 1, Scope.Log);
 
                 return ToExpression(new ReturnStatement(
-                    Scope.Function.Global.ConvertImplicit(
+                    Scope.Function.ConvertImplicit(
                         Converter.ConvertExpression(Node.Args[0], Scope),
                         Scope.ReturnType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
             }
@@ -852,7 +852,7 @@ namespace Flame.Ecs
             var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
 
             return OverloadResolution.CreateCheckedInvocation(
-                "method", delegates, args, Scope.Function.Global,
+                "method", delegates, args, Scope.Function,
                 NodeHelpers.ToSourceLocation(Node.Range));
         }
 
@@ -882,7 +882,7 @@ namespace Flame.Ecs
             var ctorCallNode = Node.Args[0];
 
             var loc = NodeHelpers.ToSourceLocation(Node.Range);
-            var globalScope = Scope.Function.Global;
+            var funScope = Scope.Function;
             var initializerList = Node.Args.Slice(1);
 
             if (ctorCallNode.IsIdNamed(GSymbol.Empty))
@@ -897,7 +897,7 @@ namespace Flame.Ecs
                 // Type-inferred array type.
                 var elems = OverloadResolution.ConvertArguments(initializerList, Scope, Converter);
 
-                var elemType = TypeInference.GetBestType(elems.Select(item => item.Item1.Type), globalScope);
+                var elemType = TypeInference.GetBestType(elems.Select(item => item.Item1.Type), funScope);
 
                 if (elemType == null)
                 {
@@ -913,7 +913,7 @@ namespace Flame.Ecs
                 {
                     return new InitializedArrayExpression(
                         elemType, elems.Select(expr =>
-                            globalScope.ConvertImplicit(
+                            funScope.ConvertImplicit(
                                 expr.Item1, elemType, expr.Item2)).ToArray());
                 }
             }
@@ -929,14 +929,14 @@ namespace Flame.Ecs
                 var arrTy = ctorType.AsArrayType();
                 var initializerExprs = initializerList
                     .Select(n =>
-                        globalScope.ConvertImplicit(
+                        funScope.ConvertImplicit(
                             Converter.ConvertExpression(n, Scope),
                             arrTy.ElementType,
                             loc))
                     .ToArray();
                 var arrDims = ctorArgs
                     .Select(item =>
-                        Scope.Function.Global.ConvertImplicit(
+                        funScope.ConvertImplicit(
                             item.Item1, PrimitiveTypes.Int32, item.Item2))
                     .ToArray();
 
@@ -1051,7 +1051,7 @@ namespace Flame.Ecs
             {
                 var newInstExpr = OverloadResolution.CreateCheckedNewObject(
                     Scope.Function.GetInstanceConstructors(ctorType),
-                    ctorArgs, Scope.Function.Global, loc);
+                    ctorArgs, Scope.Function, loc);
 
                 if (initializerList.Count == 0)
                     // Empty initializer list. Easy.
@@ -1383,7 +1383,7 @@ namespace Flame.Ecs
                 return new ExpressionStatement(
                     OverloadResolution.CreateCheckedInvocation(
                         "initializer", LazyAddDelegates.Value,
-                        args, Scope.Function.Global, loc));
+                        args, Scope.Function, loc));
             }
         }
 
@@ -1458,7 +1458,7 @@ namespace Flame.Ecs
 
         private static IExpression TryConvertEnumOperand(
             IExpression Value, IType UnderlyingType,
-            GlobalScope Scope)
+            FunctionScope Scope)
         {
             var valTy = Value.Type;
             if (valTy.GetIsEnum() && valTy.GetParent().Equals(UnderlyingType))
@@ -1467,7 +1467,7 @@ namespace Flame.Ecs
             }
             else
             {
-                var implConv = Scope.ConversionRules
+                var implConv = Scope
                     .ClassifyConversion(Value, UnderlyingType)
                     .Where(x => x.IsImplicit && x.IsStatic)
                     .ToArray();
@@ -1527,9 +1527,9 @@ namespace Flame.Ecs
                 }
 
                 return DirectBinaryExpression.Instance.Create(
-                    globalScope.ConvertImplicit(lExpr, opTy, LeftLocation),
+                    Scope.ConvertImplicit(lExpr, opTy, LeftLocation),
                     Op,
-                    globalScope.ConvertImplicit(rExpr, opTy, RightLocation));
+                    Scope.ConvertImplicit(rExpr, opTy, RightLocation));
             }
 
             // Enum operators
@@ -1537,11 +1537,11 @@ namespace Flame.Ecs
             if (BinaryOperatorResolution.TryGetEnumOperatorType(
                 Op, lTy, rTy, out underlyingTy, out opTy))
             {
-                var lConv = TryConvertEnumOperand(lExpr, underlyingTy, Scope.Global);
+                var lConv = TryConvertEnumOperand(lExpr, underlyingTy, Scope);
 
                 if (lConv != null)
                 {
-                    var rConv = TryConvertEnumOperand(rExpr, underlyingTy, Scope.Global);
+                    var rConv = TryConvertEnumOperand(rExpr, underlyingTy, Scope);
 
                     if (rConv != null)
                     {
@@ -1572,7 +1572,7 @@ namespace Flame.Ecs
             };
             var argTypes = OverloadResolution.GetArgumentTypes(args);
             var result = OverloadResolution.CreateUncheckedInvocation(
-                candidates, args, Scope.Global);
+                candidates, args, Scope);
             if (result != null)
             {
                 // We found a user-defined operator to apply.
@@ -1583,13 +1583,13 @@ namespace Flame.Ecs
             // Try reference equality.
             if (BinaryOperatorResolution.IsReferenceEquality(Op, lTy, rTy))
             {
-                opTy = Scope.Global.ConversionRules.HasImplicitConversion(lTy, rTy)
+                opTy = Scope.HasImplicitConversion(lTy, rTy)
                     ? rTy : lTy;
 
                 return DirectBinaryExpression.Instance.Create(
-                    globalScope.ConvertImplicit(lExpr, opTy, LeftLocation),
+                    Scope.ConvertImplicit(lExpr, opTy, LeftLocation),
                     Op,
-                    globalScope.ConvertImplicit(rExpr, opTy, RightLocation));
+                    Scope.ConvertImplicit(rExpr, opTy, RightLocation));
             }
 
             // We couldn't find a single binary operator to apply.
@@ -1661,7 +1661,7 @@ namespace Flame.Ecs
                 return new SelectExpression(
                     lhs, 
                     rhs, 
-                    Scope.Function.Global.ConvertImplicit(
+                    Scope.Function.ConvertImplicit(
                         new BooleanExpression(false),
                         rhsTy, NodeHelpers.ToSourceLocation(Node.Range)));
             }
@@ -1688,7 +1688,7 @@ namespace Flame.Ecs
             {
                 return new SelectExpression(
                     lhs, 
-                    Scope.Function.Global.ConvertImplicit(
+                    Scope.Function.ConvertImplicit(
                         new BooleanExpression(true),
                         rhsTy, NodeHelpers.ToSourceLocation(Node.Range)),
                     rhs);
@@ -1743,7 +1743,7 @@ namespace Flame.Ecs
             ILocalScope Scope, SourceLocation Location)
         {
             return CreateUncheckedAssignment(
-                Variable, Scope.Function.Global.ConvertImplicit(
+                Variable, Scope.Function.ConvertImplicit(
                     Value, Variable.Type, Location),
                 Scope, Location);
         }
@@ -1785,7 +1785,7 @@ namespace Flame.Ecs
                     Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
 
                 return CreateUncheckedAssignment(
-                    lhs, scope.Function.Global.ConvertImplicit(
+                    lhs, scope.Function.ConvertImplicit(
                         result, lhs.Type, rightLoc),
                     scope, leftLoc.Concat(rightLoc));
             };
@@ -1855,7 +1855,7 @@ namespace Flame.Ecs
                 if (val != null)
                 {
                     stmts.Add(local.CreateSetStatement(
-                        Scope.Function.Global.ConvertImplicit(
+                        Scope.Function.ConvertImplicit(
                             val, varMember.VariableType,
                             NodeHelpers.ToSourceLocation(decompNodes.Item2.Range))));
                 }
@@ -1910,7 +1910,7 @@ namespace Flame.Ecs
 
                 return new ExpressionValue(
                     OverloadResolution.CreateCheckedInvocation(
-                        "constructor", candidates, args, Scope.Function.Global,
+                        "constructor", candidates, args, Scope.Function,
                         NodeHelpers.ToSourceLocation(Node.Range)));
             }
         }
@@ -1968,7 +1968,7 @@ namespace Flame.Ecs
                 var args = OverloadResolution.ConvertArguments(Node.Args, Scope, Converter);
 
                 return OverloadResolution.CreateCheckedInvocation(
-                    "constructor", candidates, args, Scope.Function.Global,
+                    "constructor", candidates, args, Scope.Function,
                     NodeHelpers.ToSourceLocation(Node.Range));
             }
         }
@@ -2005,24 +2005,24 @@ namespace Flame.Ecs
             var ifExpr = Converter.ConvertScopedExpression(Node.Args[1], Scope);
             var elseExpr = Converter.ConvertScopedExpression(Node.Args[2], Scope);
 
-            var globalScope = Scope.Function.Global;
+            var funScope = Scope.Function;
 
             var ifType = ifExpr.Type;
             var elseType = elseExpr.Type;
 
-                    if (globalScope.ConversionRules.HasImplicitConversion(ifType, elseType))
-                    {
-                        ifExpr = globalScope.ConvertImplicit(
-                            ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
-                    }
-                    else
-                    {
-                        elseExpr = globalScope.ConvertImplicit(
-                            elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
-                    }
-
-                    return new SelectExpression(cond, ifExpr, elseExpr);
+            if (funScope.HasImplicitConversion(ifType, elseType))
+            {
+                ifExpr = funScope.ConvertImplicit(
+                    ifExpr, elseType, NodeHelpers.ToSourceLocation(Node.Args[1].Range));
             }
+            else
+            {
+                elseExpr = funScope.ConvertImplicit(
+                    elseExpr, ifType, NodeHelpers.ToSourceLocation(Node.Args[2].Range));
+            }
+
+            return new SelectExpression(cond, ifExpr, elseExpr);
+        }
 
         /// <summary>
         /// Converts a break-statement (type #break), and
@@ -2240,7 +2240,7 @@ namespace Flame.Ecs
                 return new ReinterpretCastExpression(op, ty);
             }
 
-            if (Scope.Function.Global.ConversionRules.HasReferenceConversion(op.Type, ty))
+            if (Scope.Function.HasReferenceConversion(op.Type, ty))
             {
                 Scope.Log.LogError(new LogEntry(
                     "invalid expression",
@@ -2376,7 +2376,7 @@ namespace Flame.Ecs
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
 
-            return Scope.Function.Global.ConvertExplicit(
+            return Scope.Function.ConvertExplicit(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
         }
 
@@ -2404,7 +2404,7 @@ namespace Flame.Ecs
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
 
-            var implConv = Scope.Function.Global.GetImplicitConversion(
+            var implConv = Scope.Function.GetImplicitConversion(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
 
             if (implConv.IsBoxing)
@@ -2747,7 +2747,7 @@ namespace Flame.Ecs
 
             var resolvedCall = OverloadResolution.CreateUncheckedInvocation(
                 inter, new Tuple<IExpression, SourceLocation>[] { },
-                Scope.Function.Global);
+                Scope.Function);
 
             if (resolvedCall == null)
             {

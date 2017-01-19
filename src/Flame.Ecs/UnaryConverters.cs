@@ -263,7 +263,7 @@ namespace Flame.Ecs
 
                 return OverloadResolution.CreateCheckedInvocation(
                     "indexer", indexers, dimExprs, 
-                    Scope.Function.Global, loc);
+                    Scope.Function, loc);
             }
         }
 
@@ -297,7 +297,7 @@ namespace Flame.Ecs
         /// </summary>
         public static IExpression CreateUnary(
             Operator Op, IExpression Operand, 
-            GlobalScope Scope,
+            FunctionScope Scope,
             SourceLocation Location)
         {
             var ty = Operand.Type;
@@ -307,11 +307,11 @@ namespace Flame.Ecs
             {
                 if (opTy == null)
                 {
-                    Scope.Log.LogError(new LogEntry(
+                    Scope.Global.Log.LogError(new LogEntry(
                         "operator application",
                         NodeHelpers.HighlightEven(
                             "operator '", Op.Name, "' cannot be applied to an operand of type '", 
-                            Scope.TypeNamer.Convert(ty), "'."),
+                            Scope.Global.TypeNamer.Convert(ty), "'."),
                         Location));
                     return new UnknownExpression(ty);
                 }
@@ -322,7 +322,7 @@ namespace Flame.Ecs
 
             // TODO: actually implement this
 
-            Scope.Log.LogError(new LogEntry(
+            Scope.Global.Log.LogError(new LogEntry(
                 "operators not yet implemented",
                 "custom unary operator resolution has not been implemented yet. Sorry. :/",
                 Location));
@@ -344,7 +344,7 @@ namespace Flame.Ecs
                 return CreateUnary(
                     Op, 
                     conv.ConvertExpression(node.Args[0], scope), 
-                    scope.Function.Global,
+                    scope.Function,
                     NodeHelpers.ToSourceLocation(node.Args[0].Range));
             };
         }
@@ -367,7 +367,7 @@ namespace Flame.Ecs
                     return CreateUnary(
                         Op, 
                         conv.ConvertExpression(node.Args[0], scope), 
-                        scope.Function.Global,
+                        scope.Function,
                         NodeHelpers.ToSourceLocation(node.Args[0].Range));
                 }
                 else
