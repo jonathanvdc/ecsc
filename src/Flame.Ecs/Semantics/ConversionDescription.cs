@@ -141,12 +141,29 @@ namespace Flame.Ecs.Semantics
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this conversion is boxing.
+        /// </summary>
+        /// <value><c>true</c> if this conversion is boxing; otherwise, <c>false</c>.</value>
         public bool IsBoxing
         {
             get
             {
                 return Kind == ConversionKind.ImplicitBoxingConversion
                 || Kind == ConversionKind.ExplicitBoxingConversion;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this conversion is user-defined.
+        /// </summary>
+        /// <value><c>true</c> if this conversion is user-defined; otherwise, <c>false</c>.</value>
+        public bool IsUserDefined
+        {
+            get
+            {
+                return Kind == ConversionKind.ExplicitUserDefined
+                || Kind == ConversionKind.ImplicitUserDefined;
             }
         }
 

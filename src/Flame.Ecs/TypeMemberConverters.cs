@@ -337,7 +337,8 @@ namespace Flame.Ecs
         private static Tuple<LNode, LNode> UpdateVirtualTypeMemberAttributes(
             string MemberKind, IEnumerable<LNode> Attributes, 
             LazyDescribedTypeMember Target,
-            GlobalScope Scope, NodeConverter Converter)
+            GlobalScope Scope, NodeConverter Converter,
+            Func<LNode, bool> HandleSpecial)
         {
             LNode overrideNode = null;
             LNode abstractNode = null;
@@ -378,7 +379,7 @@ namespace Flame.Ecs
                 }
                 else
                 {
-                    return false;
+                    return HandleSpecial(node);
                 }
             });
 
@@ -474,6 +475,116 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Checks that a user-defined conversion operator is
+        /// well-defined.
+        /// </summary>
+        /// <param name="OperatorDef">The user-defined conversion operator definition.</param>
+        /// <param name="Scope">The scope in which the definition occurs.</param>
+        private static void CheckConversionOperatorDefinition(
+            IMethod OperatorDef, GlobalScope Scope)
+        {
+            // Quote from the spec:
+            //
+            //     For a given source type S and target type T, if S or T are nullable types, 
+            //     let S0 and T0 refer to their underlying types, otherwise S0 and T0 are equal 
+            //     to S and T respectively. A class or struct is permitted to declare a conversion 
+            //     from a source type S to a target type T only if all of the following are true:
+            //
+            //       * S0 and T0 are different types.
+            //
+            //       * Either S0 or T0 is the class or struct type in which the operator 
+            //         declaration takes place.
+            //
+            //       * Neither S0 nor T0 is an interface_type.
+            //
+            //       * Excluding user-defined conversions, a conversion does not exist 
+            //         from S to T or from T to S.
+            //
+            // Additionally, we also want to check that the operator definition's
+            // arity and staticness are correct.
+
+            // Check the staticness.
+            if (!OperatorDef.IsStatic)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "a user-defined conversion operator must be marked '", 
+                        "static", "'."),
+                    OperatorDef.GetSourceLocation()));
+            }
+
+            // Check the arity.
+            if (OperatorDef.Parameters.Count() != 1)
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "a user-defined conversion operator " +
+                    "must define exactly one parameter.",
+                    OperatorDef.GetSourceLocation()));
+            }
+
+            // Find the source and target types.
+            var sourceType = UserDefinedConversionDescription
+                .GetConversionMethodParameterType(OperatorDef);
+            var targetType = OperatorDef.ReturnType;
+
+            // Define a dummy function scope.
+            var funcScope = CreateFunctionScope(OperatorDef, Scope);
+
+            // Check that 'S0 and T0 are different types.'
+            if (sourceType.Equals(targetType))
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "a user-defined conversion operator's " +
+                    "source type cannot be equal to its target type.",
+                    OperatorDef.GetSourceLocation()));
+            }
+
+            // Check that 'Either S0 or T0 is the class or 
+            // struct type in which the operator declaration 
+            // takes place.'
+            if (!sourceType.Equals(funcScope.DeclaringType)
+                && !targetType.Equals(funcScope.DeclaringType))
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    "either the source or target type of a user-defined " +
+                    "conversion operator must be the type in which the " +
+                    "operator is defined.",
+                    OperatorDef.GetSourceLocation()));
+            }
+
+            // Check that 'Neither S0 nor T0 is an interface_type.'
+            if (sourceType.GetIsInterface()
+                || targetType.GetIsInterface())
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "user-defined conversions to and from '",
+                        "interface", "' types are not permitted."),
+                    OperatorDef.GetSourceLocation()));
+            }
+
+            // Check that 'Excluding user-defined conversions, 
+            // a conversion does not exist from S to T or 
+            // from T to S.'
+            var classifiedConv = funcScope.ClassifyConversion(sourceType, targetType);
+            if (classifiedConv.Any(conv => !conv.IsUserDefined))
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "a conversion from '", Scope.TypeNamer.Convert(sourceType), 
+                        "' to '", Scope.TypeNamer.Convert(targetType), 
+                        "' already exists."),
+                    OperatorDef.GetSourceLocation()));
+            }
+        }
+
+        /// <summary>
         /// Converts an '#fn' function declaration node.
         /// </summary>
         public static GlobalScope ConvertFunction(
@@ -487,6 +598,7 @@ namespace Flame.Ecs
             // Handle the function's name first.
             var name = NameNodeHelpers.ToGenericMemberName(Node.Args[1], Scope);
             var op = ParseOperatorName(name.Name.Name);
+            bool isCast = name.Name.Name == CodeSymbols.Cast.ToString();
             Tuple<LNode, LNode> attrNodePair = null;
             var def = new LazyDescribedMethod(new SimpleName(name.Name.Name), DeclaringType, methodDef =>
             {
@@ -504,9 +616,30 @@ namespace Flame.Ecs
                         ((DescribedGenericParameter)genParam).AddConstraint(constraint);
                     });
 
+                LNode implicitCastNode = null;
+                LNode explicitCastNode = null;
+
                 // Attributes next. override, abstract, virtual, sealed
-                // and new are specific to methods, so we'll handle those here.
-                attrNodePair = UpdateVirtualTypeMemberAttributes("method", Node.Attrs, methodDef, innerScope, Converter);
+                // new, implicit and explicit are specific to methods, so we'll handle those here.
+                attrNodePair = UpdateVirtualTypeMemberAttributes(
+                    "method", Node.Attrs, methodDef, innerScope, Converter,
+                    node => 
+                    {
+                        if (node.IsIdNamed(CodeSymbols.Implicit))
+                        {
+                            implicitCastNode = node;
+                            return true;
+                        }
+                        else if (node.IsIdNamed(CodeSymbols.Explicit))
+                        {
+                            explicitCastNode = node;
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    });
                 methodDef.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
 
                 if (op.IsDefined)
@@ -522,6 +655,48 @@ namespace Flame.Ecs
                     }
 
                     methodDef.AddAttribute(new OperatorAttribute(op));
+                }
+                else if (isCast)
+                {
+                    if (explicitCastNode != null)
+                    {
+                        if (implicitCastNode != null)
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "user-defined conversion operators cannot be both '", 
+                                    "implicit", "' and '", "explicit", "'."),
+                                NodeHelpers.ToSourceLocation(implicitCastNode.Range)));
+                        }
+                        methodDef.AddAttribute(new OperatorAttribute(Operator.ConvertExplicit));
+                    }
+                    else 
+                    {
+                        if (implicitCastNode == null)
+                        {
+                            Scope.Log.LogError(new LogEntry(
+                                "syntax error",
+                                NodeHelpers.HighlightEven(
+                                    "user-defined conversion operators must be either '", 
+                                    "implicit", "' or '", "explicit", "'."),
+                                methodDef.GetSourceLocation()));
+                        }
+
+
+                        methodDef.AddAttribute(new OperatorAttribute(Operator.ConvertImplicit));
+                    }
+                }
+                else if (implicitCastNode != null 
+                    || explicitCastNode != null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "only user-defined conversions can be '", 
+                            "implicit", "' or '", "explicit", "'."),
+                            NodeHelpers.ToSourceLocation(
+                                (implicitCastNode ?? explicitCastNode).Range)));
                 }
 
                 // Resolve the return type.
@@ -560,6 +735,10 @@ namespace Flame.Ecs
                                 "' must be the containing type."),
                             methodDef.GetSourceLocation()));
                     }
+                }
+                else if (isCast)
+                {
+                    CheckConversionOperatorDefinition(methodDef, innerScope);
                 }
             }, methodDef =>
             {
@@ -987,7 +1166,8 @@ namespace Flame.Ecs
                 propDef.PropertyType = lazyRetType.Value ?? PrimitiveTypes.Void;
 
                 // Attributes next.
-                var virtAttrNodes = UpdateVirtualTypeMemberAttributes("property", Node.Attrs, propDef, Scope, Converter);
+                var virtAttrNodes = UpdateVirtualTypeMemberAttributes(
+                    "property", Node.Attrs, propDef, Scope, Converter, node => false);
                 propDef.AddAttribute(locAttr);
                 if (isIndexer)
                 {
