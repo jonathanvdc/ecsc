@@ -40,6 +40,7 @@ tests
     static-properties/StaticProperties.test;
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
+    user-defined-conversions/UserDefinedConversions.test;
     user-defined-operators/UserDefinedOperators.test;
     using-statement/UsingStatement.test;
     using-static/UsingStatic.test;
