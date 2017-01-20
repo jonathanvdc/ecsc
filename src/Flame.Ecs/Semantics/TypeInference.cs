@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Flame.Ecs
+namespace Flame.Ecs.Semantics
 {
     /// <summary>
     /// A static class that defines type inference helpers.

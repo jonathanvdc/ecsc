@@ -207,6 +207,7 @@
     <Compile Include="Parsing\ParsedDocument.cs" />
     <Compile Include="Parsing\SourceHelpers.cs" />
     <Compile Include="FunctionScope.cs" />
+    <Compile Include="Semantics\Betterness.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

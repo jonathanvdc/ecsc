@@ -39,7 +39,7 @@ namespace Flame.Ecs.Semantics
         ImplicitBoxingConversion,
 
         /// <summary>
-        /// An implicit boxing conversion is applicable.
+        /// An explicit boxing conversion is applicable.
         /// </summary>
         ExplicitBoxingConversion,
 
@@ -181,75 +181,193 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
-        /// Gets a conversion description for a non-existent conversion.
+        /// A conversion description for a non-existent conversion.
         /// </summary>
-        public static ConversionDescription None 
-        { 
-            get { return new SimpleConversionDescription(ConversionKind.None); } 
-        }
-    }
-
-    /// <summary>
-    /// A conversion description type for simple conversions, which
-    /// do not call methods.
-    /// </summary>
-    public sealed class SimpleConversionDescription : ConversionDescription
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Flame.Ecs.Semantics.SimpleConversionDescription"/> class.
-        /// </summary>
-        /// <param name="Kind">The kind of conversion to perform.</param>
-        public SimpleConversionDescription(ConversionKind Kind)
-        {
-            this.convKind = Kind;
-        }
-
-        private ConversionKind convKind;
+        public static readonly ConversionDescription None
+            = new SimpleConversionDescription(ConversionKind.None);
 
         /// <summary>
-        /// Gets the kind of conversion that is performed.
+        /// A conversion description for an identity conversion.
         /// </summary>
-        public override ConversionKind Kind { get { return convKind; } }
+        public static readonly ConversionDescription Identity 
+            = new SimpleConversionDescription(ConversionKind.Identity);
 
-        /// <inheritdoc/>
-        public override IExpression Convert(IExpression Value, IType TargetType)
+        /// <summary>
+        /// A conversion description for implicit static casts.
+        /// </summary>
+        public static readonly ConversionDescription ImplicitStaticCast
+            = new SimpleConversionDescription(ConversionKind.ImplicitStaticCast);
+
+        /// <summary>
+        /// A conversion description for explicit static casts.
+        /// </summary>
+        public static readonly ConversionDescription ExplicitStaticCast
+            = new SimpleConversionDescription(ConversionKind.ImplicitStaticCast);
+
+        /// <summary>
+        /// A conversion description for implicit boxing conversions.
+        /// </summary>
+        public static readonly ConversionDescription ImplicitBoxingConversion
+            = new SimpleConversionDescription(ConversionKind.ImplicitBoxingConversion);
+
+        /// <summary>
+        /// A conversion description for explicit boxing conversions.
+        /// </summary>
+        public static readonly ConversionDescription ExplicitBoxingConversion
+            = new SimpleConversionDescription(ConversionKind.ExplicitBoxingConversion);
+
+        /// <summary>
+        /// A conversion description for unbox-value conversions.
+        /// </summary>
+        public static readonly ConversionDescription UnboxValueConversion
+            = new SimpleConversionDescription(ConversionKind.UnboxValueConversion);
+
+        /// <summary>
+        /// A conversion description for enum-to-number static casts.
+        /// </summary>
+        public static readonly ConversionDescription EnumToNumberStaticCast
+            = new SimpleConversionDescription(ConversionKind.EnumToNumberStaticCast);
+
+        /// <summary>
+        /// A conversion description for number-to-enum static casts.
+        /// </summary>
+        public static readonly ConversionDescription NumberToEnumStaticCast
+            = new SimpleConversionDescription(ConversionKind.NumberToEnumStaticCast);
+
+        /// <summary>
+        /// A conversion description for dynamic casts.
+        /// </summary>
+        public static readonly ConversionDescription DynamicCast
+            = new SimpleConversionDescription(ConversionKind.DynamicCast);
+
+        /// <summary>
+        /// A conversion description for reinterpret casts.
+        /// </summary>
+        public static readonly ConversionDescription ReinterpretCast
+            = new SimpleConversionDescription(ConversionKind.ReinterpretCast);
+
+        /// <summary>
+        /// Creates a conversion description for an implicit user-defined cast.
+        /// </summary>
+        /// <param name="ConversionMethod">
+        /// The method that implements the user-defined conversion.
+        /// </param>
+        /// <param name="PreConversion">
+        /// The conversion that is used to make input values 
+        /// conform to the conversion method's parameter type. 
+        /// </param>
+        /// <param name="PostConversion">
+        /// The conversion that is used to make the conversion
+        /// method's return values conform to the conversion's 
+        /// target type.
+        /// </param>
+        /// <returns>
+        /// A user-defined conversion description.
+        /// </returns>
+        public static UserDefinedConversionDescription ImplicitUserDefined(
+            IMethod ConversionMethod, 
+            ConversionDescription PreConversion, 
+            ConversionDescription PostConversion)
         {
-            switch (Kind)
+            return new UserDefinedConversionDescription(
+                ConversionKind.ImplicitUserDefined, 
+                ConversionMethod,
+                PreConversion,
+                PostConversion);
+        }
+
+        /// <summary>
+        /// Creates a conversion description for an explicit user-defined cast.
+        /// </summary>
+        /// <param name="ConversionMethod">
+        /// The method that implements the user-defined conversion.
+        /// </param>
+        /// <param name="PreConversion">
+        /// The conversion that is used to make input values 
+        /// conform to the conversion method's parameter type. 
+        /// </param>
+        /// <param name="PostConversion">
+        /// The conversion that is used to make the conversion
+        /// method's return values conform to the conversion's 
+        /// target type.
+        /// </param>
+        /// <returns>
+        /// A user-defined conversion description.
+        /// </returns>
+        public static UserDefinedConversionDescription ExplicitUserDefined(
+            IMethod ConversionMethod, 
+            ConversionDescription PreConversion, 
+            ConversionDescription PostConversion)
+        {
+            return new UserDefinedConversionDescription(
+                ConversionKind.ExplicitUserDefined, 
+                ConversionMethod,
+                PreConversion,
+                PostConversion);
+        }
+
+        /// <summary>
+        /// A conversion description type for simple conversions, which
+        /// do not call methods.
+        /// </summary>
+        private sealed class SimpleConversionDescription : ConversionDescription
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Flame.Ecs.Semantics.SimpleConversionDescription"/> class.
+            /// </summary>
+            /// <param name="Kind">The kind of conversion to perform.</param>
+            public SimpleConversionDescription(ConversionKind Kind)
             {
-                case ConversionKind.Identity:
-                    return Value;
-                case ConversionKind.DynamicCast:
-                    return new DynamicCastExpression(Value, TargetType);
-                case ConversionKind.ImplicitStaticCast:
-                case ConversionKind.ExplicitStaticCast:
-                    return new StaticCastExpression(Value, TargetType);
-                case ConversionKind.ImplicitBoxingConversion:
-                    return new ReinterpretCastExpression(
-                        new BoxExpression(Value), TargetType);
-                case ConversionKind.ExplicitBoxingConversion:
-                    return new DynamicCastExpression(
-                        new BoxExpression(Value), TargetType);
-                case ConversionKind.UnboxValueConversion:
-                    return new UnboxValueExpression(Value, TargetType);
-                case ConversionKind.NumberToEnumStaticCast:
-                    // An 'enum' static cast requires two casts:
-                    // a static cast to the underlying type, 
-                    // and a reinterpret cast to or from the 'enum'
-                    // type itself.
-                    return new ReinterpretCastExpression(
-                        new StaticCastExpression(
-                            Value, TargetType.GetParent()),
-                        TargetType);
-                case ConversionKind.EnumToNumberStaticCast:
-                    return new StaticCastExpression(
-                        new ReinterpretCastExpression(
-                            Value, Value.Type.GetParent()),
-                        TargetType);
-                case ConversionKind.ReinterpretCast:
-                    return new ReinterpretCastExpression(Value, TargetType);
-                case ConversionKind.None:
-                default:
-                    throw new InvalidOperationException();
+                this.convKind = Kind;
+            }
+
+            private ConversionKind convKind;
+
+            /// <summary>
+            /// Gets the kind of conversion that is performed.
+            /// </summary>
+            public override ConversionKind Kind { get { return convKind; } }
+
+            /// <inheritdoc/>
+            public override IExpression Convert(IExpression Value, IType TargetType)
+            {
+                switch (Kind)
+                {
+                    case ConversionKind.Identity:
+                        return Value;
+                    case ConversionKind.DynamicCast:
+                        return new DynamicCastExpression(Value, TargetType);
+                    case ConversionKind.ImplicitStaticCast:
+                    case ConversionKind.ExplicitStaticCast:
+                        return new StaticCastExpression(Value, TargetType);
+                    case ConversionKind.ImplicitBoxingConversion:
+                        return new ReinterpretCastExpression(
+                            new BoxExpression(Value), TargetType);
+                    case ConversionKind.ExplicitBoxingConversion:
+                        return new DynamicCastExpression(
+                            new BoxExpression(Value), TargetType);
+                    case ConversionKind.UnboxValueConversion:
+                        return new UnboxValueExpression(Value, TargetType);
+                    case ConversionKind.NumberToEnumStaticCast:
+                        // An 'enum' static cast requires two casts:
+                        // a static cast to the underlying type, 
+                        // and a reinterpret cast to or from the 'enum'
+                        // type itself.
+                        return new ReinterpretCastExpression(
+                            new StaticCastExpression(
+                                Value, TargetType.GetParent()),
+                            TargetType);
+                    case ConversionKind.EnumToNumberStaticCast:
+                        return new StaticCastExpression(
+                            new ReinterpretCastExpression(
+                                Value, Value.Type.GetParent()),
+                            TargetType);
+                    case ConversionKind.ReinterpretCast:
+                        return new ReinterpretCastExpression(Value, TargetType);
+                    case ConversionKind.None:
+                    default:
+                        throw new InvalidOperationException();
+                }
             }
         }
     }
@@ -271,11 +389,15 @@ namespace Flame.Ecs.Semantics
         /// <param name="ConversionMethod">
         /// The method that implements the user-defined conversion.
         /// </param>
-        public UserDefinedConversionDescription(
-            ConversionKind Kind, IMethod ConversionMethod)
+        internal UserDefinedConversionDescription(
+            ConversionKind Kind, IMethod ConversionMethod,
+            ConversionDescription PreConversion,
+            ConversionDescription PostConversion)
         {
             this.convKind = Kind;
             this.ConversionMethod = ConversionMethod;
+            this.PreConversion = PreConversion;
+            this.PostConversion = PostConversion;
         }
 
         private ConversionKind convKind;
@@ -314,15 +436,12 @@ namespace Flame.Ecs.Semantics
         /// The type of the conversion method parameter,
         /// or the declaring type, whichever is applicable.
         /// </value>
-        private IType ConversionMethodParameterType
+        public static IType GetConversionMethodParameterType(IMethod Method)
         {
-            get
-            {
-                if (ConversionMethod.IsStatic)
-                    return ConversionMethod.Parameters.Single().ParameterType;
-                else
-                    return ConversionMethod.DeclaringType;
-            }
+            if (Method.IsStatic)
+                return Method.Parameters.Single().ParameterType;
+            else
+                return Method.DeclaringType;
         }
 
         /// <summary>
@@ -353,7 +472,8 @@ namespace Flame.Ecs.Semantics
                 CreateCall(
                     PreConversion.Convert(
                         Value, 
-                        ConversionMethodParameterType)), 
+                        GetConversionMethodParameterType(
+                            ConversionMethod))), 
                 TargetType);
         }
     }
