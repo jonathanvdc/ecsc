@@ -29,6 +29,7 @@ namespace Flame.Ecs
             this.instanceCtorCache = new Dictionary<IType, IMethod[]>();
             this.instanceIndexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
+            this.conversionCache = new Dictionary<KeyValuePair<IType, IType>, IReadOnlyList<ConversionDescription>>();
 
             this.Global = Global;
             this.CurrentType = CurrentType;
@@ -110,6 +111,7 @@ namespace Flame.Ecs
         private Dictionary<IType, IProperty[]> instanceIndexerCache;
         private Dictionary<IType, IMethod[]> instanceCtorCache;
         private Dictionary<IType, SmallMultiDictionary<Operator, IMethod>> operatorCache;
+        private Dictionary<KeyValuePair<IType, IType>, IReadOnlyList<ConversionDescription>> conversionCache;
 
         private ITypeMember[] GetMembers(
             IType Type, string Name, 
@@ -302,7 +304,7 @@ namespace Flame.Ecs
         {
             return Type != null && Type.GetIsPointer() 
                 ? Type.AsPointerType().ElementType
-                    : Type;
+                : Type;
         }
 
         /// <summary>
@@ -313,7 +315,7 @@ namespace Flame.Ecs
         {
             return Type == null
                 ? null
-                    : DereferenceOrId(ThisVariable.GetThisType(Type));
+                : DereferenceOrId(ThisVariable.GetThisType(Type));
         }
 
         /// <summary>
@@ -333,7 +335,14 @@ namespace Flame.Ecs
         public IReadOnlyList<ConversionDescription> ClassifyConversion(
             IType From, IType To)
         {
-            return Global.ConversionRules.ClassifyConversion(From, To, this);
+            var kvPair = new KeyValuePair<IType, IType>(From, To);
+            IReadOnlyList<ConversionDescription> result;
+            if (!conversionCache.TryGetValue(kvPair, out result))
+            {
+                result = Global.ConversionRules.ClassifyConversion(From, To, this);
+                conversionCache[kvPair] = result;
+            }
+            return result;
         }
 
         private ConversionDescription PickAnyConversion(
