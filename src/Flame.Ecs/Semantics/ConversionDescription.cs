@@ -386,6 +386,11 @@ namespace Flame.Ecs.Semantics
                         throw new InvalidOperationException();
                 }
             }
+
+            public override string ToString()
+            {
+                return string.Format("[SimpleConversionDescription: Kind={0}]", Kind);
+            }
         }
     }
 
@@ -492,6 +497,13 @@ namespace Flame.Ecs.Semantics
                         GetConversionMethodParameterType(
                             ConversionMethod))), 
                 TargetType);
+        }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "[UserDefinedConversionDescription: Kind={0}, ConversionMethod={1}, PreConversion={2}, PostConversion={3}]", 
+                Kind, ConversionMethod, PreConversion, PostConversion);
         }
     }
 }
