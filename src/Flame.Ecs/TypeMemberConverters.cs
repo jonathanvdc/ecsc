@@ -529,9 +529,6 @@ namespace Flame.Ecs
                 .GetConversionMethodParameterType(OperatorDef);
             var targetType = OperatorDef.ReturnType;
 
-            // Define a dummy function scope.
-            var funcScope = CreateFunctionScope(OperatorDef, Scope);
-
             // Check that 'S0 and T0 are different types.'
             if (sourceType.Equals(targetType))
             {
@@ -545,8 +542,10 @@ namespace Flame.Ecs
             // Check that 'Either S0 or T0 is the class or 
             // struct type in which the operator declaration 
             // takes place.'
-            if (!sourceType.Equals(funcScope.DeclaringType)
-                && !targetType.Equals(funcScope.DeclaringType))
+            var declTy = FunctionScope.DereferenceOrId(
+                ThisVariable.GetThisType(OperatorDef.DeclaringType));
+            
+            if (!sourceType.Equals(declTy) && !targetType.Equals(declTy))
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
@@ -571,8 +570,8 @@ namespace Flame.Ecs
             // Check that 'Excluding user-defined conversions, 
             // a conversion does not exist from S to T or 
             // from T to S.'
-            var classifiedConv = funcScope.ClassifyConversion(sourceType, targetType);
-            if (classifiedConv.Any(conv => !conv.IsUserDefined))
+            if (EcsConversionRules.ClassifyBuiltinConversion(
+                sourceType, targetType).Exists)
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
