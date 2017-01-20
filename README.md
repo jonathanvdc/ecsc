@@ -32,7 +32,7 @@ nuget restore src/ecsc.sln
 xbuild /p:Configuration=Release src/ecsc.sln
 ```
 
-You should be all set now. Maybe you also want to add `ecsc` to your `PATH` environment variable, but I'll leave that up to you.
+You should be all set now. You may also want to add `ecsc` to your `PATH` environment variable, but I'll leave that up to you.
 
 ## Using `ecsc`
 
@@ -42,10 +42,10 @@ You should be all set now. Maybe you also want to add `ecsc` to your `PATH` envi
 ecsc code.cs ecs-code.ecs -platform clr
 ```
 
-Note the `-platform clr` option, which instructs `ecsc` to generate code for the CLR. This is almost always what you want. Also, source files must be specified _first_, before any other option. If you want to specify source files later on, you must use the `-source` option. 
+Note the `-platform clr` option, which instructs `ecsc` to generate code for the CLR. This is almost always what you want. Also, source files must be specified _first_, before any other option. If you want to specify source files later on, you must use the `-source` option.
 
 ```
-ecsc -platform clr -source code.cs ecs-code.ecs 
+ecsc -platform clr -source code.cs ecs-code.ecs
 ```
 
 By default, `ecsc` will put your output file(s) in a folder called `bin`. If you want them to end up elsewhere, use the `-o` option.
