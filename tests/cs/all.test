@@ -41,6 +41,7 @@ tests
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
     user-defined-conversions/UserDefinedConversions.test;
+    user-defined-conversions/UserDefinedConversions2.test;
     user-defined-operators/UserDefinedOperators.test;
     using-statement/UsingStatement.test;
     using-static/UsingStatic.test;
