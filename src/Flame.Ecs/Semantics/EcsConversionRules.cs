@@ -104,7 +104,7 @@ namespace Flame.Ecs.Semantics
         /// Classifies a conversion of the given source type to the given target type.
         /// User-defined conversions are not considered.
         /// </summary>
-        private static ConversionDescription ClassifyBuiltinConversion(
+        public static ConversionDescription ClassifyBuiltinConversion(
             IType SourceType, IType TargetType)
         {
             if (SourceType.Equals(TargetType))
@@ -503,14 +503,14 @@ namespace Flame.Ecs.Semantics
                 ? GetStandardConversion(From, methodParamType)
                 : GetEncompassingConversion(From, methodParamType);
 
-            if (fromConv == null)
+            if (!fromConv.Exists)
                 return null;
 
             var toConv = IsExplicit
                 ? GetStandardConversion(CandidateMethod.ReturnType, To)
                 : GetEncompassingConversion(CandidateMethod.ReturnType, To);
 
-            if (toConv == null)
+            if (!toConv.Exists)
                 return null;
 
             if (IsExplicit)
