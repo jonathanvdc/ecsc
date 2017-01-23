@@ -42,13 +42,12 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
-        /// Checks if the given type is a CLR reference type.
-        /// This excludes most primitive types.
+        /// Checks if the given type is a C# reference type.
+        /// This excludes enum types.
         /// </summary>
-        public static bool IsClrReferenceType(IType Type)
+        public static bool IsCSharpReferenceType(IType Type)
         {
-            return Type.GetIsReferenceType()
-                && (!Type.GetIsPrimitive() || PrimitiveTypes.String.Equals(Type));
+            return Type.GetIsReferenceType() && !Type.GetIsEnum();
         }
 
         private static ConversionDescription NoConversion(
@@ -113,7 +112,7 @@ namespace Flame.Ecs.Semantics
                 return ConversionDescription.Identity;
             }
             else if (PrimitiveTypes.Null.Equals(SourceType)
-                && TargetType.GetIsReferenceType())
+                && IsCSharpReferenceType(TargetType))
             {
                 // Convert 'null' to any reference type, no
                 // questions asked.
@@ -149,17 +148,21 @@ namespace Flame.Ecs.Semantics
             {
                 return ConversionDescription.UnboxValueConversion;
             }
-            else if (ConversionExpression.Instance.UseDynamicCast(SourceType, TargetType))
+            else if (IsCSharpReferenceType(SourceType) && IsCSharpReferenceType(TargetType))
             {
-                if (ConversionExpression.Instance.UseReinterpretAsDynamicCast(SourceType, TargetType))
+                if (HasImplicitReferenceConversion(SourceType, TargetType))
                 {
-                    // Upcast. 
+                    // Implicit reference conversion.
                     return ConversionDescription.ReinterpretCast;
                 }
-                else
+                else if (HasExplicitReferenceConversion(SourceType, TargetType))
                 {
                     // Downcast. 
                     return ConversionDescription.DynamicCast;
+                }
+                else
+                {
+                    return NoConversion(SourceType, TargetType);
                 }
             }
             else if (ConversionExpression.Instance.UseExplicitBox(SourceType, TargetType))
@@ -174,6 +177,325 @@ namespace Flame.Ecs.Semantics
             // TODO: method group conversions
 
             return NoConversion(SourceType, TargetType);
+        }
+
+        /// <summary>
+        /// Determines if there is an implicit reference conversion from the given source
+        /// reference type to the specified target reference type.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if there is an implicit reference conversion from the given source
+        /// type to the specified target type; otherwise, <c>false</c>.
+        /// </returns>
+        /// <param name="SourceReferenceType">The source reference type.</param>
+        /// <param name="TargetReferenceType">The target reference type.</param>
+        private static bool HasImplicitReferenceConversion(
+            IType SourceReferenceType, IType TargetReferenceType)
+        {
+            // Quote from the C# spec:
+            //
+            // The implicit reference conversions are:
+            //
+            // *  From any reference_type to object and dynamic.
+            // *  From any class_type S to any class_type T, provided S is derived from T.
+            // *  From any class_type S to any interface_type T, provided S implements T.
+            // *  From any interface_type S to any interface_type T, provided S is derived from T.
+            // *  From an array_type S with an element type SE to an array_type T with an element 
+            //    type TE, provided all of the following are true:
+            //     *  S and T differ only in element type. In other words, S and T have the same 
+            //        number of dimensions.
+            //     *  Both SE and TE are reference_types.
+            //     *  An implicit reference conversion exists from SE to TE.
+            // *  From any array_type to System.Array and the interfaces it implements.
+            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
+            //    and its base interfaces, provided that there is an implicit identity or 
+            //    reference conversion from S to T.
+            // *  From any delegate_type to System.Delegate and the interfaces it implements.
+            // *  From the null literal to any reference_type.
+            // *  From any reference_type to a reference_type T if it has an implicit identity 
+            //    or reference conversion to a reference_type T0 and T0 has an identity conversion 
+            //    to T.
+            // *  From any reference_type to an interface or delegate type T if it has an implicit 
+            //    identity or reference conversion to an interface or delegate type T0 and T0 is 
+            //    variance-convertible (Variance conversion) to T.
+            // *  Implicit conversions involving type parameters that are known to be reference 
+            //    types. See Implicit conversions involving type parameters for more details 
+            //    on implicit conversions involving type parameters.
+            //
+            // The implicit reference conversions are those conversions between reference_types 
+            // that can be proven to always succeed, and therefore require no checks at run-time.
+            //
+            // Reference conversions, implicit or explicit, never change the referential identity 
+            // of the object being converted. In other words, while a reference conversion may 
+            // change the type of the reference, it never changes the type or value of the object 
+            // being referred to.
+
+            if (TargetReferenceType.GetIsRootType())
+            {
+                return true;
+            }
+            else if (SourceReferenceType.GetIsArray())
+            {
+                var srcArr = SourceReferenceType.AsArrayType();
+                if (TargetReferenceType.GetIsArray())
+                {
+                    var tgtArr = SourceReferenceType.AsArrayType();
+                    return srcArr.ArrayRank == tgtArr.ArrayRank
+                    && IsCSharpReferenceType(srcArr.ElementType)
+                    && IsCSharpReferenceType(tgtArr.ElementType)
+                    && HasImplicitReferenceConversion(
+                        srcArr.ElementType, tgtArr.ElementType);
+                }
+                // TODO: implement the conversion rules listed below. They are somewhat 
+                // troublesome to implement because relying on specific type names 
+                // constrains us to a specific standard library. Ideally, we'd get this
+                // information from the back-end in the future.
+                // 
+                // *  From any array_type to System.Array and the interfaces it implements.
+                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
+                //    and its base interfaces, provided that there is an implicit identity or 
+                //    reference conversion from S to T.
+                //
+                // HACK: allow conversions from S[] to IEnumerable<T> as a temporary fix.
+                else if (srcArr.ArrayRank == 1 
+                    && TargetReferenceType.GetIsEnumerableType())
+                {
+                    var enumerableElemType = TargetReferenceType.GetEnumerableElementType();
+                    return srcArr.ElementType.Equals(enumerableElemType)
+                    || (IsCSharpReferenceType(srcArr.ElementType)
+                    && IsCSharpReferenceType(enumerableElemType)
+                    && HasImplicitReferenceConversion(srcArr.ElementType, enumerableElemType));
+                }
+                return false;
+            }
+            else if (SourceReferenceType.GetIsDelegate())
+            {
+                // TODO: implement the rule quoted below. Some reasoning as above.
+                //
+                // *  From any delegate_type to System.Delegate and the interfaces it implements.
+                return false;
+            }
+            else if (SourceReferenceType.Equals(PrimitiveTypes.Null))
+            {
+                return true;
+            }
+            else
+            {
+                return SourceReferenceType.Is(TargetReferenceType);
+            }
+        }
+
+        /// <summary>
+        /// Determines if there is an explicit reference conversion from the given source
+        /// reference type to the specified target reference type.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if there is an explicit reference conversion from the given source
+        /// type to the specified target type; otherwise, <c>false</c>.
+        /// </returns>
+        /// <param name="SourceReferenceType">The source reference type.</param>
+        /// <param name="TargetReferenceType">The target reference type.</param>
+        private static bool HasExplicitReferenceConversion(
+            IType SourceReferenceType, IType TargetReferenceType)
+        {
+            // Let's hear what the C# spec has to say about this:
+            //
+            // The explicit reference conversions are:
+            // *  From object and dynamic to any other reference_type.
+            // *  From any class_type S to any class_type T, provided S is a base class of T.
+            // *  From any class_type S to any interface_type T, provided S is not sealed and 
+            //    provided S does not implement T.
+            // *  From any interface_type S to any class_type T, provided T is not sealed or 
+            //    provided T implements S.
+            // *  From any interface_type S to any interface_type T, provided S is not derived 
+            //    from T.
+            // *  From an array_type S with an element type SE to an array_type T with an element 
+            //    type TE, provided all of the following are true:
+            //     *  S and T differ only in element type. In other words, S and T have the same 
+            //        number of dimensions.
+            //     *  Both SE and TE are reference_types.
+            //     *  An explicit reference conversion exists from SE to TE.
+            // *  From System.Array and the interfaces it implements to any array_type.
+            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
+            //    and its base interfaces, provided that there is an explicit reference conversion 
+            //    from S to T.
+            // *  From System.Collections.Generic.IList<S> and its base interfaces to a 
+            //    single-dimensional array type T[], provided that there is an explicit identity 
+            //    or reference conversion from S to T.
+            // *  From System.Delegate and the interfaces it implements to any delegate_type.
+            // *  From a reference type to a reference type T if it has an explicit reference 
+            //    conversion to a reference type T0 and T0 has an identity conversion T.
+            // *  From a reference type to an interface or delegate type T if it has an explicit 
+            //    reference conversion to an interface or delegate type T0 and either T0 is 
+            //    variance-convertible to T or T is variance-convertible to T0 (Variance conversion).
+            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type, 
+            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each 
+            //    type parameter Xi of D the following holds:
+            //     *  If Xi is invariant, then Si is identical to Ti.
+            //     *  If Xi is covariant, then there is an implicit or explicit identity 
+            //        or reference conversion from Si to Ti.
+            //     *  If Xi is contravariant, then Si and Ti are either identical or both reference types.
+            // *  Explicit conversions involving type parameters that are known to be reference types. 
+            //    For more details on explicit conversions involving type parameters, see Explicit 
+            //    conversions involving type parameters.
+            // 
+            // The explicit reference conversions are those conversions between reference-types that 
+            // require run-time checks to ensure they are correct.
+            //
+            // For an explicit reference conversion to succeed at run-time, the value of the source 
+            // operand must be null, or the actual type of the object referenced by the source operand 
+            // must be a type that can be converted to the destination type by an implicit reference 
+            // conversion (Implicit reference conversions) or boxing conversion (Boxing conversions). 
+            // If an explicit reference conversion fails, a System.InvalidCastException is thrown.
+            //
+            // Reference conversions, implicit or explicit, never change the referential identity of 
+            // the object being converted. In other words, while a reference conversion may change the 
+            // type of the reference, it never changes the type or value of the object being referred to.
+
+            if (SourceReferenceType.GetIsRootType())
+            {
+                return true;
+            }
+            else if (SourceReferenceType.GetIsArray())
+            {
+                if (TargetReferenceType.GetIsArray())
+                {
+                    var srcArr = SourceReferenceType.AsArrayType();
+                    var tgtArr = SourceReferenceType.AsArrayType();
+                    return srcArr.ArrayRank == tgtArr.ArrayRank
+                    && IsCSharpReferenceType(srcArr.ElementType)
+                    && IsCSharpReferenceType(tgtArr.ElementType)
+                    && HasExplicitReferenceConversion(
+                        srcArr.ElementType, tgtArr.ElementType);
+                }
+                // TODO: implement the conversion rules listed below. They are somewhat 
+                // troublesome to implement because relying on specific type names 
+                // constrains us to a specific standard library. Ideally, we'd get this
+                // information from the back-end in the future.
+                // 
+                // *  From System.Array and the interfaces it implements to any array_type.
+                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
+                //    and its base interfaces, provided that there is an explicit reference conversion 
+                //    from S to T.
+                // *  From System.Collections.Generic.IList<S> and its base interfaces to a 
+                //    single-dimensional array type T[], provided that there is an explicit identity 
+                //    or reference conversion from S to T.
+                return false;
+            }
+            // HACK: allow conversions from IEnumerable<S> to T[] as a temporary fix.
+            else if (SourceReferenceType.GetIsEnumerableType()
+                     && TargetReferenceType.GetIsArray())
+            {
+                var enumerableElemType = SourceReferenceType.GetEnumerableElementType();
+                var tgtArr = TargetReferenceType.AsArrayType();
+                return tgtArr.ArrayRank == 1
+                && (tgtArr.ElementType.Equals(enumerableElemType)
+                    || (IsCSharpReferenceType(tgtArr.ElementType)
+                        && IsCSharpReferenceType(enumerableElemType)
+                        && (HasImplicitReferenceConversion(
+                            enumerableElemType, tgtArr.ElementType)
+                            || HasExplicitReferenceConversion(
+                                enumerableElemType, tgtArr.ElementType))));
+            }
+            else if (SourceReferenceType.GetIsDelegate())
+            {
+                return TargetReferenceType.GetIsDelegate()
+                && HasExplicitGenericDelegateConversion(
+                    SourceReferenceType, TargetReferenceType);
+            }
+            else if (SourceReferenceType.GetIsInterface())
+            {
+                if (TargetReferenceType.GetIsInterface())
+                {
+                    // We can relax the requirement that "S is not derived from T", 
+                    // because implicit reference conversions are always preferred
+                    // over explicit reference conversions -- if S were derived from
+                    // T, then `HasExplicitReferenceConversion` would never have been
+                    // called in the first place.
+                    return true;
+                }
+                else if (!TargetReferenceType.GetIsArray()
+                         && !TargetReferenceType.GetIsDelegate())
+                {
+                    return TargetReferenceType.GetIsVirtual()
+                    || TargetReferenceType.Is(SourceReferenceType);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (TargetReferenceType.GetIsInterface())
+                {
+                    // We can relax the "and provided S does not implement T" requirement, 
+                    // because implicit reference conversions are always preferred
+                    // over explicit reference conversions -- if S actually implemented
+                    // T, then `HasExplicitReferenceConversion` would never have been
+                    // called in the first place.
+                    return SourceReferenceType.GetIsVirtual();
+                }
+                else if (!TargetReferenceType.GetIsArray()
+                         && !TargetReferenceType.GetIsDelegate())
+                {
+                    return TargetReferenceType.Is(SourceReferenceType);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        private static bool HasExplicitGenericDelegateConversion(
+            IType SourceDelegateType, IType TargetDelegateType)
+        {
+            // This function implements the following rule (from the C# spec):
+            //
+            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type, 
+            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each 
+            //    type parameter Xi of D the following holds:
+            //     *  If Xi is invariant, then Si is identical to Ti.
+            //     *  If Xi is covariant, then there is an implicit or explicit identity 
+            //        or reference conversion from Si to Ti.
+            //     *  If Xi is contravariant, then Si and Ti are either identical or both reference types.
+
+            if (!SourceDelegateType.GetGenericDeclaration().Equals(
+                TargetDelegateType.GetGenericDeclaration()))
+            {
+                return false;
+            }
+
+            var srcArgs = SourceDelegateType.GetGenericArguments().ToArray();
+
+            if (srcArgs.Length == 0)
+                return false;
+
+            var tgtArgs = TargetDelegateType.GetGenericArguments().ToArray();
+            var srcParams = SourceDelegateType.GetGenericDeclaration().GenericParameters.ToArray();
+
+            for (int i = 0; i < srcArgs.Length; i++)
+            {
+                var genParam = srcParams[i];
+                var srcGenArg = srcArgs[i];
+                var tgtGenArg = tgtArgs[i];
+
+                bool foundMatch = srcGenArg.Equals(tgtGenArg)
+                    || (genParam.GetIsCovariant() 
+                        && (HasImplicitReferenceConversion(
+                            srcGenArg, tgtGenArg)
+                            || HasExplicitReferenceConversion(
+                                srcGenArg, tgtGenArg))
+                    || (genParam.GetIsContravariant()
+                        && IsCSharpReferenceType(srcGenArg)
+                        && IsCSharpReferenceType(tgtGenArg)));
+                
+                if (!foundMatch)
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>

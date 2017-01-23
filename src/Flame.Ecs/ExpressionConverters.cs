@@ -2498,7 +2498,7 @@ namespace Flame.Ecs
                     new IStatement[] { ToStatement(lockee), lockBody }));
             }
 
-            if (!EcsConversionRules.IsClrReferenceType(lockeeTy))
+            if (!EcsConversionRules.IsCSharpReferenceType(lockeeTy))
             {
                 Scope.Log.LogError(new LogEntry(
                     "type error",
