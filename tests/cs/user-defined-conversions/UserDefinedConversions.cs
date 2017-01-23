@@ -46,12 +46,7 @@ class Test
         // an explicit conversion, a cast must be used:
         Console.WriteLine((int)numeral);
 
-        // Call the implicit conversion to string. Because there is no
-        // cast, the implicit conversion to string is the only
-        // conversion that is considered:
-        // TODO: uncomment the line below when method overloading is implemented
-        // properly.
-        //     Console.WriteLine(numeral);
+        Console.WriteLine(numeral);
 
         // Call the explicit conversion from numeral to int and
         // then the explicit conversion from int to short:

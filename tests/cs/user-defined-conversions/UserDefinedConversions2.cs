@@ -65,8 +65,6 @@ class Test
         // No cast is required:
         roman = binary;
         Console.WriteLine((int)binary);
-        // TODO: uncomment the line below when method overloading is implemented
-        // properly.
-        //     Console.WriteLine(binary);
+        Console.WriteLine(binary);
     }
 }
