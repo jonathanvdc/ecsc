@@ -30,6 +30,15 @@ namespace Flame.Ecs
                 return Node;
         }
 
+        private static bool IsAttributeClass(IType Type)
+        {
+            return Type != null
+            && Type.GetIsReferenceType()
+            && !Type.GetIsDelegate()
+            && !Type.GetIsArray()
+            && !Type.GetIsInterface();
+        }
+
         /// <summary>
         /// Converts a type node for a custom attribute. This
         /// includes appending an 'Attribute' suffix if initial
@@ -46,9 +55,9 @@ namespace Flame.Ecs
             var suffixedType = Converter.ConvertType(
                 AppendAttributeSuffix(Node), Scope);
 
-            if (simpleType == null)
+            if (!IsAttributeClass(simpleType))
             {
-                if (suffixedType == null)
+                if (!IsAttributeClass(suffixedType))
                 {
                     Scope.Log.LogError(new LogEntry(
                             "type resolution",
@@ -62,12 +71,14 @@ namespace Flame.Ecs
             }
             else
             {
-                if (suffixedType != null)
+                if (IsAttributeClass(suffixedType))
                 {
                     Scope.Log.LogError(new LogEntry(
                         "type resolution",
                         NodeHelpers.HighlightEven(
-                            "attribute type '", Node.ToString(), "' is ambiguous."),
+                            "attribute type '", Node.ToString(), "' is ambiguous " +
+                            "between classes '", Scope.TypeNamer.Convert(simpleType), 
+                            "' and '", Scope.TypeNamer.Convert(suffixedType), "'."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
 
