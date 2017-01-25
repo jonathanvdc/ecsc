@@ -29,6 +29,7 @@ tests
     logical-ops/LogicalOps.test;
     null/Null.test;
     overrides/Overrides.test;
+    params-methods/ParamsMethods.test;
     partial/Partial.test;
     prop-init/PropInit.test;
     properties/Properties.test;
