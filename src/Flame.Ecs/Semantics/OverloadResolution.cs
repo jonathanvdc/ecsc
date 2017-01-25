@@ -89,18 +89,6 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Gets the list of parameter types for the given delegate
-        /// expression.
-        /// </summary>
-        /// <returns>The delegate parameter type list.</returns>
-        /// <param name="Delegate">The delegate whose parameter type list is to be ascertained.</param>
-        private static IReadOnlyList<IType> GetDelegateParameterTypeList(
-            IExpression Delegate)
-        {
-            return Delegate.GetDelegateParameterTypes().ToArray();
-        }
-
-        /// <summary>
         /// Tries to create an expression that invokes the most
         /// appropriate delegate in the given candidate expressions 
         /// with the given list of arguments, for the given scope. 
@@ -116,17 +104,18 @@ namespace Flame.Ecs
             IType[] ArgumentTypes)
         {
             var argExprs = Arguments.Select(pair => pair.Item1).ToArray();
+            var overloadCandidates = CandidateOverload.CreateAll(
+                Candidates, Arguments.Count);
 
-            IExpression bestDelegate;
+            CandidateOverload bestOverload;
             if (!TryResolveOverload(
-                Candidates, argExprs, Scope, 
-                GetDelegateParameterTypeList,
-                out bestDelegate))
+                overloadCandidates, argExprs, Scope, 
+                out bestOverload))
             {
                 return null;
             }
 
-            var delegateParams = GetDelegateParameterTypeList(bestDelegate);
+            var delegateParams = bestOverload.ParameterTypes;
 
             var delegateArgs = new IExpression[Arguments.Count];
             for (int i = 0; i < delegateArgs.Length; i++)
@@ -136,7 +125,7 @@ namespace Flame.Ecs
                     Arguments[i].Item2);
             }
 
-            return bestDelegate.CreateDelegateInvocationExpression(delegateArgs);
+            return bestOverload.CreateInvocationExpression(delegateArgs);
         }
 
         /// <summary>
@@ -147,15 +136,13 @@ namespace Flame.Ecs
         /// <param name="Overloads">The set of possible overloads.</param>
         /// <param name="ArgumentList">The argument list.</param>
         /// <param name="Scope">The current scope.</param>
-        /// <param name="GetParameterTypes">Gets the list of parameter types for a given overload.</param>
+        /// <param name="GetParameters">Gets the list of parameters for a given overload.</param>
         /// <param name="Result">The location to which the result will be written.</param>
-        /// <typeparam name="T">The type of the overloads.</typeparam>
-        public static bool TryResolveOverload<T>(
-            IEnumerable<T> Overloads,
+        public static bool TryResolveOverload(
+            IEnumerable<CandidateOverload> Overloads,
             IReadOnlyList<IExpression> ArgumentList,
             FunctionScope Scope,
-            Func<T, IReadOnlyList<IType>> GetParameterTypes,
-            out T Result)
+            out CandidateOverload Result)
         {
             // According to the C# spec:
             //
@@ -175,17 +162,15 @@ namespace Flame.Ecs
             //     is better than all other function members, then the function 
             //     member invocation is ambiguous and a binding-time error occurs.
 
-            var candidates = new List<KeyValuePair<T, IReadOnlyList<IType>>>();
+            var candidates = new List<CandidateOverload>();
             foreach (var item in Overloads)
             {
-                var pTypes = GetParameterTypes(item);
-                if (IsApplicable(pTypes, ArgumentList, Scope))
+                if (IsApplicable(item.ParameterTypes, ArgumentList, Scope))
                 {
                     // Only add items to the candidate set if they
                     // are actually applicable.
-                    candidates.Add(
-                        new KeyValuePair<T, IReadOnlyList<IType>>(
-                            item, pTypes));
+                    candidates.Add(item);
+                    continue;
                 }
             }
 
@@ -194,15 +179,13 @@ namespace Flame.Ecs
                 // This branch is technically redundant, but it does
                 // optimize the common case where a function is not
                 // overloaded at all.
-                Result = candidates[0].Key;
+                Result = candidates[0];
                 return true;
             }
 
-            KeyValuePair<T, IReadOnlyList<IType>> bestOverload;
             bool success = candidates.TryGetBestElement((left, right) => 
-                GetBetterFunctionMember(ArgumentList, left.Value, right.Value, Scope), 
-                out bestOverload);
-            Result = bestOverload.Key;
+                GetBetterFunctionMember(ArgumentList, left, right, Scope), 
+                out Result);
             return success;
         }
 
@@ -280,36 +263,67 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Determines which function member is better for the given 
+        /// Determines which overload is better for the given 
         /// argument list in the current scope.
         /// </summary>
-        /// <returns>The better function member.</returns>
+        /// <returns>The better overload.</returns>
         /// <param name="ArgumentList">The argument list.</param>
-        /// <param name="FirstParameterTypes">The first list of parameter types.</param>
-        /// <param name="SecondParameterTypes">The second list of parameter types.</param>
+        /// <param name="FirstOverload">The first overload.</param>
+        /// <param name="SecondOverload">The second overload.</param>
         /// <param name="Scope">The current scope.</param>
         private static Betterness GetBetterFunctionMember(
             IReadOnlyList<IExpression> ArgumentList,
-            IReadOnlyList<IType> FirstParameterTypes,
-            IReadOnlyList<IType> SecondParameterTypes,
+            CandidateOverload FirstOverload,
+            CandidateOverload SecondOverload,
             FunctionScope Scope)
         {
-            if (IsBetterFunctionMember(
-                ArgumentList, FirstParameterTypes,
-                SecondParameterTypes, Scope))
+            var fstParamTypes = FirstOverload.ParameterTypes;
+            var sndParamTypes = SecondOverload.ParameterTypes;
+
+            var firstBetterness = IsBetterFunctionMember(
+                ArgumentList, fstParamTypes, sndParamTypes, Scope);
+
+            switch (firstBetterness)
             {
+                case Betterness.First:
+                    return Betterness.First;
+                case Betterness.Equal:
+                    return ResolveBetterFunctionMemberTie(
+                        FirstOverload, SecondOverload);
+                case Betterness.Second:
+                default:
+                {
+                    if (IsBetterFunctionMember(
+                        ArgumentList, sndParamTypes, 
+                        fstParamTypes, Scope) == Betterness.First)
+                    {
+                        return Betterness.Second;
+                    }
+                    else
+                    {
+                        return Betterness.Neither;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds out which of the given tied overloads is
+        /// better, if any.
+        /// </summary>
+        /// <returns>The better function member.</returns>
+        /// <param name="FirstOverload">First overload.</param>
+        /// <param name="SecondOverload">Second overload.</param>
+        private static Betterness ResolveBetterFunctionMemberTie(
+            CandidateOverload FirstOverload, CandidateOverload SecondOverload)
+        {
+            // TODO: update this to be fully spec-compliant
+            if (FirstOverload.IsExpanded && !SecondOverload.IsExpanded)
                 return Betterness.First;
-            }
-            else if (IsBetterFunctionMember(
-                ArgumentList, SecondParameterTypes,
-                FirstParameterTypes, Scope))
-            {
+            else if (!FirstOverload.IsExpanded && SecondOverload.IsExpanded)
                 return Betterness.Second;
-            }
             else
-            {
                 return Betterness.Neither;
-            }
         }
 
         /// <summary>
@@ -318,16 +332,19 @@ namespace Flame.Ecs
         /// list of parameter types for the specified argument list in the current scope.
         /// </summary>
         /// <returns>
-        /// <c>true</c> if the function form with the first list of parameter types 
+        /// <c>Betterness.First</c> if the function form with the first list of parameter types 
         /// is a better function member than the function form with the second 
-        /// list of parameter types for the specified argument list in the current scope; 
-        /// otherwise, <c>false</c>.
+        /// list of parameter types for the specified argument list in the current scope.
+        /// <c>Betterness.Equal</c> if the function form with the first list of parameter types 
+        /// is an equally good function member as the function form with the second 
+        /// list of parameter types for the specified argument list in the current scope.
+        /// Otherwise, <c>Betterness.Second</c>.
         /// </returns>
         /// <param name="ArgumentList">The argument list list.</param>
         /// <param name="BetterParameterTypes">The first list of parameter types.</param>
         /// <param name="WorseParameterTypes">The second list of parameter types.</param>
         /// <param name="Scope">The current scope.</param>
-        private static bool IsBetterFunctionMember(
+        private static Betterness IsBetterFunctionMember(
             IReadOnlyList<IExpression> ArgumentList,
             IReadOnlyList<IType> BetterParameterTypes,
             IReadOnlyList<IType> WorseParameterTypes,
@@ -347,16 +364,21 @@ namespace Flame.Ecs
             // When performing this evaluation, if Mp or Mq is applicable in its expanded form, then 
             // Px or Qx refers to a parameter in the expanded form of the parameter list.
 
-            bool foundBetter = false;
+            var foundBetter = Betterness.Equal;
             for (int i = 0; i < ArgumentList.Count; i++)
             {
                 var arg = ArgumentList[i];
                 var betterParamTy = BetterParameterTypes[i];
                 var worseParamTy = WorseParameterTypes[i];
-                if (!foundBetter && IsBetterConversion(arg, betterParamTy, worseParamTy, Scope))
-                    foundBetter = true;
+                if (foundBetter == Betterness.Equal
+                    && IsBetterConversion(arg, betterParamTy, worseParamTy, Scope))
+                {
+                    foundBetter = Betterness.First;
+                }
                 else if (IsBetterConversion(arg, worseParamTy, betterParamTy, Scope))
-                    return false;                    
+                {
+                    return Betterness.Second;
+                }
             }
             return foundBetter;
         }
