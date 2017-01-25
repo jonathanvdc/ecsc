@@ -133,13 +133,24 @@ namespace Flame.Ecs
             new WarningDescription("ecs", Warnings.Instance.Pedantic);
 
         /// <summary>
-        /// The -Wecs-using-cast warning.
+        /// The -Wecs-using-cast warning, which is triggered when a `using`
+        /// cast is analyzed.
         /// </summary>
         /// <remarks>
         /// This is a -Wecs warning.
         /// </remarks>
         public static readonly WarningDescription EcsExtensionUsingCastWarning = 
             new WarningDescription("ecs-using-cast", EcsExtensionWarningGroup);
+
+        /// <summary>
+        /// The -Wecs-params-enumerable warning, which is triggered when 
+        /// a `params IEnumerable&lt;T&gt;` parameter is encountered.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wecs warning.
+        /// </remarks>
+        public static readonly WarningDescription EcsExtensionParamsEnumerableWarning = 
+            new WarningDescription("ecs-params-enumerable", EcsExtensionWarningGroup);
     }
 }
 

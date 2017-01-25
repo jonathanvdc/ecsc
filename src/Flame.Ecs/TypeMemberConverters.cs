@@ -90,6 +90,22 @@ namespace Flame.Ecs
                             "array nor an enumerable type."),
                         NodeHelpers.ToSourceLocation(paramsNode.Range)));
                 }
+                else if (!paramTy.GetIsArray())
+                {
+                    // Log a warning whenever 'params T' is encountered where T is not 
+                    // an array.
+                    var paramsEnumerableWarn = EcsWarnings.EcsExtensionParamsEnumerableWarning;
+                    if (paramsEnumerableWarn.UseWarning(Scope.Log.Options))
+                    {
+                        Scope.Log.LogWarning(new LogEntry(
+                            "EC# extension",
+                            paramsEnumerableWarn.CreateMessage(
+                                new MarkupNode("#group", NodeHelpers.HighlightEven(
+                                    "non-array '", "params", 
+                                    "' parameters are an EC# extension. "))),
+                            NodeHelpers.ToSourceLocation(paramsNode.Range)));
+                    }
+                }
                 descParam.AddAttribute(PrimitiveAttributes.Instance.VarArgsAttribute);
             }
             return Tuple.Create<IParameter, LNode>(descParam, thisNode);
