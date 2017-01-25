@@ -1,0 +1,19 @@
+using System;
+using System.Collections.Generic;
+
+public static class Program
+{
+    public static void PrintAll(params IEnumerable<object> list)
+    {
+        foreach (var item in list)
+        {
+            Console.Write(item + " ");
+        }
+        Console.WriteLine();
+    }
+
+    public static void Main(string[] Args)
+    {
+        PrintAll(1, true, "test", 4.5, 2.35f);
+    }
+}

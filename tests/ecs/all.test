@@ -3,6 +3,7 @@ tests
 {
     alt-class/AltClass.test;
     generic-alt-class/GenericAltClass.test;
+    ienumerable-params/IEnumerableParams.test;
     static-if/StaticIf.test;
     using-cast/UsingCast.test;
 }
