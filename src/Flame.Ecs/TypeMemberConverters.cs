@@ -18,8 +18,8 @@ namespace Flame.Ecs
     {
         /// <summary>
         /// Converts a parameter declaration node. A tuple is 
-        /// returned, of which the first element describes the analyzed
-        /// parameter, and the is an optional 'this' attribute node,
+        /// returned of which the first element describes the analyzed
+        /// parameter. The second is an optional 'this' attribute node,
         /// which is present in extension methods.
         /// </summary>
         public static Tuple<IParameter, LNode> ConvertParameter(
@@ -39,6 +39,7 @@ namespace Flame.Ecs
             }
             bool isOut = false;
             LNode thisNode = null;
+            LNode paramsNode = null;
             var attrs = Converter.ConvertAttributeList(Node.Attrs, node =>
             {
                 if (node.IsIdNamed(CodeSymbols.Ref))
@@ -57,6 +58,11 @@ namespace Flame.Ecs
                     thisNode = node;
                     return true;
                 }
+                else if (node.IsIdNamed(CodeSymbols.Params))
+                {
+                    paramsNode = node;
+                    return true;
+                }
                 else
                 {
                     return false;
@@ -70,6 +76,21 @@ namespace Flame.Ecs
             if (isOut)
             {
                 descParam.AddAttribute(PrimitiveAttributes.Instance.OutAttribute);
+            }
+            if (paramsNode != null)
+            {
+                if (paramTy.GetEnumerableElementType() == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "parameter '", name.ToString(), "' was annotated " +
+                            "with the '", "params", "' modifier, but its type ('", 
+                            Scope.TypeNamer.Convert(paramTy), "') was neither an " +
+                            "array nor an enumerable type."),
+                        NodeHelpers.ToSourceLocation(paramsNode.Range)));
+                }
+                descParam.AddAttribute(PrimitiveAttributes.Instance.VarArgsAttribute);
             }
             return Tuple.Create<IParameter, LNode>(descParam, thisNode);
         }
