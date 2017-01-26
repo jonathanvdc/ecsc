@@ -3,6 +3,7 @@ using LeMP;
 using Loyc.Syntax;
 using Loyc;
 using System.Collections.Generic;
+using Loyc.Collections;
 
 namespace EcscMacros
 {
@@ -230,6 +231,48 @@ namespace EcscMacros
                             value,
                             idisposableNode),
                         GSymbol.Get("Dispose"))));
+        }
+
+        [LexicalMacro(
+            "#var(T, variable = #arrayInit(values...))", 
+            "lowers array initializers to new-array expressions", 
+            "#var")]
+        public static LNode LowerArrayInitializer(LNode Node, IMacroContext Sink)
+        {
+            // We want to match syntax trees that look like this:
+            //
+            // #var(T, variable = #arrayInit(values...))
+            //
+            // and then transform them to:
+            //
+            // #var(T, variable = #new(T, values...))
+
+            if (!Node.CallsMin(CodeSymbols.Var, 1))
+                return Reject(Sink, Node, "'#var' nodes must take at least one argument.");
+
+            var varType = Node.Args[0];
+            var newArgs = new VList<LNode>();
+            newArgs.Add(varType);
+            foreach (var item in Node.Args.Slice(1))
+            {
+                if (item.Calls(CodeSymbols.Assign, 2))
+                {
+                    var rhs = item.Args[1];
+                    if (rhs.Calls(CodeSymbols.ArrayInit))
+                    {
+                        var lhs = item.Args[0];
+                        newArgs.Add(
+                            item.WithArgs(
+                                lhs,
+                                F.Call(CodeSymbols.New, F.Call(varType))
+                                .PlusArgs(rhs.Args)
+                                .WithRange(rhs.Range)));
+                        continue;
+                    }
+                }
+                newArgs.Add(item);
+            }
+            return Node.WithArgs(newArgs);
         }
     }
 }
