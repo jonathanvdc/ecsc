@@ -2,6 +2,7 @@
 tests
 {
     anonymous-types/AnonymousTypes.test;
+    array-initializers/ArrayInitializers.test;
     arithmetic/Arithmetic.test;
     arrays/Arrays.test;
     assign/Assign.test;
