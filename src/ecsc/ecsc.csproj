@@ -78,76 +78,76 @@
       <HintPath>..\packages\LeMP.24.3.0\lib\net45\LeMP.StdMacros.dll</HintPath>
     </Reference>
     <Reference Include="Flame">
-      <HintPath>..\packages\Flame.Compiler.0.9.3\lib\net45\Flame.dll</HintPath>
+      <HintPath>..\packages\Flame.Compiler.0.9.4\lib\net45\Flame.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Compiler">
-      <HintPath>..\packages\Flame.Compiler.0.9.3\lib\net45\Flame.Compiler.dll</HintPath>
+      <HintPath>..\packages\Flame.Compiler.0.9.4\lib\net45\Flame.Compiler.dll</HintPath>
     </Reference>
     <Reference Include="Pixie">
-      <HintPath>..\packages\Flame.Compiler.0.9.3\lib\net45\Pixie.dll</HintPath>
+      <HintPath>..\packages\Flame.Compiler.0.9.4\lib\net45\Pixie.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Optimization">
-      <HintPath>..\packages\Flame.Optimization.0.9.3\lib\net45\Flame.Optimization.dll</HintPath>
+      <HintPath>..\packages\Flame.Optimization.0.9.4\lib\net45\Flame.Optimization.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Analysis">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Analysis.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Analysis.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Cecil">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Cecil.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Flame.CodeDescription">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.CodeDescription.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.CodeDescription.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Cpp">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Cpp.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Cpp.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Front.Common">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Front.Common.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Front.Common.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Front">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Front.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Front.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Intermediate">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Intermediate.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Intermediate.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Markdown">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Markdown.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Markdown.dll</HintPath>
     </Reference>
     <Reference Include="Flame.MIPS">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.MIPS.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.MIPS.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Python">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Python.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Python.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Recompilation">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Recompilation.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Recompilation.dll</HintPath>
     </Reference>
     <Reference Include="Flame.RT">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.RT.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.RT.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Syntax">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Syntax.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Syntax.dll</HintPath>
     </Reference>
     <Reference Include="Flame.TextContract">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.TextContract.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.TextContract.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Verification">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Verification.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Verification.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Wasm">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.Wasm.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.Wasm.dll</HintPath>
     </Reference>
     <Reference Include="Flame.XmlDocs">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.XmlDocs.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.XmlDocs.dll</HintPath>
     </Reference>
     <Reference Include="Pixie.Xml">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Pixie.Xml.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Pixie.Xml.dll</HintPath>
     </Reference>
     <Reference Include="Flame.DSProject">
-      <HintPath>..\packages\Flame.Front.0.9.3\lib\net45\Flame.DSProject.dll</HintPath>
+      <HintPath>..\packages\Flame.Front.0.9.4\lib\net45\Flame.DSProject.dll</HintPath>
     </Reference>
     <Reference Include="Flame.Build.Lazy">
-      <HintPath>..\packages\Flame.Build.Lazy.0.9.3\lib\net45\Flame.Build.Lazy.dll</HintPath>
+      <HintPath>..\packages\Flame.Build.Lazy.0.9.4\lib\net45\Flame.Build.Lazy.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
