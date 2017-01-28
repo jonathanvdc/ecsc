@@ -12,6 +12,7 @@ tests
     const/Const.test;
     constructor/Constructor.test;
     enums/Enums.test;
+    equatable-struct/EquatableStruct.test;
     extension-methods/ExtensionMethods.test;
     exception-handling/ExceptionHandling.test;
     field/Field.test;
@@ -47,4 +48,5 @@ tests
     user-defined-operators/UserDefinedOperators.test;
     using-statement/UsingStatement.test;
     using-static/UsingStatic.test;
+    writeline-formatted/WriteLineFormatted.test;
 }

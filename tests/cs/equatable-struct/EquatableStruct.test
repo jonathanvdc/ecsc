@@ -37,7 +37,7 @@ configs
 
 init
 {
-    Filename = ParamsMethods;
+    Filename = EquatableStruct;
     Executable = bin/$(Filename).exe;
     Args = ;
 }
