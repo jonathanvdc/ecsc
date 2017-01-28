@@ -14,8 +14,6 @@ class Sample
 
     public static void Main()
     {
-        Console.Clear();
-
         // Format a negative integer or floating-point number in various ways.
         Console.WriteLine("Standard Numeric Format Specifiers");
         Console.WriteLine(
