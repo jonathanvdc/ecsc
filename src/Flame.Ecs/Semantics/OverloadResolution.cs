@@ -318,9 +318,10 @@ namespace Flame.Ecs
             CandidateOverload FirstOverload, CandidateOverload SecondOverload)
         {
             // TODO: update this to be fully spec-compliant
-            if (FirstOverload.IsExpanded && !SecondOverload.IsExpanded)
+            // Prefer methods whose 'params' arrays have not been expanded.
+            if (!FirstOverload.IsExpanded && SecondOverload.IsExpanded)
                 return Betterness.First;
-            else if (!FirstOverload.IsExpanded && SecondOverload.IsExpanded)
+            else if (FirstOverload.IsExpanded && !SecondOverload.IsExpanded)
                 return Betterness.Second;
             else
                 return Betterness.Neither;
