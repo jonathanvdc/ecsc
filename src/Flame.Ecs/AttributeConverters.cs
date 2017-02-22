@@ -93,7 +93,7 @@ namespace Flame.Ecs
         /// <param name="Node">The custom attribute node.</param>
         /// <param name="Scope">The global scope.</param>
         /// <param name="Converter">The node converter.</param>
-        public static IAttribute ConvertCustomAttribute(
+        public static IEnumerable<IAttribute> ConvertCustomAttribute(
             LNode Node, GlobalScope Scope, NodeConverter Converter)
         {
             var typeNode = Node.IsCall ? Node.Target : Node;
@@ -103,7 +103,7 @@ namespace Flame.Ecs
             if (attrType == null)
                 // Early-out here. We don't even know what type of
                 // attribute we're constructing.
-                return null;
+                return Enumerable.Empty<IAttribute>();
 
             var localScope = Scope.CreateLocalScope();
             var ctorArgs = OverloadResolution.ConvertArguments(argNodes, localScope, Converter);
@@ -138,12 +138,12 @@ namespace Flame.Ecs
                         }
                         boundArgs.Add(bArg);
                     }
-                    return new ConstructedAttribute(invExpr.Constructor, boundArgs);
+                    return new IAttribute[] { new ConstructedAttribute(invExpr.Constructor, boundArgs) };
                 }
             }
 
-            // Something went wrong. Return null.
-            return null;
+            // Something went wrong. Return nothing.
+            return Enumerable.Empty<IAttribute>();
         }
     }
 }

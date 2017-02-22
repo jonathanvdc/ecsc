@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Flame.Compiler;
 using Flame.Build;
+using Flame.Compiler;
 using Flame.Compiler.Expressions;
-using Pixie;
 using Flame.Ecs.Semantics;
+using Flame.Syntax;
+using Pixie;
 using Loyc;
 
 namespace Flame.Ecs
@@ -17,30 +18,36 @@ namespace Flame.Ecs
     public sealed class GlobalScope
     {
         public GlobalScope(
-            IBinder Binder, ConversionRules ConversionRules, 
-            ICompilerLog Log, TypeConverterBase<string> TypeNamer)
-            : this(new QualifiedBinder(Binder), ConversionRules, Log, TypeNamer)
+            IBinder Binder, ConversionRules ConversionRules,
+            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            IDocumentationParser DocumentationParser)
+            : this(
+                new QualifiedBinder(Binder), ConversionRules,
+                Log, TypeNamer, DocumentationParser)
         {
         }
 
         public GlobalScope(
-            QualifiedBinder Binder, ConversionRules ConversionRules, 
-            ICompilerLog Log, TypeConverterBase<string> TypeNamer)
+            QualifiedBinder Binder, ConversionRules ConversionRules,
+            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            IDocumentationParser DocumentationParser)
             : this(
-                Binder, ConversionRules, Log, TypeNamer, 
+                Binder, ConversionRules, Log, TypeNamer, DocumentationParser,
                 new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()))
         {
         }
 
         private GlobalScope(
-            QualifiedBinder Binder, ConversionRules ConversionRules, 
+            QualifiedBinder Binder, ConversionRules ConversionRules,
             ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            IDocumentationParser DocumentationParser,
             ThreadLocal<GlobalMemberCache> MemberCache)
         {
             this.Binder = Binder;
             this.ConversionRules = ConversionRules;
             this.Log = Log;
             this.TypeNamer = TypeNamer;
+            this.DocumentationParser = DocumentationParser;
             this.memCache = MemberCache;
             this.extMemCache = new ThreadLocal<ExtensionMemberCache>(
                 CreateExtensionMemberCache);
@@ -70,6 +77,12 @@ namespace Flame.Ecs
         /// </summary>
         /// <value>The type namer.</value>
         public TypeConverterBase<string> TypeNamer { get; private set; }
+
+        /// <summary>
+        /// Gets the documentation parser for this global scope.
+        /// </summary>
+        /// <value>The documentation parser.</value>
+        public IDocumentationParser DocumentationParser { get; private set; }
 
         private ThreadLocal<GlobalMemberCache> memCache;
         private ThreadLocal<ExtensionMemberCache> extMemCache;
@@ -115,7 +128,8 @@ namespace Flame.Ecs
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
         {
             return new GlobalScope(
-                NewBinder, ConversionRules, Log, TypeNamer, memCache);
+                NewBinder, ConversionRules, Log, TypeNamer,
+                DocumentationParser, memCache);
         }
 
         private ExtensionMemberCache CreateExtensionMemberCache()

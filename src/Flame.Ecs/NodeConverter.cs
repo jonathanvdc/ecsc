@@ -10,6 +10,7 @@ using Flame.Compiler.Expressions;
 using Flame.Ecs.Semantics;
 using Pixie;
 using Flame.Ecs.Values;
+using EcscMacros;
 
 namespace Flame.Ecs
 {
@@ -17,7 +18,7 @@ namespace Flame.Ecs
     using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
     using LocalTypeConverter = Func<LNode, LocalScope, NodeConverter, IType>;
     using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
-    using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IAttribute>;
+    using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IEnumerable<IAttribute>>;
     using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
     using ValueConverter = Func<LNode, LocalScope, NodeConverter, IValue>;
     using TypeOrExpressionConverter = Func<LNode, LocalScope, NodeConverter, TypeOrExpression>;
@@ -193,14 +194,14 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts an attribute node. Null is returned if that fails.
         /// </summary>
-        public IAttribute ConvertAttribute(
+        public IEnumerable<IAttribute> ConvertAttribute(
             LNode Node, GlobalScope Scope)
         {
             var conv = GetConverterOrDefault(attrConverters, Node);
             if (conv == null)
             {
                 if (Node.IsTrivia)
-                    return null;
+                    return Enumerable.Empty<IAttribute>();
                 else
                     return CustomAttributeConverter(Node, Scope, this);
             }
@@ -227,8 +228,8 @@ namespace Flame.Ecs
                 if (!HandleSpecial(item))
                 {
                     var result = ConvertAttribute(item, Scope);
-                    if (result != null)
-                        yield return result;
+                    foreach (var attr in result)
+                        yield return attr;
                 }
             }
         }
@@ -578,7 +579,7 @@ namespace Flame.Ecs
         /// </summary>
         public void AliasAttribute(Symbol Symbol, IAttribute Attribute)
         {
-            AddAttributeConverter(Symbol, (node, scope, self) => Attribute);
+            AddAttributeConverter(Symbol, (node, scope, self) => new IAttribute[] { Attribute });
         }
 
         /// <summary>
@@ -632,6 +633,7 @@ namespace Flame.Ecs
                 result.AliasAttribute(CodeSymbols.Abstract, PrimitiveAttributes.Instance.AbstractAttribute);
                 result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
                 result.AliasAttribute(CodeSymbols.Virtual, PrimitiveAttributes.Instance.VirtualAttribute);
+                result.AddAttributeConverter(EcscSymbols.TriviaDocumentationComment, TriviaConverters.ConvertDocumentationComment);
 
                 // Statements
                 result.AddExprConverter(CodeSymbols.Break, ExpressionConverters.ConvertBreakExpression);

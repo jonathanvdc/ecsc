@@ -15,6 +15,7 @@ using Flame.Front.Options;
 using Flame.Front.Projects;
 using Flame.Front.Target;
 using Flame.Verification;
+using Flame.Syntax;
 using LeMP;
 using Loyc;
 using Loyc.Collections;
@@ -196,7 +197,8 @@ namespace ecsc
             NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var globalScope = new GlobalScope(
                 Binder, EcsConversionRules.Instance,
-                Log, EcsTypeNamer.Instance);
+                Log, EcsTypeNamer.Instance,
+                Log.Options.GetDocumentationParser());
 
             var mainNs = new RootNamespace(DeclaringAssembly);
             foreach (var item in Units)
