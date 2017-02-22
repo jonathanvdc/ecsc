@@ -88,16 +88,28 @@ namespace EcscMacros
             var docs = new StringBuilder();
             foreach (var item in Node.Attrs)
             {
-                if (IsSinglelineDocumentationComment(item)
-                    || IsMultilineDocumentationComment(item))
+                if (IsSinglelineDocumentationComment(item))
                 {
                     // Single-line documentation comments start with '///'.
                     // Since the '//' part is parsed as part of the comment, we only
                     // need to trim the leading '/'.
-                    // Analogously, multi-line documentation comments start with '/**'.
+                    docs.AppendLine(item.Args[0].Value.ToString().Substring(1));
+                }
+                else if (IsMultilineDocumentationComment(item))
+                {
+                    // Multi-line documentation comments start with '/**'.
                     // Since the '/*' part is parsed as part of the comment, we only
                     // need to trim the leading '*'.
-                    docs.AppendLine(item.Args[0].Value.ToString().Substring(1));
+                    string docContents = item.Args[0].Value.ToString().Substring(1);
+                    // However, there's a catch. Multi-line documentation comments
+                    // may contain lines that start with an asterisk. These should
+                    // be removed.
+                    foreach (var line in docContents.Split(
+                        new string[] { Environment.NewLine }, StringSplitOptions.None))
+                    {
+                        // Extract the parenthesized part from [\w]*[\*]*(.*)
+                        docs.AppendLine(line.TrimStart(null).TrimStart('*'));
+                    }
                 }
                 else
                 {
