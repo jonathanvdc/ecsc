@@ -1,0 +1,44 @@
+// A compare-test test description.
+// This test compares ecsc to the reference implementation (csc or mcs).
+
+build
+{
+    $(compiler) $(Filename).cs $(Flags);
+}
+
+run
+{
+    return = @($(net-runtime) $(Executable) $(Args));
+}
+
+configs
+{
+    EcscOg
+    {
+        compiler = $ecsc;
+        Flags = -Og -platform clr -o $(Executable) -docs;
+    }
+    EcscO3
+    {
+        compiler = $ecsc;
+        Flags = -O3 -platform clr -o $(Executable) -docs;
+    }
+    ReferenceDebug
+    {
+        compiler = $csc;
+        Flags = /debug+ /out:$(Executable) /doc:$(Documentation);
+    }
+    ReferenceRelease
+    {
+        compiler = $csc;
+        Flags = /optimize+ /out:$(Executable) /doc:$(Documentation);
+    }
+}
+
+init
+{
+    Filename = XmlDocs;
+    Executable = bin/$(Filename).exe;
+    Documentation = bin/$(Filename).xml;
+    Args = ;
+}

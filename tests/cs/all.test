@@ -49,4 +49,5 @@ tests
     using-statement/UsingStatement.test;
     using-static/UsingStatic.test;
     writeline-formatted/WriteLineFormatted.test;
+    xml-docs/XmlDocs.test;
 }
