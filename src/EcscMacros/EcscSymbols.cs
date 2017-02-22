@@ -54,6 +54,11 @@ namespace EcscMacros
         /// Disposes a value, if it implements IDisposable.
         /// </summary>
         public static readonly Symbol DisposeValue = GSymbol.Get("#dispose_value");
+
+        /// <summary>
+        /// A documentation comment.
+        /// </summary>
+        public static readonly Symbol TriviaDocumentationComment = GSymbol.Get("#trivia_doc_comment");
     }
 }
 

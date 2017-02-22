@@ -236,7 +236,7 @@ namespace EcscMacros
         [LexicalMacro(
             "#var(T, variable = #arrayInit(values...))", 
             "lowers array initializers to new-array expressions", 
-            "#var")]
+            "#var", Mode = MacroMode.Passive | MacroMode.Normal)]
         public static LNode LowerArrayInitializer(LNode Node, IMacroContext Sink)
         {
             // We want to match syntax trees that look like this:
