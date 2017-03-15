@@ -1395,7 +1395,7 @@ namespace Flame.Ecs
             IValue Value, ILocalScope Scope,
             SourceLocation Location)
         {
-            if (PrimitiveTypes.String.Equals(Value))
+            if (PrimitiveTypes.String.Equals(Value.Type))
                 return Value.CreateGetExpressionOrError(Scope, Location);
 
             var fScope = Scope.Function;
