@@ -1516,14 +1516,32 @@ namespace Flame.Ecs
             {
                 if (opTy == null)
                 {
-                    globalScope.Log.LogError(new LogEntry(
-                        "operator application",
-                        NodeHelpers.HighlightEven(
-                            "operator '", Op.Name, "' cannot be applied to operands of type '",
-                            globalScope.TypeNamer.Convert(lTy), "' and '",
-                            globalScope.TypeNamer.Convert(rTy), "'."),
-                        LeftLocation.Concat(RightLocation)));
-                    return new UnknownExpression(lTy);
+                    // We *might* be dealing with the case where one of the operands can be
+                    // converted to the other operand's type via a literal conversion, e.g.,
+                    //
+                    //     ulong x = 10;
+                    //     ulong y = x & 0x2;
+                    //
+                    // So we should test if one operand is convertible to the other before panicking.
+                    if (Scope.HasImplicitConversion(lExpr, rExpr.Type))
+                    {
+                        opTy = rExpr.Type;
+                    }
+                    else if (Scope.HasImplicitConversion(rExpr, lExpr.Type))
+                    {
+                        opTy = lExpr.Type;
+                    }
+                    else
+                    {
+                        globalScope.Log.LogError(new LogEntry(
+                            "operator application",
+                            NodeHelpers.HighlightEven(
+                                "operator '", Op.Name, "' cannot be applied to operands of type '",
+                                globalScope.TypeNamer.Convert(lTy), "' and '",
+                                globalScope.TypeNamer.Convert(rTy), "'."),
+                            LeftLocation.Concat(RightLocation)));
+                        return new UnknownExpression(lTy);
+                    }
                 }
 
                 return DirectBinaryExpression.Instance.Create(

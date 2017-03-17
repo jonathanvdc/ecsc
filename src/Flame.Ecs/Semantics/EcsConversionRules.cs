@@ -21,13 +21,29 @@ namespace Flame.Ecs.Semantics
         /// Classifies a conversion of the given expression to the given type.
         /// </summary>
         public override IReadOnlyList<ConversionDescription> ClassifyConversion(
-            IExpression Source, IType Type, FunctionScope Scope)
+            IExpression Source, IType TargetType, FunctionScope Scope)
         {
             var srcType = Source.Type;
 
-            // TODO: special cases for literals.
+            if (srcType.Equals(TargetType))
+            {
+                // Identity conversion.
+                return new ConversionDescription[] { ConversionDescription.Identity };
+            }
 
-            return ClassifyConversion(srcType, Type, Scope);
+            if (Source is IntegerExpression)
+            {
+                var srcLiteral = ((IntegerExpression)Source).Value;
+                var targetSpec = TargetType.GetIntegerSpec();
+                if (targetSpec != null && targetSpec.IsRepresentible(srcLiteral.Value))
+                {
+                    return new ConversionDescription[] { ConversionDescription.ImplicitStaticCast };
+                }
+            }
+
+            // TODO: more special cases for literals.
+
+            return ClassifyConversion(srcType, TargetType, Scope);
         }
 
         /// <summary>

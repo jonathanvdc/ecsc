@@ -148,6 +148,7 @@
     <Reference Include="Flame.Build.Lazy">
       <HintPath>..\packages\Flame.Build.Lazy.0.9.4\lib\net45\Flame.Build.Lazy.dll</HintPath>
     </Reference>
+    <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
