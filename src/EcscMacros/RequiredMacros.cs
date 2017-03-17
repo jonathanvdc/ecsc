@@ -250,6 +250,7 @@ namespace EcscMacros
             if (!Node.CallsMin(CodeSymbols.Var, 1))
                 return Reject(Sink, Node, "'#var' nodes must take at least one argument.");
 
+            bool hasChanged = false;
             var varType = Node.Args[0];
             var newArgs = new VList<LNode>();
             newArgs.Add(varType);
@@ -260,6 +261,7 @@ namespace EcscMacros
                     var rhs = item.Args[1];
                     if (rhs.Calls(CodeSymbols.ArrayInit))
                     {
+                        hasChanged = true;
                         var lhs = item.Args[0];
                         newArgs.Add(
                             item.WithArgs(
@@ -272,7 +274,10 @@ namespace EcscMacros
                 }
                 newArgs.Add(item);
             }
-            return Node.WithArgs(newArgs);
+            if (hasChanged)
+                return Node.WithArgs(newArgs);
+            else
+                return null;
         }
     }
 }
