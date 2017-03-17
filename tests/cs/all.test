@@ -26,6 +26,7 @@ tests
     inc-dec/IncDec.test;
     interface/Interface.test;
     internal/Internal.test;
+    literal-conversion/LiteralConversion.test;
     local-decl/LocalDecl.test;
     lock/Lock.test;
     logical-ops/LogicalOps.test;
