@@ -54,15 +54,19 @@ namespace ecsc
             get { return new string[] { "ecsproj" }.Concat(parsers.Keys); }
         }
 
-        public IProject Parse(ProjectPath Path, ICompilerLog Log)
+        public ParsedProject Parse(ProjectPath Path, ICompilerLog Log)
         {
             if (Path.HasExtension("ecs") || Path.HasExtension("cs") || Path.HasExtension("les"))
             {
-                return new SingleFileProject(Path, Log.Options.GetTargetPlatform());
+                return new ParsedProject(
+                    new PathIdentifier(Path.Path.Name),
+                    new SingleFileProject(Path, Log.Options.GetTargetPlatform()));
             }
             else
             {
-                return DSProject.ReadProject(Path.Path.Path);
+                return new ParsedProject(
+                    Path.Path,
+                    DSProject.ReadProject(Path.Path.Path));
             }
         }
 
