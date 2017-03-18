@@ -30,6 +30,7 @@ tests
     local-decl/LocalDecl.test;
     lock/Lock.test;
     logical-ops/LogicalOps.test;
+    multiple-files/MultipleFiles.test;
     null/Null.test;
     overrides/Overrides.test;
     params-methods/ParamsMethods.test;
