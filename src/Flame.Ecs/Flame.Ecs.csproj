@@ -211,6 +211,7 @@
     <Compile Include="Semantics\Betterness.cs" />
     <Compile Include="Semantics\CandidateOverload.cs" />
     <Compile Include="TriviaConverters.cs" />
+    <Compile Include="WarningStack.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

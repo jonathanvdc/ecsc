@@ -33,7 +33,8 @@ namespace Flame.Ecs
             IDocumentationParser DocumentationParser)
             : this(
                 Binder, ConversionRules, Log, TypeNamer, DocumentationParser,
-                new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()))
+                new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()),
+                new WarningStack())
         {
         }
 
@@ -41,7 +42,8 @@ namespace Flame.Ecs
             QualifiedBinder Binder, ConversionRules ConversionRules,
             ICompilerLog Log, TypeConverterBase<string> TypeNamer,
             IDocumentationParser DocumentationParser,
-            ThreadLocal<GlobalMemberCache> MemberCache)
+            ThreadLocal<GlobalMemberCache> MemberCache,
+            WarningStack Warnings)
         {
             this.Binder = Binder;
             this.ConversionRules = ConversionRules;
@@ -51,6 +53,7 @@ namespace Flame.Ecs
             this.memCache = MemberCache;
             this.extMemCache = new ThreadLocal<ExtensionMemberCache>(
                 CreateExtensionMemberCache);
+            this.warningStack = Warnings;
         }
 
         /// <summary>
@@ -83,6 +86,8 @@ namespace Flame.Ecs
         /// </summary>
         /// <value>The documentation parser.</value>
         public IDocumentationParser DocumentationParser { get; private set; }
+
+        private WarningStack warningStack;
 
         private ThreadLocal<GlobalMemberCache> memCache;
         private ThreadLocal<ExtensionMemberCache> extMemCache;
@@ -135,7 +140,20 @@ namespace Flame.Ecs
         {
             return new GlobalScope(
                 NewBinder, ConversionRules, Log, TypeNamer,
-                DocumentationParser, memCache);
+                DocumentationParser, memCache, warningStack);
+        }
+
+        /// <summary>
+        /// Tests if the given warning should be enabled in this global scope.
+        /// </summary>
+        /// <param name="Warning">A description of the warning.</param>
+        /// <returns>A Boolean value that tells if the warning is enabled.</returns>
+        public bool UseWarning(WarningDescription Warning)
+        {
+            if (warningStack.IsDisabled(Warning.WarningOption))
+                return false;
+            else
+                return Warning.UseWarning(Log.Options);
         }
 
         private ExtensionMemberCache CreateExtensionMemberCache()
