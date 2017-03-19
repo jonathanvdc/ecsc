@@ -125,6 +125,12 @@ namespace Flame.Ecs
                     new Dictionary<Symbol, IVariable>()));
         }
 
+        /// <summary>
+        /// Creates a new global scope that is identical to this scope except for its binder,
+        /// which is given as an argument.
+        /// </summary>
+        /// <param name="NewBinder">The new binder.</param>
+        /// <returns>The new global scope.</returns>
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
         {
             return new GlobalScope(
