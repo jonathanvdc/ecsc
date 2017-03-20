@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Flame.Ecs
 {
     /// <summary>
-    /// A stack of warnings which are either explicitly enabled or disabled.
+    /// A stack of warnings which are either explicitly disabled or restored.
     /// </summary>
     public sealed class WarningStack
     {
@@ -25,7 +25,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Specifies which warnings have been disabled and which have been enabled.
+        /// Specifies which warnings have been disabled and which have been restored.
         /// </summary>
         private Dictionary<string, bool> warningStates;
 
@@ -39,12 +39,12 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Creates a warning stack that copies all warning states from this stack and enables
+        /// Creates a warning stack that copies all warning states from this stack and restores
         /// the given warnings.
         /// </summary>
-        /// <param name="WarningNames">The warnings to enable.</param>
+        /// <param name="WarningNames">The warnings to restore.</param>
         /// <returns>The new warning stack.</returns>
-        public WarningStack PushEnable(params string[] WarningNames)
+        public WarningStack PushRstore(params string[] WarningNames)
         {
             return Push(true, WarningNames);
         }
@@ -58,23 +58,6 @@ namespace Flame.Ecs
         public WarningStack PushDisable(params string[] WarningNames)
         {
             return Push(false, WarningNames);
-        }
-
-        /// <summary>
-        /// Tells if the warning with the given name is enabled by this warning stack.
-        /// </summary>
-        /// <param name="WarningName">The name of the warning.</param>
-        /// <returns>
-        /// A Boolean flag that tells if the warning with the given name is enabled by
-        /// this warning stack.
-        /// </returns>
-        public bool IsEnabled(string WarningName)
-        {
-            bool result;
-            if (warningStates.TryGetValue(WarningName, out result))
-                return result;
-            else
-                return false;
         }
 
         /// <summary>
