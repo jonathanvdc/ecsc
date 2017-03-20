@@ -16,12 +16,12 @@ configs
     EcscOg
     {
         compiler = $ecsc;
-        Flags = -Og -platform clr -o $(Executable);
+        Flags = -Og -platform clr -o $(Executable) -Whidden-null-check -Wno-unused-option;
     }
     EcscO3
     {
         compiler = $ecsc;
-        Flags = -O3 -platform clr -o $(Executable);
+        Flags = -O3 -platform clr -o $(Executable) -Whidden-null-check -Wno-unused-option;
     }
     ReferenceDebug
     {

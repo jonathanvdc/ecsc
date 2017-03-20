@@ -42,6 +42,9 @@ public static class Program
         foreach (var item in new List<string>(Args))
             Console.WriteLine(item);
 
+        foreach (var item in (IEnumerable<string>)new List<string>(Args))
+            Console.WriteLine(item);
+
         foreach (var item in StaticEnumerable)
             Console.WriteLine(item);
     }
