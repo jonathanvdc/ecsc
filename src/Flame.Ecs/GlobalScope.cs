@@ -144,7 +144,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Creates a new global scope that disables the warnings with the given name.
+        /// Creates a new global scope that disables the warnings with the given names.
         /// </summary>
         /// <param name="WarningNames">The names of the warnings to disable.</param>
         /// <returns>The new global scope.</returns>
@@ -156,7 +156,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Creates a new global scope that restores the warnings with the given name.
+        /// Creates a new global scope that restores the warnings with the given names.
         /// </summary>
         /// <param name="WarningNames">The names of the warnings to restore.</param>
         /// <returns>The new global scope.</returns>

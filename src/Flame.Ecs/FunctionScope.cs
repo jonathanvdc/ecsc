@@ -18,8 +18,13 @@ namespace Flame.Ecs
     /// </summary>
     public sealed class FunctionScope : ILocalScope
     {
+        private FunctionScope()
+        {
+
+        }
+
         public FunctionScope(
-            GlobalScope Global, IType CurrentType, 
+            GlobalScope Global, IType CurrentType,
             IMethod CurrentMethod, IType ReturnType,
             IReadOnlyDictionary<Symbol, IVariable> ParameterVariables)
         {
@@ -114,7 +119,7 @@ namespace Flame.Ecs
         private Dictionary<KeyValuePair<IType, IType>, IReadOnlyList<ConversionDescription>> conversionCache;
 
         private ITypeMember[] GetMembers(
-            IType Type, string Name, 
+            IType Type, string Name,
             Dictionary<Tuple<IType, string>, ITypeMember[]> TargetCache,
             Func<ITypeMember, bool> Predicate)
         {
@@ -122,7 +127,7 @@ namespace Flame.Ecs
         }
 
         private ITypeMember[] GetMembers(
-            IType Type, string Name, 
+            IType Type, string Name,
             Dictionary<Tuple<IType, string>, ITypeMember[]> TargetCache,
             MemberCacheBase SourceCache,
             Func<ITypeMember, bool> Predicate)
@@ -167,7 +172,7 @@ namespace Flame.Ecs
             else
             {
                 result = Global.MemberCache.GetAllIndexers(Type)
-                    .Where(p => 
+                    .Where(p =>
                         !p.IsStatic && CanAccess(p))
                     .ToArray();
                 instanceIndexerCache[Type] = result;
@@ -191,7 +196,7 @@ namespace Flame.Ecs
             else
             {
                 result = Type.GetConstructors()
-                    .Where(p => 
+                    .Where(p =>
                         !p.IsStatic && CanAccess(p))
                     .ToArray();
                 instanceCtorCache[Type] = result;
@@ -218,7 +223,7 @@ namespace Flame.Ecs
         public IEnumerable<ITypeMember> GetExtensionMembers(IType Type, string Name)
         {
             return GetMembers(
-                Type, Name, extensionMemberCache, 
+                Type, Name, extensionMemberCache,
                 Global.ExtensionMemberCache, item =>
                 {
                     return CanAccess(item);
@@ -302,7 +307,7 @@ namespace Flame.Ecs
         /// </summary>
         public static IType DereferenceOrId(IType Type)
         {
-            return Type != null && Type.GetIsPointer() 
+            return Type != null && Type.GetIsPointer()
                 ? Type.AsPointerType().ElementType
                 : Type;
         }
@@ -355,7 +360,7 @@ namespace Flame.Ecs
         }
 
         private IExpression ApplyOrUnknown(
-            IExpression From, IType To, 
+            IExpression From, IType To,
             ConversionDescription Conversion)
         {
             if (Conversion.Kind != ConversionKind.None)
@@ -365,7 +370,7 @@ namespace Flame.Ecs
         }
 
         private IExpression ApplyAnyConversion(
-            IExpression From, IType To, 
+            IExpression From, IType To,
             IReadOnlyList<ConversionDescription> Conversions)
         {
             return ApplyOrUnknown(From, To, PickAnyConversion(Conversions));
@@ -390,9 +395,9 @@ namespace Flame.Ecs
                     if (result.Kind != ConversionKind.None)
                     {
                         Global.Log.LogError(new LogEntry(
-                            "ambiguous implicit conversion", 
+                            "ambiguous implicit conversion",
                             NodeHelpers.HighlightEven(
-                                "the implicit conversion of type '", Global.TypeNamer.Convert(From.Type), 
+                                "the implicit conversion of type '", Global.TypeNamer.Convert(From.Type),
                                 "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
                             Location));
                         return result;
@@ -407,9 +412,9 @@ namespace Flame.Ecs
             if (result.Kind == ConversionKind.None)
             {
                 Global.Log.LogError(new LogEntry(
-                    "no implicit conversion", 
+                    "no implicit conversion",
                     NodeHelpers.HighlightEven(
-                        "cannot implicitly convert type '", Global.TypeNamer.Convert(From.Type), 
+                        "cannot implicitly convert type '", Global.TypeNamer.Convert(From.Type),
                         "' to '", Global.TypeNamer.Convert(To), "'." +
                         (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
                     Location));
@@ -451,9 +456,9 @@ namespace Flame.Ecs
                     if (result != null)
                     {
                         Global.Log.LogError(new LogEntry(
-                            "ambiguous static conversion", 
+                            "ambiguous static conversion",
                             NodeHelpers.HighlightEven(
-                                "the static conversion of type '", Global.TypeNamer.Convert(From.Type), 
+                                "the static conversion of type '", Global.TypeNamer.Convert(From.Type),
                                 "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
                             Location));
                         return result;
@@ -468,9 +473,9 @@ namespace Flame.Ecs
             if (result == null)
             {
                 Global.Log.LogError(new LogEntry(
-                    "no static conversion", 
+                    "no static conversion",
                     NodeHelpers.HighlightEven(
-                        "cannot guarantee at compile-time that type '", Global.TypeNamer.Convert(From.Type), 
+                        "cannot guarantee at compile-time that type '", Global.TypeNamer.Convert(From.Type),
                         "' can safely be converted to '", Global.TypeNamer.Convert(To), "'." +
                         (convs.Count > 0 ? " An explicit conversion exists." : "")),
                     Location));
@@ -507,9 +512,9 @@ namespace Flame.Ecs
                     if (result != null)
                     {
                         Global.Log.LogError(new LogEntry(
-                            "ambiguous explicit conversion", 
+                            "ambiguous explicit conversion",
                             NodeHelpers.HighlightEven(
-                                "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type), 
+                                "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type),
                                 "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
                             Location));
                         return result;
@@ -524,9 +529,9 @@ namespace Flame.Ecs
             if (convs.Count == 0)
             {
                 Global.Log.LogError(new LogEntry(
-                    "no conversion", 
+                    "no conversion",
                     NodeHelpers.HighlightEven(
-                        "cannot convert type '", Global.TypeNamer.Convert(From.Type), 
+                        "cannot convert type '", Global.TypeNamer.Convert(From.Type),
                         "' to '", Global.TypeNamer.Convert(To), "'."),
                     Location));
 
@@ -535,9 +540,9 @@ namespace Flame.Ecs
             else
             {
                 Global.Log.LogError(new LogEntry(
-                    "ambiguous explicit conversion", 
+                    "ambiguous explicit conversion",
                     NodeHelpers.HighlightEven(
-                        "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type), 
+                        "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type),
                         "' to '", Global.TypeNamer.Convert(To), "' is ambiguous, because " +
                         "there no true explicit conversion was applicable, and the implicit " +
                         "conversion was ambiguous."),
@@ -602,6 +607,62 @@ namespace Flame.Ecs
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Creates a copy of this function scope.
+        /// </summary>
+        /// <returns>A copy of this function scope.</returns>
+        private FunctionScope Copy()
+        {
+            var result = new FunctionScope();
+            result.instanceMemberCache = instanceMemberCache;
+            result.extensionMemberCache = extensionMemberCache;
+            result.staticMemberCache = staticMemberCache;
+            result.instanceCtorCache = instanceCtorCache;
+            result.instanceIndexerCache = instanceIndexerCache;
+            result.operatorCache = operatorCache;
+            result.conversionCache = conversionCache;
+
+            result.Global = Global;
+            result.CurrentType = CurrentType;
+            result.DeclaringType = DeclaringType;
+            result.CurrentMethod = CurrentMethod;
+            result.ReturnType = ReturnType;
+            result.ParameterVariables = ParameterVariables;
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a copy of this function scope and assigns it the given global scope.
+        /// </summary>
+        /// <param name="NewGlobalScope">The new global scope.</param>
+        /// <returns>The new function scope.</returns>
+        private FunctionScope WithGlobalScope(GlobalScope NewGlobalScope)
+        {
+            var result = Copy();
+            result.Global = NewGlobalScope;
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a new function scope that disables the warnings with the given names.
+        /// </summary>
+        /// <param name="WarningNames">The names of the warnings to disables.</param>
+        /// <returns>The new function scope.</returns>
+        public FunctionScope DisableWarnings(params string[] WarningNames)
+        {
+            return WithGlobalScope(Global.DisableWarnings(WarningNames));
+        }
+
+        /// <summary>
+        /// Creates a new function scope that restores the warnings with the given names.
+        /// </summary>
+        /// <param name="WarningNames">The names of the warnings to restore.</param>
+        /// <returns>The new function scope.</returns>
+        public FunctionScope RestoreWarnings(params string[] WarningNames)
+        {
+            return WithGlobalScope(Global.RestoreWarnings(WarningNames));
         }
     }
 }
