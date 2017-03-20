@@ -166,7 +166,7 @@ namespace Flame.Ecs
                     }));
             }
             else if (Parent.GetVariable(Name) != null
-            && Warnings.Instance.Shadow.UseWarning(Function.Global.Log.Options))
+            && Function.Global.UseWarning(Warnings.Instance.Shadow))
             {
                 // Variable was already declared by parent scope.
                 // Log a warning.

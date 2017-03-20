@@ -278,7 +278,7 @@ namespace Flame.Ecs
             foreach (var item in Modifiers)
             {
                 var symbol = item.Name;
-                if (!accModSet.Add(symbol) && EcsWarnings.DuplicateAccessModifierWarning.UseWarning(Scope.Log.Options))
+                if (!accModSet.Add(symbol) && Scope.UseWarning(EcsWarnings.DuplicateAccessModifierWarning))
                 {
                     // Looks like this access modifier is a duplicate.
                     // Let's issue a warning.

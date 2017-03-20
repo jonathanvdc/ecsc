@@ -95,7 +95,7 @@ namespace Flame.Ecs
                     // Log a warning whenever 'params T' is encountered where T is not 
                     // an array.
                     var paramsEnumerableWarn = EcsWarnings.EcsExtensionParamsEnumerableWarning;
-                    if (paramsEnumerableWarn.UseWarning(Scope.Log.Options))
+                    if (Scope.UseWarning(paramsEnumerableWarn))
                     {
                         Scope.Log.LogWarning(new LogEntry(
                             "EC# extension",
@@ -807,7 +807,7 @@ namespace Flame.Ecs
                                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
                             }
                             else if (newNode != null
-                                && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                                && Scope.UseWarning(EcsWarnings.RedundantNewAttributeWarning))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "redundant attribute",
@@ -853,7 +853,7 @@ namespace Flame.Ecs
                                 }
                             }
                             else if (newNode == null
-                                && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                                && Scope.UseWarning(EcsWarnings.HiddenMemberWarning))
                             {
                                 Scope.Log.LogWarning(new LogEntry(
                                     "member hiding",
@@ -1081,7 +1081,7 @@ namespace Flame.Ecs
                         {
                             fieldDef.AddAttribute(PrimitiveAttributes.Instance.ConstantAttribute);
                             if (fieldDef.IsStatic
-                            && EcsWarnings.RedundantStaticAttributeWarning.UseWarning(Scope.Log.Options))
+                            && Scope.UseWarning(EcsWarnings.RedundantStaticAttributeWarning))
                             {
                                 // Warn if a field is marked both 'const' and 'static'.
                                 var staticNode = attrNodes.FirstOrDefault(x => x.IsIdNamed(CodeSymbols.Static));
@@ -1699,7 +1699,7 @@ namespace Flame.Ecs
                                 NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                         }
                         else if (NewNode != null
-                                 && EcsWarnings.RedundantNewAttributeWarning.UseWarning(Scope.Log.Options))
+                                 && Scope.UseWarning(EcsWarnings.RedundantNewAttributeWarning))
                         {
                             Scope.Log.LogWarning(new LogEntry(
                                 "redundant attribute",
@@ -1735,7 +1735,7 @@ namespace Flame.Ecs
                             }
                         }
                         else if (NewNode == null
-                                 && EcsWarnings.HiddenMemberWarning.UseWarning(Scope.Log.Options))
+                                 && Scope.UseWarning(EcsWarnings.HiddenMemberWarning))
                         {
                             Scope.Log.LogWarning(new LogEntry(
                                 "member hiding",

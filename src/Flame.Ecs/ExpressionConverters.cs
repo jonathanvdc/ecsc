@@ -415,7 +415,7 @@ namespace Flame.Ecs
                                             // Log a warning whenever we elide a boxing conversion, because
                                             // regular C# typically can't do that.
                                             var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
-                                            if (usingCastWarn.UseWarning(Scope.Log.Options))
+                                            if (Scope.UseWarning(usingCastWarn))
                                             {
                                                 Scope.Log.LogWarning(new LogEntry(
                                                     "EC# extension",
@@ -1354,7 +1354,7 @@ namespace Flame.Ecs
                     // with warnings when we have actual errors to worry
                     // about.
                     if (!InitializedMembers.Add(fieldName)
-                        && EcsWarnings.DuplicateInitializationWarning.UseWarning(Scope.Log.Options))
+                        && Scope.Function.Global.UseWarning(EcsWarnings.DuplicateInitializationWarning))
                     {
                         Scope.Log.LogWarning(new LogEntry(
                             "duplicate initialization",
@@ -2281,7 +2281,7 @@ namespace Flame.Ecs
                 // at compile-time. That's a warning no matter what.
                 if (evalResult.Type.Equals(PrimitiveTypes.Null))
                 {
-                    if (EcsWarnings.AlwaysNullWarning.UseWarning(Scope.Log.Options))
+                    if (Scope.Function.Global.UseWarning(EcsWarnings.AlwaysNullWarning))
                     {
                         Scope.Log.LogWarning(new LogEntry(
                             "always null",
@@ -2292,7 +2292,7 @@ namespace Flame.Ecs
                             NodeHelpers.ToSourceLocation(Node.Range)));
                     }
                 }
-                else if (EcsWarnings.RedundantAsWarning.UseWarning(Scope.Log.Options))
+                else if (Scope.Function.Global.UseWarning(EcsWarnings.RedundantAsWarning))
                 {
                     Scope.Log.LogWarning(new LogEntry(
                         "redundant 'as' operator",
@@ -2353,7 +2353,7 @@ namespace Flame.Ecs
                 bool resultVal = evalResult.GetValue<bool>();
                 string lit = resultVal ? "true" : "false";
                 var warn = resultVal ? EcsWarnings.AlwaysTrueWarning : EcsWarnings.AlwaysFalseWarning;
-                if (warn.UseWarning(Scope.Log.Options))
+                if (Scope.Function.Global.UseWarning(warn))
                 {
                     Scope.Log.LogWarning(new LogEntry(
                         "always " + lit,
@@ -2367,7 +2367,7 @@ namespace Flame.Ecs
             else if (opType.Is(ty))
             {
                 var warn = Warnings.Instance.HiddenNullCheck;
-                if (warn.UseWarning(Scope.Log.Options))
+                if (Scope.Function.Global.UseWarning(warn))
                 {
                     Scope.Log.LogWarning(new LogEntry(
                         "hidden null check",
