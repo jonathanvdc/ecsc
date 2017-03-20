@@ -206,8 +206,11 @@ namespace EcscMacros
             //
             // we will produce a Loyc tree that looks like this:
             //
-            //      if (Value is System.IDisposable)
-            //          ((System.IDisposable)Value).Dispose();
+            //      #builtin_warning_disable ("Whidden-null-check")
+            //      {
+            //          if (Value is System.IDisposable)
+            //              ((System.IDisposable)Value).Dispose();
+            //      }
             //
             // Note: this intentionally does boxing for value types,
             // because 'foreach' has the same behavior (and 'foreach'
@@ -219,18 +222,21 @@ namespace EcscMacros
             var value = Node.Args[0];
             var idisposableNode = F.Dot("System", "IDisposable");
             return F.Call(
-                CodeSymbols.If,
+                EcscSymbols.BuiltinWarningDisable,
+                F.Literal("Whidden-null-check"),
                 F.Call(
-                    CodeSymbols.Is,
-                    value,
-                    idisposableNode),
-                F.Call(
-                    F.Dot(
-                        F.Call(
-                            CodeSymbols.Cast,
-                            value,
-                            idisposableNode),
-                        GSymbol.Get("Dispose"))));
+                    CodeSymbols.If,
+                    F.Call(
+                        CodeSymbols.Is,
+                        value,
+                        idisposableNode),
+                    F.Call(
+                        F.Dot(
+                            F.Call(
+                                CodeSymbols.Cast,
+                                value,
+                                idisposableNode),
+                            GSymbol.Get("Dispose")))));
         }
 
         [LexicalMacro(

@@ -61,6 +61,23 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Tells if the warning with the given name is restored by this warning stack.
+        /// </summary>
+        /// <param name="WarningName">The name of the warning.</param>
+        /// <returns>
+        /// A Boolean flag that tells if the warning with the given name is restored by
+        /// this warning stack.
+        /// </returns>
+        public bool IsRestored(string WarningName)
+        {
+            bool result;
+            if (warningStates.TryGetValue(WarningName, out result))
+                return result;
+            else
+                return false;
+        }
+
+        /// <summary>
         /// Tells if the warning with the given name is disabled by this warning stack.
         /// </summary>
         /// <param name="WarningName">The name of the warning.</param>

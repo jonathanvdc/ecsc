@@ -2951,5 +2951,74 @@ namespace Flame.Ecs
             var expr = Converter.ConvertExpression(Node.Args[0], Scope);
             return expr.Type;
         }
+
+        /// <summary>
+        /// Parses the given node as a warning name.
+        /// </summary>
+        /// <param name="NameNode">The node to parse.</param>
+        /// <param name="Scope">The current scope, which may be used for error logging.</param>
+        /// <returns>The warning name, as a string. Null if the node was not a warning name.</returns>
+        private static string ConvertWarningName(LNode NameNode, LocalScope Scope)
+        {
+            if (NameNode.IsLiteral && NameNode.Value != null && NameNode.Value is string)
+                return (string)NameNode.Value;
+
+            Scope.Log.LogError(
+                new LogEntry(
+                    "syntax error",
+                    "expected a warning name formatted as a string literal.",
+                    NodeHelpers.ToSourceLocation(NameNode.Range)));
+            return null;
+        }
+
+        /// <summary>
+        /// Parses the given nodes as warning names.
+        /// </summary>
+        /// <param name="NameNodes">The nodes to parse.</param>
+        /// <param name="Scope">The current scope, which may be used for error logging.</param>
+        /// <returns>An array of all warning names that were successfully parsed.</returns>
+        private static string[] ConvertWarningNames(IEnumerable<LNode> NameNodes, LocalScope Scope)
+        {
+            var warningNames = new List<string>();
+            foreach (var warningNameNode in NameNodes)
+            {
+                var name = ConvertWarningName(warningNameNode, Scope);
+                if (name != null)
+                    warningNames.Add(name);
+            }
+            return warningNames.ToArray();
+        }
+
+        /// <summary>
+        /// Converts a builtin disable-warning node (type #builtin_warning_disable).
+        /// </summary>
+        public static TypeOrExpression ConvertBuiltinDisableWarning(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return null;
+
+            var warningNames = ConvertWarningNames(Node.Args.Slice(0, Node.Args.Count - 1), Scope);
+            var contents = Node.Args.Last;
+            return Converter.ConvertTypeOrExpression(
+                contents,
+                new LocalScope(
+                    new AlteredFunctionScope(Scope, Scope.Function.DisableWarnings(warningNames))));
+        }
+
+        /// <summary>
+        /// Converts a builtin restore-warning node (type #builtin_warning_restore).
+        /// </summary>
+        public static TypeOrExpression ConvertBuiltinRestoreWarning(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+                return null;
+
+            var warningNames = ConvertWarningNames(Node.Args.Slice(0, Node.Args.Count - 1), Scope);
+            var contents = Node.Args.Last;
+            return Converter.ConvertTypeOrExpression(
+                contents,
+                new LocalScope(
+                    new AlteredFunctionScope(Scope, Scope.Function.RestoreWarnings(warningNames))));
+        }
     }
 }

@@ -672,6 +672,8 @@ namespace Flame.Ecs
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIf, ExpressionConverters.ConvertBuiltinStaticIfExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
                 result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDecltype, ExpressionConverters.ConvertBuiltinDecltype);
+                result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningDisable, ExpressionConverters.ConvertBuiltinDisableWarning);
+                result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningRestore, ExpressionConverters.ConvertBuiltinRestoreWarning);
 
                 // Operators
                 // - Ternary operators

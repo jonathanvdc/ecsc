@@ -36,6 +36,22 @@ namespace EcscMacros
         public static readonly Symbol BuiltinStaticIs = GSymbol.Get("#builtin_static_is");
 
         /// <summary>
+        /// A builtin node that disables specific types of warnings.
+        /// </summary>
+        /// <returns>
+        /// Usage: #builtin_warning_disable("Wfirst", "Wsecond", body);
+        /// </returns>
+        public static readonly Symbol BuiltinWarningDisable = GSymbol.Get("#builtin_warning_disable");
+
+        /// <summary>
+        /// A builtin node that restores specific types of warnings.
+        /// </summary>
+        /// <returns>
+        /// Usage: #builtin_warning_restore("Wfirst", "Wsecond", body);
+        /// </returns>
+        public static readonly Symbol BuiltinWarningRestore = GSymbol.Get("#builtin_warning_restore");
+
+        /// <summary>
         /// A builtin node type that tests if a type is an array. An optional array rank can be
         /// given.
         /// </summary>

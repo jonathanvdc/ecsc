@@ -260,5 +260,58 @@ namespace Flame.Ecs
             return Parent.GetVariable(Name);
         }
     }
+
+    /// <summary>
+    /// A local scope that replaces the old function scope by a new function scope.
+    /// </summary>
+    public sealed class AlteredFunctionScope : ILocalScope
+    {
+        public AlteredFunctionScope(ILocalScope Parent, FunctionScope Function)
+        {
+            this.Parent = Parent;
+            this.Function = Function;
+        }
+
+        /// <summary>
+        /// Gets this local scope's parent scope.
+        /// </summary>
+        public ILocalScope Parent { get; private set; }
+
+        /// <summary>
+        /// Gets this local scope's function scope.
+        /// </summary>
+        public FunctionScope Function { get; private set; }
+
+        /// <inheritdoc/>
+        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+
+        /// <summary>
+        /// Gets the log object for this scope.
+        /// </summary>
+        public ICompilerLog Log { get { return Function.Global.Log; } }
+
+        /// <summary>
+        /// Gets this local scope's return type.
+        /// </summary>
+        /// <value>The type of the return value.</value>
+        public IType ReturnType
+        {
+            get { return Parent.ReturnType; }
+        }
+
+        /// <summary>
+        /// Gets the set of all local variable identifiers
+        /// that are defined in this scope.
+        /// </summary>
+        public IEnumerable<Symbol> VariableNames { get { return Parent.VariableNames; } }
+
+        /// <summary>
+        /// Gets the variable with the given name.
+        /// </summary>
+        public IVariable GetVariable(Symbol Name)
+        {
+            return Parent.GetVariable(Name);
+        }
+    }
 }
 

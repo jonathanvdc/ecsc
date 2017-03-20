@@ -97,7 +97,7 @@ namespace Flame.Ecs
         /// </summary>
         /// <value>The member cache.</value>
         public GlobalMemberCache MemberCache
-        { 
+        {
             get { return memCache.Value; }
         }
 
@@ -126,7 +126,7 @@ namespace Flame.Ecs
         public LocalScope CreateLocalScope()
         {
             return new LocalScope(new FunctionScope(
-                    this, null, null, null, 
+                    this, null, null, null,
                     new Dictionary<Symbol, IVariable>()));
         }
 
@@ -152,7 +152,7 @@ namespace Flame.Ecs
         {
             return new GlobalScope(
                 Binder, ConversionRules, Log, TypeNamer,
-                DocumentationParser, memCache, warningStack.PushDisable(WarningNames)); 
+                DocumentationParser, memCache, warningStack.PushDisable(WarningNames));
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace Flame.Ecs
         {
             return new GlobalScope(
                 Binder, ConversionRules, Log, TypeNamer,
-                DocumentationParser, memCache, warningStack.PushRestore(WarningNames)); 
+                DocumentationParser, memCache, warningStack.PushRestore(WarningNames));
         }
 
         /// <summary>
@@ -174,10 +174,18 @@ namespace Flame.Ecs
         /// <returns>A Boolean value that tells if the warning is enabled.</returns>
         public bool UseWarning(WarningDescription Warning)
         {
-            if (warningStack.IsDisabled(Warning.WarningOption))
-                return false;
-            else
-                return Warning.UseWarning(Log.Options);
+            var ancestor = Warning;
+            while (ancestor != null)
+            {
+                if (warningStack.IsDisabled(ancestor.WarningOption))
+                    return false;
+                else if (warningStack.IsRestored(ancestor.WarningOption))
+                    break;
+
+                ancestor = ancestor.Parent;
+            }
+
+            return Warning.UseWarning(Log.Options);
         }
 
         private ExtensionMemberCache CreateExtensionMemberCache()
