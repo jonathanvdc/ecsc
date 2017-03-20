@@ -21,7 +21,7 @@ namespace Flame.Ecs
         /// <param name="warningStates">The warning states for this warning stack.</param>
         private WarningStack(Dictionary<string, bool> warningStates)
         {
-            this.warningStates = new Dictionary<string, bool>();
+            this.warningStates = warningStates;
         }
 
         /// <summary>
