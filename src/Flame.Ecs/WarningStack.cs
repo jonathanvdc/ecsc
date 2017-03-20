@@ -44,7 +44,7 @@ namespace Flame.Ecs
         /// </summary>
         /// <param name="WarningNames">The warnings to restore.</param>
         /// <returns>The new warning stack.</returns>
-        public WarningStack PushRstore(params string[] WarningNames)
+        public WarningStack PushRestore(params string[] WarningNames)
         {
             return Push(true, WarningNames);
         }
