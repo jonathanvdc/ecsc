@@ -2043,6 +2043,57 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a switch-statement node (type #switch),
+        /// and wraps it in a void expression.
+        /// </summary>
+        public static IExpression ConvertSwitchExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
+                return ErrorTypeExpression;
+
+            var breakTag = new UniqueTag("switch");
+            var switchSrcLoc = NodeHelpers.ToSourceLocation(Node.Args[0].Range);
+            var switchExpr = Converter.ConvertExpression(Node.Args[0], Scope);
+            var switchVar = new RegisterVariable(switchExpr.Type);
+
+            var builder = new SwitchBuilder(
+                new VariableValue(switchVar),
+                switchSrcLoc,
+                new LocalScope(
+                    new FlowScope(
+                        Scope,
+                        new LocalFlow(breakTag, Scope.Flow.ContinueTag))),
+                Converter);
+
+            foreach (var childNode in Node.Args[1].Args)
+            {
+                if (childNode.Calls(CodeSymbols.Case))
+                {
+                    if (!NodeHelpers.CheckArity(childNode, 1, Scope.Log))
+                        continue;
+
+                    builder.AppendCondition(childNode.Args[0]);
+                }
+                else if (childNode.Calls(CodeSymbols.Label, 1) && childNode.Args[0].IsIdNamed(CodeSymbols.Default))
+                {
+                    builder.AppendDefault(childNode);
+                }
+                else
+                {
+                    builder.AppendStatement(childNode);
+                }
+            }
+            return ToExpression(
+                new TaggedStatement(
+                    breakTag,
+                    new BlockStatement(new IStatement[]
+                    {
+                        switchVar.CreateSetStatement(switchExpr),
+                        builder.FinishSwitch()
+                    })));
+        }
+
+        /// <summary>
         /// Converts a break-statement (type #break), and
         /// wraps it in an expression.
         /// </summary>
@@ -2052,8 +2103,8 @@ namespace Flame.Ecs
             if (NodeHelpers.CheckCall(Node, Scope.Log))
                 NodeHelpers.CheckArity(Node, 0, Scope.Log);
 
-            var tag = Scope.FlowTag;
-            if (tag == null)
+            var flow = Scope.Flow;
+            if (flow.BreakTag == null)
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
@@ -2065,7 +2116,7 @@ namespace Flame.Ecs
             }
             else
             {
-                return ToExpression(new BreakStatement(Scope.FlowTag));
+                return ToExpression(new BreakStatement(flow.BreakTag));
             }
         }
 
@@ -2079,8 +2130,8 @@ namespace Flame.Ecs
             if (NodeHelpers.CheckCall(Node, Scope.Log))
                 NodeHelpers.CheckArity(Node, 0, Scope.Log);
 
-            var tag = Scope.FlowTag;
-            if (tag == null)
+            var flow = Scope.Flow;
+            if (flow.ContinueTag == null)
             {
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
@@ -2092,7 +2143,7 @@ namespace Flame.Ecs
             }
             else
             {
-                return ToExpression(new ContinueStatement(Scope.FlowTag));
+                return ToExpression(new ContinueStatement(flow.ContinueTag));
             }
         }
 
@@ -2109,7 +2160,8 @@ namespace Flame.Ecs
             var tag = new UniqueTag("while");
 
             var cond = Converter.ConvertExpression(Node.Args[0], Scope, PrimitiveTypes.Boolean);
-            var body = Converter.ConvertScopedStatement(Node.Args[1], new FlowScope(Scope, tag));
+            var body = Converter.ConvertScopedStatement(
+                Node.Args[1], new FlowScope(Scope, new LocalFlow(tag, tag)));
 
             return ToExpression(new WhileStatement(tag, cond, body));
         }
@@ -2126,7 +2178,8 @@ namespace Flame.Ecs
 
             var tag = new UniqueTag("do-while");
 
-            var body = Converter.ConvertScopedStatement(Node.Args[0], new FlowScope(Scope, tag));
+            var body = Converter.ConvertScopedStatement(
+                Node.Args[0], new FlowScope(Scope, new LocalFlow(tag, tag)));
             var cond = Converter.ConvertExpression(Node.Args[1], Scope, PrimitiveTypes.Boolean);
 
             return ToExpression(new DoWhileStatement(tag, body, cond));
@@ -2149,7 +2202,8 @@ namespace Flame.Ecs
             var init = Converter.ConvertStatementBlock(Node.Args[0].Args, childScope);
             var cond = Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
             var delta = Converter.ConvertStatementBlock(Node.Args[2].Args, childScope);
-            var body = Converter.ConvertScopedStatement(Node.Args[3], new FlowScope(childScope, tag));
+            var body = Converter.ConvertScopedStatement(
+                Node.Args[3], new FlowScope(childScope, new LocalFlow(tag, tag)));
 
             return ToExpression(new ForStatement(tag, init, cond, delta, body, childScope.Release()));
         }

@@ -164,12 +164,14 @@
     <Compile Include="TypeMemberConverters.cs" />
     <Compile Include="AttributeConverters.cs" />
     <Compile Include="EcsWarnings.cs" />
+    <Compile Include="LocalFlow.cs" />
     <Compile Include="LocalScope.cs" />
     <Compile Include="ExpressionConverters.cs" />
     <Compile Include="TypeOrExpression.cs" />
     <Compile Include="UnaryConverters.cs" />
     <Compile Include="Passes\AutoInitializationPass.cs" />
     <Compile Include="Semantics\OverloadResolution.cs" />
+    <Compile Include="Semantics\SwitchBuilder.cs" />
     <Compile Include="Semantics\NewObjectDelegate.cs" />
     <Compile Include="Semantics\BinaryOperatorResolution.cs" />
     <Compile Include="Semantics\TypeInference.cs" />

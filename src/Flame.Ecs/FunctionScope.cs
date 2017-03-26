@@ -37,6 +37,7 @@ namespace Flame.Ecs
             this.conversionCache = new Dictionary<KeyValuePair<IType, IType>, IReadOnlyList<ConversionDescription>>();
 
             this.Global = Global;
+            this.Flow = new LocalFlow();
             this.CurrentType = CurrentType;
             this.DeclaringType = DereferenceOrId(CurrentType);
             this.CurrentMethod = CurrentMethod;
@@ -90,7 +91,7 @@ namespace Flame.Ecs
         public FunctionScope Function { get { return this; } }
 
         /// <inheritdoc/>
-        public UniqueTag FlowTag { get { return null; } }
+        public LocalFlow Flow { get; private set; }
 
         /// <summary>
         /// Gets the set of all local variable identifiers

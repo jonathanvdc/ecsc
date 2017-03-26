@@ -21,15 +21,9 @@ namespace Flame.Ecs
         FunctionScope Function { get; }
 
         /// <summary>
-        /// Gets the enclosing control-flow node's
-        /// tag, if there is an enclosing control-flow node.
-        /// Otherwise, null is returned.
+        /// Gets the enclosing control-flow for this local scope.
         /// </summary>
-        /// <remarks>
-        /// This tag can be used as a target for break
-        /// and continue nodes.
-        /// </remarks>
-        UniqueTag FlowTag { get; }
+        LocalFlow Flow { get; }
 
         /// <summary>
         /// Gets this local scope's return type.
@@ -93,7 +87,7 @@ namespace Flame.Ecs
         public ICompilerLog Log { get { return Function.Global.Log; } }
 
         /// <inheritdoc/>
-        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+        public LocalFlow Flow { get { return Parent.Flow; } }
 
         /// <summary>
         /// Gets this local scope's return type.
@@ -213,10 +207,10 @@ namespace Flame.Ecs
     /// </summary>
     public sealed class FlowScope : ILocalScope
     {
-        public FlowScope(ILocalScope Parent, UniqueTag FlowTag)
+        public FlowScope(ILocalScope Parent, LocalFlow Flow)
         {
             this.Parent = Parent;
-            this.FlowTag = FlowTag;
+            this.Flow = Flow;
         }
 
         /// <summary>
@@ -225,7 +219,7 @@ namespace Flame.Ecs
         public ILocalScope Parent { get; private set; }
 
         /// <inheritdoc/>
-        public UniqueTag FlowTag { get; private set; }
+        public LocalFlow Flow { get; private set; }
 
         /// <summary>
         /// Gets this local scope's function scope.
@@ -283,7 +277,7 @@ namespace Flame.Ecs
         public FunctionScope Function { get; private set; }
 
         /// <inheritdoc/>
-        public UniqueTag FlowTag { get { return Parent.FlowTag; } }
+        public LocalFlow Flow { get { return Parent.Flow; } }
 
         /// <summary>
         /// Gets the log object for this scope.

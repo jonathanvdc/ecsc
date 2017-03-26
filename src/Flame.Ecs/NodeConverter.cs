@@ -642,6 +642,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.If, ExpressionConverters.ConvertIfExpression);
                 result.AddExprConverter(CodeSymbols.While, ExpressionConverters.ConvertWhileExpression);
                 result.AddExprConverter(CodeSymbols.DoWhile, ExpressionConverters.ConvertDoWhileExpression);
+                result.AddExprConverter(CodeSymbols.Switch, ExpressionConverters.ConvertSwitchExpression);
                 result.AddExprConverter(CodeSymbols.Lock, ExpressionConverters.ConvertLockExpression);
                 result.AddExprConverter(CodeSymbols.Try, ExpressionConverters.ConvertTryExpression);
                 result.AddExprConverter(CodeSymbols.UsingStmt, ExpressionConverters.ConvertUsingExpression);
