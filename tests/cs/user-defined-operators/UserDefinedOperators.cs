@@ -18,6 +18,22 @@ struct complex
     {
         return new complex(a.r + b.r, a.i + b.i);
     }
+    public static complex operator *(complex a, double b)
+    {
+        return new complex(a.r * b, a.i * b);
+    }
+    public static complex operator /(complex a, double b)
+    {
+        return new complex(a.r / b, a.i / b);
+    }
+    public static complex operator <<(complex a, int b)
+    {
+        return a * Math.Pow(2, b);
+    }
+    public static complex operator >>(complex a, int b)
+    {
+        return a / Math.Pow(2, b);
+    }
 }
 
 public class Program
@@ -27,6 +43,8 @@ public class Program
         var c = new complex(3, 4);
         c = c + new complex(4, 4);
         c += c;
+        c = c >> 1;
+        c = c << 1;
         Console.WriteLine(c.r);
         Console.WriteLine(c.i);
         Console.WriteLine(c.sqabs());

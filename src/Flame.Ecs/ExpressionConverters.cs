@@ -404,34 +404,37 @@ namespace Flame.Ecs
                                     new GetExtensionMethodExpression(
                                         method, targetExpr));
                         }
-                        else
+                        var boxedVal = UsingBoxValue.GetBoxedValue(Target);
+                        if (boxedVal == null)
                         {
                             return AsTargetValue(Target, scope, srcLoc, true)
                                 .MapResult<IExpression>(targetExpr =>
-                                    {
-                                        var usingBoxExpr = targetExpr.GetEssentialExpression() as UsingBoxExpression;
-                                        if (usingBoxExpr != null)
-                                        {
-                                            // Log a warning whenever we elide a boxing conversion, because
-                                            // regular C# typically can't do that.
-                                            var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
-                                            if (Scope.UseWarning(usingCastWarn))
-                                            {
-                                                Scope.Log.LogWarning(new LogEntry(
-                                                    "EC# extension",
-                                                    usingCastWarn.CreateMessage(
-                                                        new MarkupNode("#group", NodeHelpers.HighlightEven(
-                                                            "this usage of '", "using", "' cannot be translated " +
-                                                            "faithfully to C#, because a cast requires boxing but '",
-                                                            "using", "' does not. "))),
-                                                    srcLoc));
-                                            }
+                            {
+                                return new GetMethodExpression(method, targetExpr);
+                            });
+                        }
+                        else
+                        {
+                            return AsTargetValue(boxedVal, scope, srcLoc, true)
+                                .MapResult<IExpression>(targetExpr =>
+                            {
+                                // Log a warning whenever we elide a boxing conversion, because
+                                // regular C# typically can't do that.
+                                var usingCastWarn = EcsWarnings.EcsExtensionUsingCastWarning;
+                                if (Scope.UseWarning(usingCastWarn))
+                                {
+                                    Scope.Log.LogWarning(new LogEntry(
+                                        "EC# extension",
+                                        usingCastWarn.CreateMessage(
+                                            new MarkupNode("#group", NodeHelpers.HighlightEven(
+                                                "this usage of '", "using", "' cannot be translated " +
+                                                "faithfully to C#, because a cast requires boxing but '",
+                                                "using", "' does not. "))),
+                                        srcLoc));
+                                }
 
-                                            targetExpr = usingBoxExpr.Value;
-                                        }
-
-                                        return new GetMethodExpression(method, targetExpr);
-                                    });
+                                return new GetMethodExpression(method, targetExpr);
+                            });
                         }
                     });
             }
@@ -1097,10 +1100,8 @@ namespace Flame.Ecs
             IEnumerable<LNode> InitializerList, SourceLocation Location,
             LocalScope Scope, NodeConverter Converter)
         {
-            var curType = Scope.Function.CurrentType;
+            var curType = Scope.Function.DeclaringType;
             Debug.Assert(curType != null);
-            if (curType.GetIsPointer())
-                curType = curType.AsPointerType().ElementType;
 
             var declTy = curType.GetRecursiveGenericDeclaration();
             Debug.Assert(declTy != null);
@@ -1175,9 +1176,7 @@ namespace Flame.Ecs
                 {
                     // A generic instance of the anonymous type, instantiated with
                     // its own generic parameters.
-                    var anonGenericTyInst = (curType.GetIsRecursiveGenericInstance()
-                        ? new GenericInstanceType(anonTy, ((GenericTypeBase)curType).Resolver, curType)
-                        : (IType)anonTy).MakeGenericType(anonTy.GenericParameters);
+                    var anonGenericTyInst = anonTy.MakeRecursiveGenericType(anonTy.GetRecursiveGenericParameters());
 
                     // Call the root type's parameterless constructor in the
                     // anonymous type's (parameterless) constructor.
@@ -1195,9 +1194,8 @@ namespace Flame.Ecs
 
             // A generic instance of the anonymous type, instantiated with
             // the generic parameters of the enclosing method, if any.
-            var anonMethodTyInst = (curType.GetIsRecursiveGenericInstance()
-                ? new GenericInstanceType(anonTy, ((GenericTypeBase)curType).Resolver, curType)
-                : (IType)anonTy).MakeGenericType(genericParams);
+            var anonMethodTyInst = anonTy.MakeRecursiveGenericType(
+                curType.GetRecursiveGenericArguments().Concat(genericParams));
 
             var anonTyVar = new LocalVariable("tmp", anonMethodTyInst);
             var anonTyVal = anonTyVar.CreateGetExpression();
@@ -1273,7 +1271,7 @@ namespace Flame.Ecs
                 field.AddAttribute(new AccessAttribute(AccessModifier.Public));
                 anonTy.AddField(field);
                 fieldDecls[fieldName] = field;
-                if (anonMethodTyInst.GetIsRecursiveGenericInstance())
+                if (anonMethodTyInst is GenericTypeBase)
                 {
                     var genericInst = (GenericTypeBase)anonMethodTyInst;
                     initStmts.Add(new FieldVariable(
@@ -2455,7 +2453,7 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts a using-cast expression node (type #usingCast).
         /// </summary>
-        public static IExpression ConvertUsingCastExpression(
+        public static IValue ConvertUsingCastExpression(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             // A using-cast has the same meaning as an implicit cast.
@@ -2465,7 +2463,7 @@ namespace Flame.Ecs
             //
 
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
-                return ErrorTypeExpression;
+                return new ExpressionValue(ErrorTypeExpression);
 
             // Don't log a warning here. Instead, we'll log a warning
             // when `x using T` is used in a context where `using` cast
@@ -2473,19 +2471,20 @@ namespace Flame.Ecs
             // This is the case when calling a method on `x using T`
             // where `x` is a struct and `T` is not.
 
-            var op = Converter.ConvertExpression(Node.Args[0], Scope);
+            var op = Converter.ConvertValue(Node.Args[0], Scope);
             var ty = Converter.ConvertType(Node.Args[1], Scope);
 
+            var expr = op.CreateGetExpressionOrError(Scope, NodeHelpers.ToSourceLocation(Node.Range));
             var implConv = Scope.Function.GetImplicitConversion(
-                op, ty, NodeHelpers.ToSourceLocation(Node.Range));
+                expr, ty, NodeHelpers.ToSourceLocation(Node.Range));
 
             if (implConv.IsBoxing)
                 // Create a special using-box expression node here,
                 // which we can recognize when analyzing
                 // method groups.
-                return new UsingBoxExpression(op, ty);
+                return new UsingBoxValue(op, ty);
             else
-                return implConv.Convert(op, ty);
+                return new ExpressionValue(implConv.Convert(expr, ty));
         }
 
         /// <summary>

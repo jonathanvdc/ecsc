@@ -664,7 +664,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.As, ExpressionConverters.ConvertAsInstanceExpression);
                 result.AddExprConverter(CodeSymbols.Is, ExpressionConverters.ConvertIsInstanceExpression);
                 result.AddExprConverter(CodeSymbols.Cast, ExpressionConverters.ConvertCastExpression);
-                result.AddExprConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
+                result.AddValueConverter(CodeSymbols.UsingCast, ExpressionConverters.ConvertUsingCastExpression);
 
                 // Variable declaration
                 result.AddExprConverter(CodeSymbols.Var, ExpressionConverters.ConvertVariableDeclarationExpression);
