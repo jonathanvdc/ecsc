@@ -48,9 +48,10 @@ tests
     unary/Unary.test;
     user-defined-conversions/UserDefinedConversions.test;
     user-defined-conversions/UserDefinedConversions2.test;
-    user-defined-operators/UserDefinedOperators.test;
+    // user-defined-operators/UserDefinedOperators.test;
     using-statement/UsingStatement.test;
     using-static/UsingStatic.test;
     writeline-formatted/WriteLineFormatted.test;
     xml-docs/XmlDocs.test;
+    yield-return/YieldReturn.test;
 }
