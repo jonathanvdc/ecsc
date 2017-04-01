@@ -500,6 +500,34 @@ namespace Flame.Ecs
         /// </summary>
         public static IExpression ConvertReturn(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
+            if (Node.Attrs.Any(item => item.IsIdNamed(CodeSymbols.Yield)))
+            {
+                // We stumbled across a yield return, which is totally different
+                // from a regular return.
+                if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                    return ErrorTypeExpression;
+
+                var retType = Scope.Function.ReturnType;
+                if (!retType.GetIsEnumerableType())
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "methods cannot use ", "yield return",
+                            " unless they have an enumerable return type."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
+                }
+
+                var elemType = retType.GetEnumerableElementType();
+                if (elemType == null)
+                    return ErrorTypeExpression;
+                
+                return ToExpression(new YieldReturnStatement(
+                    Scope.Function.ConvertImplicit(
+                        Converter.ConvertExpression(Node.Args[0], Scope),
+                        elemType, NodeHelpers.ToSourceLocation(Node.Args[0].Range))));
+            }
+
             if (Node.ArgCount == 0)
             {
                 if (Scope.ReturnType.IsEquivalent(PrimitiveTypes.Void))
@@ -2100,6 +2128,23 @@ namespace Flame.Ecs
         {
             if (NodeHelpers.CheckCall(Node, Scope.Log))
                 NodeHelpers.CheckArity(Node, 0, Scope.Log);
+
+            if (Node.Attrs.Any(item => item.IsIdNamed(CodeSymbols.Yield)))
+            {
+                // We stumbled across a yield break, which is totally different
+                // from a regular yield.
+                if (!Scope.Function.ReturnType.GetIsEnumerableType())
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "methods cannot use ", "yield break",
+                            " unless they have an enumerable return type."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
+                }
+                
+                return ToExpression(new YieldBreakStatement());
+            }
 
             var flow = Scope.Flow;
             if (flow.BreakTag == null)
