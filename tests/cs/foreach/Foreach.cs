@@ -44,5 +44,8 @@ public static class Program
 
         foreach (var item in StaticEnumerable)
             Console.WriteLine(item);
+
+        foreach (string item in new List<object>())
+            Console.WriteLine(item);
     }
 }
