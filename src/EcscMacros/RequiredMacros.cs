@@ -104,6 +104,12 @@ namespace EcscMacros
             var pool = new SymbolPool();
             var enumeratorName = pool.Get("enumerator");
 
+            var getCurrentItem = F.Dot(enumeratorName, GSymbol.Get("Current"));
+            if (!InductionType.IsIdNamed(GSymbol.Empty))
+            {
+                getCurrentItem = F.Call(CodeSymbols.Cast, getCurrentItem, InductionType);
+            }
+
             return F.Braces(
                 F.Var(
                     F.Id(GSymbol.Empty), 
@@ -118,10 +124,7 @@ namespace EcscMacros
                             CodeSymbols.While,
                             F.Call(F.Dot(enumeratorName, GSymbol.Get("MoveNext"))),
                             F.Braces(
-                                F.Var(
-                                    InductionType, 
-                                    InductionName, 
-                                    F.Dot(enumeratorName, GSymbol.Get("Current"))),
+                                F.Var(InductionType, InductionName, getCurrentItem),
                                 Body))),
                     F.Call(
                         CodeSymbols.Finally,
