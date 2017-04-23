@@ -61,8 +61,7 @@ namespace Flame.Ecs.Semantics
         NumberToEnumStaticCast,
 
         /// <summary>
-        /// A dynamic cast is used to perform
-        /// this conversion.
+        /// A dynamic cast is used to perform this conversion.
         /// </summary>
         DynamicCast,
 
@@ -82,7 +81,12 @@ namespace Flame.Ecs.Semantics
         /// An explicit user-defined conversion is used to perform
         /// this conversion.
         /// </summary>
-        ExplicitUserDefined
+        ExplicitUserDefined,
+
+        /// <summary>
+        /// An implicit conversion that converts a method group to a delegate.
+        /// </summary>
+        ImplicitMethodGroup
     }
 
     /// <summary>
@@ -135,7 +139,7 @@ namespace Flame.Ecs.Semantics
         public bool IsReference
         {
             get
-            { 
+            {
                 return Kind == ConversionKind.DynamicCast
                 || Kind == ConversionKind.ReinterpretCast; 
             }
@@ -189,6 +193,7 @@ namespace Flame.Ecs.Semantics
                     case ConversionKind.ImplicitUserDefined:
                     case ConversionKind.ImplicitStaticCast:
                     case ConversionKind.ImplicitBoxingConversion:
+                    case ConversionKind.ImplicitMethodGroup:
                     case ConversionKind.Identity:
                     case ConversionKind.None:
                     default:
@@ -321,6 +326,19 @@ namespace Flame.Ecs.Semantics
                 ConversionMethod,
                 PreConversion,
                 PostConversion);
+        }
+
+        /// <summary>
+        /// Creates a conversion description for an implicit method group conversion.
+        /// </summary>
+        /// <param name="TargetSignature">
+        /// The signature of the delegate that is the result of applying the conversion.
+        /// </param>
+        /// <returns>A conversion description that performs method group conversions.</returns>
+        public static MethodGroupConversionDescription ImplicitMethodGroup(
+            IMethod TargetSignature)
+        {
+            return new MethodGroupConversionDescription(TargetSignature);
         }
 
         /// <summary>
@@ -504,6 +522,49 @@ namespace Flame.Ecs.Semantics
             return string.Format(
                 "[UserDefinedConversionDescription: Kind={0}, ConversionMethod={1}, PreConversion={2}, PostConversion={3}]", 
                 Kind, ConversionMethod, PreConversion, PostConversion);
+        }
+    }
+
+    /// <summary>
+    /// A conversion description for method group conversions.
+    /// </summary>
+    public sealed class MethodGroupConversionDescription : ConversionDescription
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Flame.Ecs.Semantics.MethodGroupConversionDescription"/> class.
+        /// </summary>
+        /// <param name="MethodSignature">
+        /// The signature of the method to pick.
+        /// </param>
+        internal MethodGroupConversionDescription(
+            IMethod MethodSignature)
+        {
+            this.MethodSignature = MethodSignature;
+        }
+
+        /// <summary>
+        /// Gets the kind of conversion that is performed.
+        /// </summary>
+        public override ConversionKind Kind { get { return ConversionKind.ImplicitMethodGroup; } }
+
+        /// <summary>
+        /// Gets the signature of the method to pick.
+        /// </summary>
+        public IMethod MethodSignature { get; private set; }
+
+        /// <inheritdoc/>
+        public override IExpression Convert(
+            IExpression Value, IType TargetType)
+        {
+            return new StaticCastExpression(
+                IntersectionExpression.GetIntersectedExpressions(Value.GetEssentialExpression())
+                    .First(expr => MethodSignature.Equals(MethodType.GetMethod(expr.Type))),
+                TargetType);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[MethodGroupConversionDescription: MethodSignature={0}]", MethodSignature);
         }
     }
 }

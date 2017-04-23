@@ -41,6 +41,20 @@ namespace Flame.Ecs.Semantics
                 }
             }
 
+            // Handle method group conversions.
+            if (TargetType.GetIsDelegate())
+            {
+                var sourceDelegates = IntersectionExpression.GetIntersectedExpressions(
+                    Source.GetEssentialExpression())
+                    .Where(item => item.Type is MethodType)
+                    .ToArray();
+                if (sourceDelegates.Length > 0)
+                {
+                    return ClassifyMethodGroupConversion(
+                        sourceDelegates, MethodType.GetMethod(TargetType), Scope);
+                }
+            }
+
             // TODO: more special cases for literals.
 
             return ClassifyConversion(srcType, TargetType, Scope);
@@ -190,7 +204,6 @@ namespace Flame.Ecs.Semantics
             }
 
             // TODO: pointer conversions
-            // TODO: method group conversions
 
             return NoConversion(SourceType, TargetType);
         }
@@ -1029,6 +1042,158 @@ namespace Flame.Ecs.Semantics
         private static Betterness Encompasses(IType First, IType Second)
         {
             return Encompassed(First, Second).Flip();
+        }
+
+        private static IReadOnlyList<ConversionDescription> ClassifyMethodGroupConversion(
+            IEnumerable<IExpression> SourceSignatures, IMethod TargetSignature, FunctionScope Scope)
+        {
+            // The spec on method group conversions:
+            //
+            // An implicit conversion (Implicit conversions) exists from a method group (Expression classifications)
+            // to a compatible delegate type. Given a delegate type `D` and an expression `E` that is
+            // classified as a method group, an implicit conversion exists from `E` to `D` if `E` contains
+            // at least one method that is applicable in its normal form (Applicable function member) to an argument
+            // list constructed by use of the parameter types and modifiers of `D`, as described in the following.
+            // The compile-time application of a conversion from a method group `E` to a delegate type `D` is
+            // described in the following. Note that the existence of an implicit conversion from `E` to `D` does
+            // not guarantee that the compile-time application of the conversion will succeed without error.
+            //
+            // *  A single method `M` is selected corresponding to a method invocation (Method invocations)
+            //    of the form `E(A)`, with the following modifications:
+            //
+            //     * The argument list `A` is a list of expressions, each classified as a variable and with
+            //       the type and modifier (`ref` or `out`) of the corresponding parameter in the
+            //       *formal_parameter_list* of `D`.
+            //
+            //     * The candidate methods considered are only those methods that are applicable in their
+            //       normal form (Applicable function member), not those applicable only in their expanded
+            //       form.
+            //
+            // *  If the algorithm of Method invocations produces an error, then a compile-time error occurs.
+            //    Otherwise the algorithm produces a single best method `M` having the same number of parameters
+            //    as `D` and the conversion is considered to exist.
+            //
+            // *  The selected method `M` must be compatible (Delegate compatibility) with the delegate type `D`,
+            //    or otherwise, a compile-time error occurs.
+            //
+            // *  If the selected method `M` is an instance method, the instance expression associated with `E`
+            //    determines the target object of the delegate.
+            //
+            // *  If the selected method M is an extension method which is denoted by means of a member access
+            //    on an instance expression, that instance expression determines the target object of the delegate.
+            //
+            // *  The result of the conversion is a value of type `D`, namely a newly created delegate that refers
+            //    to the selected method and target object.
+            //
+            // *  Note that this process can lead to the creation of a delegate to an extension method, if the
+            //    algorithm of Method invocations fails to find an instance method but succeeds in processing the
+            //    invocation of `E(A)` as an extension method invocation (Extension method invocations).
+            //    A delegate thus created captures the extension method as well as its first argument.
+
+            var methodOverloads = new List<CandidateOverload>();
+            foreach (var item in SourceSignatures)
+            {
+                NormalFormOverload overload;
+                if (NormalFormOverload.TryCreate(item, out overload))
+                {
+                    methodOverloads.Add(overload);
+                }
+            }
+
+            CandidateOverload resultOverload;
+            if (!OverloadResolution.TryResolveOverload(
+                methodOverloads,
+                TargetSignature.Parameters
+                    .Select(param => new UnknownExpression(param.ParameterType))
+                    .ToArray(),
+                Scope,
+                out resultOverload))
+            {
+                return new ConversionDescription[] { };
+            }
+
+            var delegExpr = ((NormalFormOverload)resultOverload).DelegateExpression;
+            var delegMethod = MethodType.GetMethod(delegExpr.Type);
+
+            if (!IsCompatibleDelegate(delegMethod, TargetSignature))
+            {
+                return new ConversionDescription[] { };
+            }
+
+            return new ConversionDescription[] { ConversionDescription.ImplicitMethodGroup(delegMethod) };
+        }
+
+        /// <summary>
+        /// Tests if a delegate with the first signature is compatible with the second signature.
+        /// </summary>
+        /// <param name="CompatibleSignature">
+        /// The signature of the delegate value whose compatiblity with the reference delegate type is examined.</param>
+        /// <param name="ReferenceSignature">The signature of the reference delegate type.</param>
+        /// <returns><c>true</c> if the first signature is compatible with the second; otherwise, <c>false</c>.</returns>
+        public static bool IsCompatibleDelegate(IMethod CompatibleSignature, IMethod ReferenceSignature)
+        {
+            // According to the spec,
+            //
+            // A method or delegate `M` is ***compatible*** with a delegate type `D` if all
+            // of the following are true:
+            //
+            // *  `D` and `M` have the same number of parameters, and each parameter in `D` has
+            //    the same `ref` or `out` modifiers as the corresponding parameter in `M`.
+            //
+            // *  For each value parameter (a parameter with no `ref` or `out` modifier), an
+            //    identity conversion (Identity conversion) or implicit reference conversion
+            //    (Implicit reference conversions) exists from the parameter type in `D` to
+            //    the corresponding parameter type in `M`.
+            //
+            // *  For each `ref` or `out` parameter, the parameter type in `D` is the same as
+            //    the parameter type in `M`.
+            //
+            // *  An identity or implicit reference conversion exists from the return type of
+            //    `M` to the return type of `D`.
+
+            var firstParamList = CompatibleSignature.GetParameters();
+            var secondParamList = ReferenceSignature.GetParameters();
+
+            if (firstParamList.Length != secondParamList.Length)
+                return false;
+
+            for (int i = 0; i < firstParamList.Length; i++)
+            {
+                var firstType = firstParamList[i].ParameterType;
+                var secondType = secondParamList[i].ParameterType;
+                if (IsReferencePointer(firstType) || IsReferencePointer(secondType))
+                {
+                    if (!firstType.IsEquivalent(secondType))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    var paramConv = ClassifyBuiltinConversion(secondType, firstType);
+                    if (paramConv.Kind != ConversionKind.Identity
+                        && paramConv.Kind != ConversionKind.ReinterpretCast)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            var retValConv = ClassifyBuiltinConversion(
+                CompatibleSignature.ReturnType, ReferenceSignature.ReturnType);
+
+            return retValConv.Kind == ConversionKind.Identity
+                || retValConv.Kind == ConversionKind.ReinterpretCast;
+        }
+
+        /// <summary>
+        /// Tests if the given type is a reference pointer type.
+        /// </summary>
+        /// <param name="Type">The type to test for reference-pointerness.</param>
+        /// <returns><c>true</c> if the given type is a reference pointer type; otherwise, <c>false</c>.</returns>
+        public static bool IsReferencePointer(IType Type)
+        {
+            return Type.GetIsPointer() && Type.AsPointerType().PointerKind.Equals(PointerKind.ReferencePointer);
         }
 
         private static readonly Dictionary<KeyValuePair<IType, IType>, ConversionDescription> primitiveConversions = 

@@ -81,6 +81,11 @@ namespace Flame.Ecs.Semantics
         private IExpression delegateExpr;
         private IReadOnlyList<IType> paramTypeList;
 
+        /// <summary>
+        /// Gets the delegate expression that backs this normal form overload.
+        /// </summary>
+        public IExpression DelegateExpression => delegateExpr;
+
         /// <inheritdoc/>
         public override IReadOnlyList<IType> ParameterTypes { get { return paramTypeList; } }
 

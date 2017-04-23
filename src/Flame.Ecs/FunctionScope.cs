@@ -500,8 +500,10 @@ namespace Flame.Ecs
             var convs = ClassifyConversion(From, To);
 
             if (convs.Count == 1)
+            {
                 // This is the usual fast-path.
                 return convs[0].Convert(From, To);
+            }
 
             // Prefer explicit conversions over implicit conversions
             // here.
