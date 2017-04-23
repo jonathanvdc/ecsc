@@ -117,6 +117,20 @@ namespace Flame.Ecs
         public IEnvironment Environment { get { return Binder.Binder.Environment; } }
 
         /// <summary>
+        /// Creates a function scope that is enclosed by
+        /// this global scope. The resulting function scope
+        /// has no enclosing function, enclosing type
+        /// or parameter list.
+        /// </summary>
+        /// <returns>A new function scope.</returns>
+        public FunctionScope CreateFunctionScope()
+        {
+            return new FunctionScope(
+                this, null, null, null,
+                new Dictionary<Symbol, IVariable>());
+        }
+
+        /// <summary>
         /// Creates a local scope that is enclosed by
         /// this global scope. The resulting local scope
         /// has no enclosing function, enclosing type
@@ -125,9 +139,7 @@ namespace Flame.Ecs
         /// <returns>A new local scope.</returns>
         public LocalScope CreateLocalScope()
         {
-            return new LocalScope(new FunctionScope(
-                    this, null, null, null,
-                    new Dictionary<Symbol, IVariable>()));
+            return new LocalScope(CreateFunctionScope());
         }
 
         /// <summary>
