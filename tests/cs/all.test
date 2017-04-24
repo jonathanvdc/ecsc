@@ -24,6 +24,7 @@ tests
     hello-world/HelloWorld.test;
     in-place-construction/InPlaceConstruction.test;
     inc-dec/IncDec.test;
+    int-main/IntMain.test;
     interface/Interface.test;
     internal/Internal.test;
     literal-conversion/LiteralConversion.test;
