@@ -5,7 +5,7 @@ namespace Flame.Ecs.Syntax
 {
     /// <summary>
     /// A generic constraint node which makes sure that a generic parameter
-    /// inherits from or implements a specific type. 
+    /// inherits from or implements a specific type.
     /// </summary>
     public sealed class TypeConstraintNode : IGenericConstraintNode
     {
@@ -22,7 +22,7 @@ namespace Flame.Ecs.Syntax
         public LNode TypeNode { get; private set; }
 
         /// <inheritdoc/>
-        public IGenericConstraint Analyze(GlobalScope Scope, NodeConverter Converter)
+        public IGenericConstraint Analyze(LocalScope Scope, NodeConverter Converter)
         {
             var type = Converter.ConvertCheckedType(TypeNode, Scope);
             return type == null

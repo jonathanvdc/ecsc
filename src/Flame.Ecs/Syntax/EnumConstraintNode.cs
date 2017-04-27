@@ -13,7 +13,7 @@ namespace Flame.Ecs.Syntax
         public static readonly EnumConstraintNode Instance = new EnumConstraintNode();
 
         /// <inheritdoc/>
-        public IGenericConstraint Analyze(GlobalScope Scope, NodeConverter Converter)
+        public IGenericConstraint Analyze(LocalScope Scope, NodeConverter Converter)
         {
             return EnumConstraint.Instance;
         }

@@ -18,7 +18,7 @@ namespace Flame.Ecs.Syntax
         /// <param name="Converter">
         /// The converter which is used to analyze child nodes of the generic constraint.
         /// </param>
-        IGenericConstraint Analyze(GlobalScope Scope, NodeConverter Converter);
+        IGenericConstraint Analyze(LocalScope Scope, NodeConverter Converter);
     }
 }
 

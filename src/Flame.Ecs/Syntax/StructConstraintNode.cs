@@ -13,7 +13,7 @@ namespace Flame.Ecs.Syntax
         public static readonly StructConstraintNode Instance = new StructConstraintNode();
 
         /// <inheritdoc/>
-        public IGenericConstraint Analyze(GlobalScope Scope, NodeConverter Converter)
+        public IGenericConstraint Analyze(LocalScope Scope, NodeConverter Converter)
         {
             return ValueTypeConstraint.Instance;
         }

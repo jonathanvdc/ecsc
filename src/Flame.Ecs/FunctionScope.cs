@@ -157,7 +157,14 @@ namespace Flame.Ecs
         /// <param name="Member">The member that might be accessible.</param>
         public bool CanAccess(ITypeMember Member)
         {
-            return DeclaringType.CanAccess(Member);
+            if (DeclaringType == null)
+            {
+                return Member.GetIsGlobalPublic();
+            }
+            else
+            {
+                return DeclaringType.CanAccess(Member);
+            }
         }
 
         /// <summary>
@@ -216,6 +223,16 @@ namespace Flame.Ecs
                 {
                     return !item.IsStatic && CanAccess(item);
                 });
+        }
+
+        /// <summary>
+        /// Gets all members that can be accessed on an instance of the given type.
+        /// </summary>
+        public IEnumerable<ITypeMember> GetInstanceMembers(IType Type)
+        {
+            return Global.MemberCache.GetAllMembers(Type)
+                .Where(member => !member.IsStatic && CanAccess(member))
+                .ToArray();
         }
 
         /// <summary>

@@ -59,7 +59,43 @@ namespace Flame.Ecs
             CreateUnqualifiedNameExpressionAccess(
                 Name.Name, new IType[] { }, Scope, Location, exprSet, ref method);
 
-            return IntersectionValue.Create(exprSet);
+            if (exprSet.Count == 0)
+            {
+                // If the set of expressions is empty, then we want to return
+                // an error value.
+                // First of all, let's see if we can guess what the user meant.
+                var suggestedName = NameSuggestionHelpers.SuggestName(
+                    Name.Name,
+                    Scope.VariableNames
+                        .Where(symbol => symbol.Pool == Name.Pool)
+                        .Select(symbol => symbol.Name)
+                        .Concat(
+                            Scope.Function.GetUnqualifiedStaticMembers()
+                            .Concat(Scope.Function.DeclaringType == null
+                                ? Enumerable.Empty<ITypeMember>()
+                                : Scope.Function.GetInstanceMembers(Scope.Function.DeclaringType))
+                            .Select(member => member.Name)
+                            .OfType<SimpleName>()
+                            .Select(member => member.Name)));
+
+                return new ErrorValue(new LogEntry(
+                    "name lookup",
+                    NodeHelpers.HighlightEven(
+                        "name '",
+                        Name.Name,
+                        "' is not defined in this scope.")
+                        .Concat(
+                            suggestedName == null
+                            ? Enumerable.Empty<MarkupNode>()
+                            : NodeHelpers.HighlightEven(
+                                " Did you mean '", suggestedName, "'?")
+                        .ToArray()),
+                    Location));
+            }
+            else
+            {
+                return IntersectionValue.Create(exprSet);
+            }
         }
 
         /// <summary>
@@ -657,7 +693,6 @@ namespace Flame.Ecs
             LocalScope Scope, SourceLocation TargetLocation,
             SourceLocation MemberLocation)
         {
-            bool hideDiagnostics = false;
             if (Target.IsExpression)
             {
                 if (ErrorType.Instance.Equals(Target.Expression.Type))
@@ -665,7 +700,7 @@ namespace Flame.Ecs
                     // Don't log an error if we tried to access a field on an error expression
                     // because logging an error here will subject the user to a cascade of
                     // unhelpful error messages.
-                    hideDiagnostics = true;
+                    return Target.Expression;
                 }
                 else
                 {
@@ -690,7 +725,7 @@ namespace Flame.Ecs
                     // Don't log an error if we tried to access a field on an error type
                     // because logging an error here will subject the user to a cascade of
                     // unhelpful error messages.
-                    hideDiagnostics = true;
+                    return new ExpressionValue(ErrorTypeExpression);
                 }
                 else
                 {
@@ -712,11 +747,6 @@ namespace Flame.Ecs
                             MemberLocation,
                             Scope));
                 }
-            }
-
-            if (hideDiagnostics)
-            {
-                return new ExpressionValue(ErrorTypeExpression);
             }
             else
             {

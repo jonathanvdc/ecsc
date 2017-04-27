@@ -39,7 +39,7 @@ namespace Flame.Ecs
 
             if (isStatic)
             {
-                var lazyTy = new Lazy<IType>(() => Converter.ConvertCheckedType(Node.Args[0], Scope));
+                var lazyTy = new Lazy<IType>(() => Converter.ConvertCheckedType(Node.Args[0], Scope, null));
                 return Scope.WithBinder(Scope.Binder.UseType(lazyTy));
             }
             else
@@ -109,12 +109,18 @@ namespace Flame.Ecs
                     Defs[i].Name, genParameters[i]));
             }
 
+            var localScope = Scope.CreateLocalScope(
+                DeclaringMember as IType
+                ?? (DeclaringMember is ITypeMember
+                    ? ((ITypeMember)DeclaringMember).DeclaringType
+                    : null));
+
             // And use that to convert generic parameters.
             for (int i = 0; i < Defs.Count; i++)
             {
                 foreach (var constraintNode in Defs[i].Constraints)
                 {
-                    var constraint = constraintNode.Analyze(innerScope, Converter);
+                    var constraint = constraintNode.Analyze(localScope, Converter);
                     AddConstraint(genParameters[i], constraint);
                 }
             }
@@ -171,7 +177,7 @@ namespace Flame.Ecs
                 bool isVirtual = isClass;
                 bool isPartial = false;
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
-                                    Node.Attrs, AccessModifier.Assembly, node =>
+                    Node.Attrs, AccessModifier.Assembly, node =>
                 {
                     if (node.IsIdNamed(CodeSymbols.Static))
                     {
@@ -195,7 +201,7 @@ namespace Flame.Ecs
                     {
                         return false;
                     }
-                }, Scope);
+                }, Scope.CreateLocalScope(descTy));
 
                 if (!isRedefinition)
                 {
@@ -240,7 +246,7 @@ namespace Flame.Ecs
                 foreach (var item in Node.Args[1].Args)
                 {
                     // Convert the base types.
-                    var innerTy = Converter.ConvertType(item, innerScope);
+                    var innerTy = Converter.ConvertType(item, innerScope, descTy);
                     if (innerTy == null)
                     {
                         Scope.Log.LogError(new LogEntry(
@@ -390,7 +396,8 @@ namespace Flame.Ecs
 
                 // Analyze the attribute list.
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
-                                    Node.Attrs, AccessModifier.Assembly, node => false, Scope);
+                    Node.Attrs, AccessModifier.Assembly,
+                    node => false, Scope.CreateLocalScope(descTy));
                 descTy.AddAttribute(PrimitiveAttributes.Instance.EnumAttribute);
                 descTy.AddAttribute(PrimitiveAttributes.Instance.ValueTypeAttribute);
                 descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
@@ -414,7 +421,7 @@ namespace Flame.Ecs
                     }
 
                     var item = Node.Args[1].Args[0];
-                    var innerTy = Converter.ConvertType(item, Scope);
+                    var innerTy = Converter.ConvertType(item, Scope, descTy);
                     if (innerTy == null)
                     {
                         Scope.Log.LogError(new LogEntry(

@@ -24,9 +24,9 @@ namespace Flame.Ecs
         /// which is present in extension methods.
         /// </summary>
         public static Tuple<IParameter, LNode> ConvertParameter(
-            LNode Node, GlobalScope Scope, NodeConverter Converter)
+            LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope);
+            var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope.Function.Global);
             var paramTy = Converter.ConvertType(Node.Args[0], Scope);
             if (paramTy == null)
             {
@@ -87,7 +87,7 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "parameter '", name.ToString(), "' was annotated " +
                             "with the '", "params", "' modifier, but its type ('", 
-                            Scope.NameAbbreviatedType(paramTy), "') was neither an " +
+                            Scope.Function.Global.NameAbbreviatedType(paramTy), "') was neither an " +
                             "array nor an enumerable type."),
                         NodeHelpers.ToSourceLocation(paramsNode.Range)));
                 }
@@ -96,7 +96,7 @@ namespace Flame.Ecs
                     // Log a warning whenever 'params T' is encountered where T is not 
                     // an array.
                     var paramsEnumerableWarn = EcsWarnings.EcsExtensionParamsEnumerableWarning;
-                    if (Scope.UseWarning(paramsEnumerableWarn))
+                    if (Scope.Function.Global.UseWarning(paramsEnumerableWarn))
                     {
                         Scope.Log.LogWarning(new LogEntry(
                             "EC# extension",
@@ -147,7 +147,7 @@ namespace Flame.Ecs
                     {
                         return HandleSpecial(node);
                     }
-                }, Scope);
+                }, Scope.CreateLocalScope(DeclaringType));
             return Tuple.Create<IEnumerable<IAttribute>, bool>(
                 attrs.ToArray(), isStatic);
         }
@@ -235,9 +235,10 @@ namespace Flame.Ecs
             GlobalScope Scope, NodeConverter Converter)
         {
             int i = 0;
+            var localScope = Scope.CreateLocalScope(Target.DeclaringType);
             foreach (var item in Parameters)
             {
-                var pair = ConvertParameter(item, Scope, Converter);
+                var pair = ConvertParameter(item, localScope, Converter);
                 Target.AddParameter(pair.Item1);
                 if (pair.Item2 != null)
                 {
@@ -738,7 +739,7 @@ namespace Flame.Ecs
                 }
 
                 // Resolve the return type.
-                var retType = Converter.ConvertType(Node.Args[0], innerScope);
+                var retType = Converter.ConvertType(Node.Args[0], innerScope, DeclaringType);
                 if (retType == null)
                 {
                     Scope.Log.LogError(new LogEntry(
@@ -754,7 +755,7 @@ namespace Flame.Ecs
 
                 // Resolve the parameters
                 AnalyzeParameters(
-                       Node.Args[2].Args, methodDef, innerScope, Converter);
+                    Node.Args[2].Args, methodDef, innerScope, Converter);
 
                 // Operator methods must take at least one parameter of the 
                 // declaring type.
@@ -1058,7 +1059,7 @@ namespace Flame.Ecs
 
             // Analyze the field type lazily, as well.
             var lazyFieldType = new Lazy<IType>(() => 
-                Converter.ConvertType(typeNode, Scope));
+                Converter.ConvertType(typeNode, Scope, DeclaringType));
 
             // Iterate over each field definition, analyze them 
             // individually.
@@ -1143,7 +1144,7 @@ namespace Flame.Ecs
             // Analyze the propert's type here, because we may want
             // to share this with an optional backing field.
             var lazyRetType = new Lazy<IType>(() => 
-                Converter.ConvertType(Node.Args[0], Scope));
+                Converter.ConvertType(Node.Args[0], Scope, DeclaringType));
 
             // We'll also share the location attribute, which need
             // not be resolved lazily.
@@ -1224,9 +1225,10 @@ namespace Flame.Ecs
                 }
 
                 // Resolve the indexer parameters.
+                var mockLocalScope = Scope.CreateLocalScope(DeclaringType);
                 foreach (var item in Node.Args[2].Args)
                 {
-                    var pair = ConvertParameter(item, Scope, Converter);
+                    var pair = ConvertParameter(item, mockLocalScope, Converter);
                     propDef.AddParameter(pair.Item1);
                     if (pair.Item2 != null)
                     {
@@ -1485,7 +1487,7 @@ namespace Flame.Ecs
             return Converter.ConvertAttributeListWithAccess(
                 Attributes, DeclaringProperty.GetAccess(), 
                 DeclaringProperty.DeclaringType.GetIsInterface(),
-                _ => false, Scope);
+                _ => false, Scope.CreateLocalScope(DeclaringProperty.DeclaringType));
         }
 
         private static AttributeMapBuilder InheritAccessorAttributes(

@@ -19,7 +19,7 @@ namespace Flame.Ecs
         /// <param name="Scope">The global scope.</param>
         /// <param name="Converter">The node converter.</param>
         public static IEnumerable<IAttribute> ConvertDocumentationComment(
-            LNode Node, GlobalScope Scope, NodeConverter Converter)
+            LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
                 // Early-out here. Documentation comment nodes should contain
@@ -41,7 +41,7 @@ namespace Flame.Ecs
             }
 
             string doc = docLiteral.Value.ToString();
-            return Scope.DocumentationParser.Parse(
+            return Scope.Function.Global.DocumentationParser.Parse(
                 doc,
                 NodeHelpers.ToSourceLocation(docLiteral.Range),
                 Scope.Log);

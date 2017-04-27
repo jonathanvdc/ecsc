@@ -49,7 +49,7 @@ namespace Flame.Ecs
         /// <param name="Scope">The global scope.</param>
         /// <param name="Converter">The node converter.</param>
         public static IType ConvertCustomAttributeType(
-            LNode Node, GlobalScope Scope, NodeConverter Converter)
+            LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             var simpleType = Converter.ConvertType(Node, Scope);
             var suffixedType = Converter.ConvertType(
@@ -77,8 +77,8 @@ namespace Flame.Ecs
                         "type resolution",
                         NodeHelpers.HighlightEven(
                             "attribute type '", Node.ToString(), "' is ambiguous " +
-                            "between classes '", Scope.Renderer.Name(simpleType), 
-                            "' and '", Scope.Renderer.Name(suffixedType), "'."),
+                            "between classes '", Scope.Function.Global.Renderer.Name(simpleType), 
+                            "' and '", Scope.Function.Global.Renderer.Name(suffixedType), "'."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
 
@@ -94,7 +94,7 @@ namespace Flame.Ecs
         /// <param name="Scope">The global scope.</param>
         /// <param name="Converter">The node converter.</param>
         public static IEnumerable<IAttribute> ConvertCustomAttribute(
-            LNode Node, GlobalScope Scope, NodeConverter Converter)
+            LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             var typeNode = Node.IsCall ? Node.Target : Node;
             var argNodes = Node.Args;
@@ -105,12 +105,11 @@ namespace Flame.Ecs
                 // attribute we're constructing.
                 return Enumerable.Empty<IAttribute>();
 
-            var localScope = Scope.CreateLocalScope();
-            var ctorArgs = OverloadResolution.ConvertArguments(argNodes, localScope, Converter);
+            var ctorArgs = OverloadResolution.ConvertArguments(argNodes, Scope, Converter);
 
             var result = OverloadResolution.CreateCheckedNewObject(
-                localScope.Function.GetInstanceConstructors(attrType),
-                ctorArgs, localScope.Function, NodeHelpers.ToSourceLocation(Node.Range));
+                Scope.Function.GetInstanceConstructors(attrType),
+                ctorArgs, Scope.Function, NodeHelpers.ToSourceLocation(Node.Range));
 
             // HACK: extract the method and arguments from the 
             //       new-object expression. This should be revisited

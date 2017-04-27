@@ -19,7 +19,7 @@ namespace Flame.Ecs
     using TypeConverter = Func<LNode, GlobalScope, NodeConverter, IType>;
     using LocalTypeConverter = Func<LNode, LocalScope, NodeConverter, IType>;
     using TypeMemberConverter = Func<LNode, LazyDescribedType, GlobalScope, NodeConverter, GlobalScope>;
-    using AttributeConverter = Func<LNode, GlobalScope, NodeConverter, IEnumerable<IAttribute>>;
+    using AttributeConverter = Func<LNode, LocalScope, NodeConverter, IEnumerable<IAttribute>>;
     using ExpressionConverter = Func<LNode, LocalScope, NodeConverter, IExpression>;
     using ValueConverter = Func<LNode, LocalScope, NodeConverter, IValue>;
     using TypeOrExpressionConverter = Func<LNode, LocalScope, NodeConverter, TypeOrExpression>;
@@ -111,9 +111,9 @@ namespace Flame.Ecs
         /// Converts the given type reference node.
         /// </summary>
         public IType ConvertType(
-            LNode Node, GlobalScope Scope)
+            LNode Node, GlobalScope Scope, IType DeclaringType)
         {
-            return ConvertType(Node, Scope.CreateLocalScope());
+            return ConvertType(Node, Scope.CreateLocalScope(DeclaringType));
         }
 
         /// <summary>
@@ -123,18 +123,9 @@ namespace Flame.Ecs
         /// and null is returned.
         /// </summary>
         public IType ConvertCheckedType(
-            LNode Node, GlobalScope Scope)
+            LNode Node, GlobalScope Scope, IType DeclaringType)
         {
-            var retType = ConvertType(Node, Scope);
-            if (retType == null)
-            {
-                Scope.Log.LogError(new LogEntry(
-                    "type resolution",
-                    NodeHelpers.HighlightEven(
-                        "cannot resolve type '", Node.ToString(), "'."),
-                    NodeHelpers.ToSourceLocation(Node.Range)));
-            }
-            return retType;
+            return ConvertCheckedType(Node, Scope.CreateLocalScope(DeclaringType));
         }
 
         /// <summary>
@@ -144,9 +135,9 @@ namespace Flame.Ecs
         /// and the void type is returned.
         /// </summary>
         public IType ConvertCheckedTypeOrError(
-            LNode Node, GlobalScope Scope)
+            LNode Node, GlobalScope Scope, IType DeclaringType)
         {
-            return ConvertCheckedType(Node, Scope) ?? PrimitiveTypes.Void;
+            return ConvertCheckedType(Node, Scope, DeclaringType) ?? PrimitiveTypes.Void;
         }
 
         /// <summary>
@@ -196,7 +187,7 @@ namespace Flame.Ecs
         /// Converts an attribute node. Null is returned if that fails.
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttribute(
-            LNode Node, GlobalScope Scope)
+            LNode Node, LocalScope Scope)
         {
             var conv = GetConverterOrDefault(attrConverters, Node);
             if (conv == null)
@@ -222,7 +213,7 @@ namespace Flame.Ecs
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeList(
             IEnumerable<LNode> Attributes, Func<LNode, bool> HandleSpecial,
-            GlobalScope Scope)
+            LocalScope Scope)
         {
             foreach (var item in Attributes)
             {
@@ -247,12 +238,12 @@ namespace Flame.Ecs
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
             IEnumerable<LNode> Attributes,
-            Func<IEnumerable<LNode>,  GlobalScope, AccessModifier> HandleAccess,
-            Func<LNode, bool> HandleSpecial, GlobalScope Scope)
+            Func<IEnumerable<LNode>, GlobalScope, AccessModifier> HandleAccess,
+            Func<LNode, bool> HandleSpecial, LocalScope Scope)
         {
             var partitioned = NodeHelpers.Partition(Attributes, item => item.IsId && NodeHelpers.IsAccessModifier(item.Name));
 
-            yield return new AccessAttribute(HandleAccess(partitioned.Item1, Scope));
+            yield return new AccessAttribute(HandleAccess(partitioned.Item1, Scope.Function.Global));
             foreach (var item in ConvertAttributeList(partitioned.Item2, HandleSpecial, Scope))
                 yield return item;
         }
@@ -284,11 +275,11 @@ namespace Flame.Ecs
                     // Looks like this access modifier is a duplicate.
                     // Let's issue a warning.
                     Scope.Log.LogWarning(new LogEntry(
-                            "duplicate access modifier",
-                            EcsWarnings.DuplicateAccessModifierWarning.CreateMessage(new MarkupNode(
-                                    "#group",
-                                    NodeHelpers.HighlightEven("access modifier '", symbol.Name, "' is duplicated. "))),
-                            NodeHelpers.ToSourceLocation(item.Range)));
+                        "duplicate access modifier",
+                        EcsWarnings.DuplicateAccessModifierWarning.CreateMessage(new MarkupNode(
+                                "#group",
+                                NodeHelpers.HighlightEven("access modifier '", symbol.Name, "' is duplicated. "))),
+                        NodeHelpers.ToSourceLocation(item.Range)));
                 }
             }
 
@@ -361,7 +352,7 @@ namespace Flame.Ecs
         /// </summary>
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
             IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
-            Func<LNode, bool> HandleSpecial, GlobalScope Scope)
+            Func<LNode, bool> HandleSpecial, LocalScope Scope)
         {
             return ConvertAttributeListWithAccess(
                 Attributes,
@@ -382,7 +373,7 @@ namespace Flame.Ecs
         public IEnumerable<IAttribute> ConvertAttributeListWithAccess(
             IEnumerable<LNode> Attributes, AccessModifier DefaultAccess,
             bool IsInterface, Func<LNode, bool> HandleSpecial,
-            GlobalScope Scope)
+            LocalScope Scope)
         {
             if (IsInterface)
             {
@@ -612,9 +603,9 @@ namespace Flame.Ecs
             get
             {
                 var result = new NodeConverter(
-                                 ExpressionConverters.LookupUnqualifiedName,
-                                 ExpressionConverters.ConvertCall,
-                                 AttributeConverters.ConvertCustomAttribute);
+                    ExpressionConverters.LookupUnqualifiedName,
+                    ExpressionConverters.ConvertCall,
+                    AttributeConverters.ConvertCustomAttribute);
 
                 // Global entities
                 result.AddGlobalConverter(CodeSymbols.Import, GlobalConverters.ConvertImportDirective);

@@ -123,23 +123,22 @@ namespace Flame.Ecs
         /// or parameter list.
         /// </summary>
         /// <returns>A new function scope.</returns>
-        public FunctionScope CreateFunctionScope()
+        public FunctionScope CreateFunctionScope(IType DeclaringType)
         {
             return new FunctionScope(
-                this, null, null, null,
+                this, DeclaringType, null, null,
                 new Dictionary<Symbol, IVariable>());
         }
 
         /// <summary>
         /// Creates a local scope that is enclosed by
         /// this global scope. The resulting local scope
-        /// has no enclosing function, enclosing type
-        /// or parameter list.
+        /// has no enclosing function or parameter list.
         /// </summary>
         /// <returns>A new local scope.</returns>
-        public LocalScope CreateLocalScope()
+        public LocalScope CreateLocalScope(IType DeclaringType)
         {
-            return new LocalScope(CreateFunctionScope());
+            return new LocalScope(CreateFunctionScope(DeclaringType));
         }
 
         /// <summary>
