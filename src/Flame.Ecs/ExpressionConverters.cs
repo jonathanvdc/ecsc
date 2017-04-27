@@ -667,6 +667,7 @@ namespace Flame.Ecs
             LocalScope Scope, SourceLocation TargetLocation,
             SourceLocation MemberLocation)
         {
+            bool hideDiagnostics = false;
             if (Target.IsExpression)
             {
                 if (ErrorType.Instance.Equals(Target.Expression.Type))
@@ -674,7 +675,7 @@ namespace Flame.Ecs
                     // Don't log an error if we tried to access a field on an error expression
                     // because logging an error here will subject the user to a cascade of
                     // unhelpful error messages.
-                    return new ExpressionValue(ErrorTypeExpression);
+                    hideDiagnostics = true;
                 }
                 else
                 {
@@ -691,14 +692,15 @@ namespace Flame.Ecs
                             Scope));
                 }
             }
-            else if (Target.IsType)
+
+            if (Target.IsType)
             {
                 if (Target.Types.Contains(ErrorType.Instance))
                 {
                     // Don't log an error if we tried to access a field on an error type
                     // because logging an error here will subject the user to a cascade of
                     // unhelpful error messages.
-                    return new ExpressionValue(ErrorTypeExpression);
+                    hideDiagnostics = true;
                 }
                 else
                 {
@@ -720,6 +722,11 @@ namespace Flame.Ecs
                             MemberLocation,
                             Scope));
                 }
+            }
+
+            if (hideDiagnostics)
+            {
+                return new ExpressionValue(ErrorTypeExpression);
             }
             else
             {
