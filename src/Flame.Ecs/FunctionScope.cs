@@ -414,7 +414,7 @@ namespace Flame.Ecs
                     {
                         new MarkupNode(NodeConstants.TextNodeType, "cannot implicitly convert type "),
                         RenderConversion(From.Type, To),
-                        new MarkupNode(NodeConstants.TextNodeType, "'." + (convs.Count > 0
+                        new MarkupNode(NodeConstants.TextNodeType, "." + (convs.Count > 0
                             ? " An explicit conversion exists. (are you missing a cast?)"
                             : ""))
                     },
@@ -477,7 +477,7 @@ namespace Flame.Ecs
                             "cannot guarantee at compile-time that " +
                             "there is a safe conversion from type "),
                         RenderConversion(From.Type, To),
-                        new MarkupNode(NodeConstants.TextNodeType, "'." + (convs.Count > 0
+                        new MarkupNode(NodeConstants.TextNodeType, "." + (convs.Count > 0
                             ? " An explicit conversion exists. (are you missing a cast?)"
                             : ""))
                     },

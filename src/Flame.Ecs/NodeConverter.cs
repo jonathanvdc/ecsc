@@ -128,10 +128,10 @@ namespace Flame.Ecs
             if (retType == null)
             {
                 Scope.Log.LogError(new LogEntry(
-                        "type resolution",
-                        NodeHelpers.HighlightEven(
-                            "could not resolve type '", Node.ToString(), "'."),
-                        NodeHelpers.ToSourceLocation(Node.Range)));
+                    "type resolution",
+                    NodeHelpers.HighlightEven(
+                        "cannot resolve type '", Node.ToString(), "'."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
             }
             return retType;
         }
@@ -173,7 +173,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type resolution",
                     NodeHelpers.HighlightEven(
-                        "could not resolve type '", Node.ToString(), "'."),
+                        "cannot resolve type '", Node.ToString(), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
             }
             return retType;
@@ -481,7 +481,7 @@ namespace Flame.Ecs
             {
                 return new ErrorValue(new LogEntry(
                     "expression resolution",
-                    NodeHelpers.HighlightEven("expression could not be resolved."),
+                    NodeHelpers.HighlightEven("cannot resolve expression."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
             }
         }

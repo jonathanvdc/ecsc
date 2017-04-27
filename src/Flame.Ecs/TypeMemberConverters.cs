@@ -32,7 +32,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type resolution",
                     NodeHelpers.HighlightEven(
-                        "could not resolve parameter type '", Node.Args[0].ToString(), 
+                        "cannot resolve parameter type '", Node.Args[0].ToString(), 
                         "' for parameter '", name.ToString(), "'."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 paramTy = PrimitiveTypes.Void;
@@ -743,7 +743,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "type resolution",
                         NodeHelpers.HighlightEven(
-                            "could not resolve return type '", 
+                            "cannot resolve return type '", 
                             Node.Args[0].ToString(), "' for method '", 
                             name.Name.Name, "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
@@ -1195,7 +1195,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "type resolution",
                         NodeHelpers.HighlightEven(
-                            "could not resolve property type '", 
+                            "cannot resolve property type '", 
                             Node.Args[0].ToString(), "' for property '", 
                             name.ToString(), "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));

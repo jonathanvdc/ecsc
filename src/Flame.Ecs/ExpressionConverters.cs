@@ -661,10 +661,87 @@ namespace Flame.Ecs
                 });
         }
 
+        private static IValue HandleFailedMemberAccess(
+            TypeOrExpression Target, string MemberName,
+            LocalScope Scope, SourceLocation TargetLocation,
+            SourceLocation MemberLocation)
+        {
+            if (Target.IsExpression)
+            {
+                if (ErrorType.Instance.Equals(Target.Expression.Type))
+                {
+                    // Don't log an error if we tried to access a field on an error expression
+                    // because logging an error here will subject the user to a cascade of
+                    // unhelpful error messages.
+                    return new ExpressionValue(ErrorTypeExpression);
+                }
+                else
+                {
+                    // The member-access expression tries to access a member on an expression
+                    // whose type is not the error type. Return an error value, which will
+                    // log an error only if it's used.
+                    return new ErrorValue(
+                        CreateFailedMemberAccessLogEntry(
+                            "value of type", Target.Expression.Type, MemberName, MemberLocation, Scope));
+                }
+            }
+            else if (Target.IsType)
+            {
+                if (Target.Types.Contains(ErrorType.Instance))
+                {
+                    // Don't log an error if we tried to access a field on an error type
+                    // because logging an error here will subject the user to a cascade of
+                    // unhelpful error messages.
+                    return new ExpressionValue(ErrorTypeExpression);
+                }
+                else
+                {
+                    // The member-access expression tries to access a member on a type
+                    // which is not the error type. Return an error value, which will
+                    // log an error only if it's used.
+                    var typeArray = Target.Types.ToArray();
+                    var intersectionType = typeArray[0];
+                    foreach (var type in typeArray.Skip(1))
+                    {
+                        intersectionType = new IntersectionType(intersectionType, type);
+                    }
+                    return new ErrorValue(
+                        CreateFailedMemberAccessLogEntry(
+                            "type", intersectionType, MemberName, MemberLocation, Scope));
+                }
+            }
+            else
+            {
+                return new ErrorValue(
+                    new LogEntry(
+                        "expression resolution",
+                        NodeHelpers.HighlightEven(
+                            "expression is neither a type nor a value."),
+                        TargetLocation));
+            }
+        }
+
+        private static LogEntry CreateFailedMemberAccessLogEntry(
+            string AccessedValueKind, IType AccessedValueType,
+            string MemberName, SourceLocation Location,
+            LocalScope Scope)
+        {
+            return new LogEntry(
+                "member access",
+                NodeHelpers.HighlightEven(
+                    AccessedValueKind + " '",
+                    Scope.Function.Global.NameAbbreviatedType(AccessedValueType),
+                    "' does not expose a member called '",
+                    MemberName,
+                    "'."),
+                Location);
+        }
+
         private static TypeOrExpression ConvertMemberAccess(
             TypeOrExpression Target, string MemberName,
             IReadOnlyList<IType> TypeArguments, LocalScope Scope,
-            SourceLocation Location)
+            SourceLocation TargetLocation,
+            SourceLocation MemberLocation)
         {
             // First, try to resolve member-access expressions, which
             // look like this (instance member access):
@@ -687,7 +764,7 @@ namespace Flame.Ecs
                 {
                     CreateMemberAccess(
                         item, TypeArguments, Target.Expression, exprSet,
-                        Scope.Function.Global, Location, ref method);
+                        Scope.Function.Global, MemberLocation, ref method);
                 }
             }
 
@@ -699,25 +776,33 @@ namespace Flame.Ecs
                     {
                         CreateMemberAccess(
                             item, TypeArguments, null, exprSet,
-                            Scope.Function.Global, Location, ref method);
+                            Scope.Function.Global, MemberLocation, ref method);
                     }
                 }
             }
 
-            if (exprSet.Count == 0 && method != null)
+            IValue expr;
+            if (exprSet.Count == 0)
             {
-                // We want to provide a diagnostic here if we
-                // encountered a method, but it was not given
-                // the right amount of type arguments.
-                LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
-                // Add the error-type expression to the set, to
-                // keep the node converter from logging a diagnostic
-                // about the fact that the expression returned here is
-                // not a value.
-                exprSet.Add(new ExpressionValue(ErrorTypeExpression));
+                if (method != null)
+                {
+                    // We want to provide a diagnostic here if we encountered a
+                    // method that was not given the right amount of type arguments.
+                    LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, MemberLocation);
+                    // Add the error-type expression to the set to keep the node
+                    // converter from logging a diagnostic about the fact that
+                    // the expression returned here is not a value.
+                    expr = new ExpressionValue(ErrorTypeExpression);
+                }
+                else
+                {
+                    expr = HandleFailedMemberAccess(Target, MemberName, Scope, TargetLocation, MemberLocation);
+                }
             }
-
-            var expr = IntersectionValue.Create(exprSet);
+            else
+            {
+                expr = IntersectionValue.Create(exprSet);
+            }
 
             // Next, we'll handle namespaces, which are
             // really just qualified names.
@@ -760,7 +845,7 @@ namespace Flame.Ecs
             return new TypeOrExpression(
                 expr,
                 InstantiateTypes(
-                    typeSet, TypeArguments, Scope.Function.Global, Location),
+                    typeSet, TypeArguments, Scope.Function.Global, MemberLocation),
                 nsName);
         }
 
@@ -773,10 +858,13 @@ namespace Flame.Ecs
             if (!NodeHelpers.CheckArity(Node, 2, Scope.Log))
                 return TypeOrExpression.Empty;
 
-            var target = Converter.ConvertTypeOrExpression(Node.Args[0], Scope);
-            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
-
+            var lhs = Node.Args[0];
             var rhs = Node.Args[1];
+
+            var target = Converter.ConvertTypeOrExpression(lhs, Scope);
+
+            var targetLoc = NodeHelpers.ToSourceLocation(lhs.Range);
+            var memberLoc = NodeHelpers.ToSourceLocation(rhs.Range);
 
             string ident;
             IType[] tArgs;
@@ -797,11 +885,11 @@ namespace Flame.Ecs
                     "syntax error",
                     "expected an identifier or a generic instantiation " +
                     "on the right-hand side of a member access expression.",
-                    srcLoc));
+                    memberLoc));
                 return TypeOrExpression.Empty;
             }
 
-            return ConvertMemberAccess(target, ident, tArgs, Scope, srcLoc);
+            return ConvertMemberAccess(target, ident, tArgs, Scope, targetLoc, memberLoc);
         }
 
         public static TypeOrExpression ConvertInstantiation(
@@ -841,9 +929,9 @@ namespace Flame.Ecs
             // an unqualified expression (i.e. an Id node),
             // or some member-access expression. (type @.)
 
-            var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
             if (target.IsId)
             {
+                var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
                 return LookupUnqualifiedNameInstance(
                     target.Name.Name, tArgs, Scope, srcLoc);
             }
@@ -859,16 +947,20 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         "expected an identifier on the right-hand side of a member access expression.",
-                        srcLoc));
+                        NodeHelpers.ToSourceLocation(target.Args[1].Range)));
                     return TypeOrExpression.Empty;
                 }
 
                 var ident = target.Args[1].Name.Name;
 
-                return ConvertMemberAccess(targetTyOrExpr, ident, tArgs, Scope, srcLoc);
+                return ConvertMemberAccess(
+                    targetTyOrExpr, ident, tArgs, Scope,
+                    NodeHelpers.ToSourceLocation(target.Args[0].Range),
+                    NodeHelpers.ToSourceLocation(target.Args[1].Range));
             }
             else
             {
+                var srcLoc = NodeHelpers.ToSourceLocation(Node.Range);
                 Scope.Function.Global.Log.LogError(new LogEntry(
                     "syntax error",
                     "generic instantiation is only applicable to unqualified names, " +
@@ -1352,7 +1444,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "initializer list",
                         NodeHelpers.HighlightEven(
-                            "could not resolve initialized member '", fieldName, "'."),
+                            "cannot resolve initialized member '", fieldName, "'."),
                         loc));
                     return new ExpressionStatement(val);
                 }
@@ -1867,7 +1959,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(
                         new LogEntry(
                             "type resolution",
-                            NodeHelpers.HighlightEven("could not resolve variable type '", Node.ToString(), "'."),
+                            NodeHelpers.HighlightEven("cannot resolve variable type '", Node.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(varTyNode.Range)));
                     return new Tuple<IStatement, IReadOnlyList<IVariable>>(
                         EmptyStatement.Instance, new IVariable[] { });
@@ -2847,13 +2939,15 @@ namespace Flame.Ecs
 
         // Creates a 'Dispose' call for a 'using' statement.
         private static IStatement CreateUsingDisposeStatement(
-            TypeOrExpression Target, 
+            TypeOrExpression Target,
             LocalScope Scope, SourceLocation Location)
         {
             var method = ConvertMemberAccess(
-                Target, "Dispose", 
+                Target, "Dispose",
                 new IType[] { },
-                Scope, Location); 
+                Scope,
+                Location,
+                Location);
 
             if (!method.IsExpression)
             {

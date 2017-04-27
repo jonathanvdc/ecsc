@@ -246,7 +246,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "type resolution",
                             NodeHelpers.HighlightEven(
-                                "could not resolve base type '", 
+                                "cannot resolve base type '", 
                                 item.ToString(), "' for '", 
                                 name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));
@@ -420,7 +420,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "type resolution",
                             NodeHelpers.HighlightEven(
-                                "could not resolve underlying type type '", 
+                                "cannot resolve underlying type type '", 
                                 item.ToString(), "' for '", 
                                 name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));

@@ -62,7 +62,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                             "type resolution",
                             NodeHelpers.HighlightEven(
-                                "could not resolve attribute type '", Node.ToString(), "'."),
+                                "cannot resolve attribute type '", Node.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(Node.Range)));
                     return null;
                 }
