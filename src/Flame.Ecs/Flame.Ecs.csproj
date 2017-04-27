@@ -164,6 +164,7 @@
     <Compile Include="TypeMemberConverters.cs" />
     <Compile Include="AttributeConverters.cs" />
     <Compile Include="Diagnostics\EcsWarnings.cs" />
+    <Compile Include="Diagnostics\NameSuggestionHelpers.cs" />
     <Compile Include="LocalFlow.cs" />
     <Compile Include="LocalScope.cs" />
     <Compile Include="ExpressionConverters.cs" />
