@@ -683,7 +683,12 @@ namespace Flame.Ecs
                     // log an error only if it's used.
                     return new ErrorValue(
                         CreateFailedMemberAccessLogEntry(
-                            "value of type", Target.Expression.Type, MemberName, MemberLocation, Scope));
+                            "value of type",
+                            Target.Expression.Type,
+                            MemberName,
+                            Scope.Function.GetInstanceAndExtensionMembers(Target.Expression.Type),
+                            MemberLocation,
+                            Scope));
                 }
             }
             else if (Target.IsType)
@@ -708,7 +713,12 @@ namespace Flame.Ecs
                     }
                     return new ErrorValue(
                         CreateFailedMemberAccessLogEntry(
-                            "type", intersectionType, MemberName, MemberLocation, Scope));
+                            "type",
+                            intersectionType,
+                            MemberName,
+                            typeArray.SelectMany(Scope.Function.GetStaticMembers).Distinct(),
+                            MemberLocation,
+                            Scope));
                 }
             }
             else
@@ -724,17 +734,32 @@ namespace Flame.Ecs
 
         private static LogEntry CreateFailedMemberAccessLogEntry(
             string AccessedValueKind, IType AccessedValueType,
-            string MemberName, SourceLocation Location,
-            LocalScope Scope)
+            string MemberName, IEnumerable<ITypeMember> AllTypeMembers,
+            SourceLocation Location, LocalScope Scope)
         {
+            var suggestedName = NameSuggestionHelpers.SuggestName(
+                MemberName,
+                AllTypeMembers
+                    .Select(item => item.Name)
+                    .OfType<SimpleName>()
+                    .Select(item => item.Name));
             return new LogEntry(
                 "member access",
-                NodeHelpers.HighlightEven(
+                NodeHelpers.HighlightEven(new string[]
+                {
                     AccessedValueKind + " '",
                     Scope.Function.Global.NameAbbreviatedType(AccessedValueType),
                     "' does not expose a member called '",
-                    MemberName,
-                    "'."),
+                    MemberName
+                }.Concat(
+                    suggestedName == null
+                    ? new string[] { "'." }
+                    : new string[]
+                {
+                    "'. Did you mean '",
+                    suggestedName,
+                    "'?"
+                }).ToArray()),
                 Location);
         }
 
