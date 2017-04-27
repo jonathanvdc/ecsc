@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Flame.Ecs
+namespace Flame.Ecs.Diagnostics
 {
     /// <summary>
     /// Describes a set of source documents, which can be 

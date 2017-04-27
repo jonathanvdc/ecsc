@@ -7,6 +7,7 @@ using Flame.Build;
 using Flame.Build.Lazy;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using Flame.Ecs.Diagnostics;
 using Flame.Ecs.Semantics;
 using Pixie;
 using Flame.Ecs.Values;

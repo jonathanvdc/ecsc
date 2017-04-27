@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Flame.Compiler;
+using Flame.Ecs.Diagnostics;
 using Loyc.Syntax;
 using Loyc;
 using LeMP;

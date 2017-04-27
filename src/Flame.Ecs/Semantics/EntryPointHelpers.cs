@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Flame.Compiler;
+using Flame.Ecs.Diagnostics;
 using Pixie;
 
 namespace Flame.Ecs.Semantics

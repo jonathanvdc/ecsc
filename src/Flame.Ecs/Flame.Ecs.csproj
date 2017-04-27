@@ -155,7 +155,7 @@
     <Compile Include="EcsTypeRenderer.cs" />
     <Compile Include="RootNamespace.cs" />
     <Compile Include="NodeConverter.cs" />
-    <Compile Include="CompilerLogMessageSink.cs" />
+    <Compile Include="Diagnostics\CompilerLogMessageSink.cs" />
     <Compile Include="NodeHelpers.cs" />
     <Compile Include="LoycSourceDocument.cs" />
     <Compile Include="GlobalScope.cs" />
@@ -163,7 +163,7 @@
     <Compile Include="GlobalConverters.cs" />
     <Compile Include="TypeMemberConverters.cs" />
     <Compile Include="AttributeConverters.cs" />
-    <Compile Include="EcsWarnings.cs" />
+    <Compile Include="Diagnostics\EcsWarnings.cs" />
     <Compile Include="LocalFlow.cs" />
     <Compile Include="LocalScope.cs" />
     <Compile Include="ExpressionConverters.cs" />
@@ -226,6 +226,7 @@
     <Folder Include="Values\" />
     <Folder Include="Syntax\" />
     <Folder Include="Parsing\" />
+    <Folder Include="Diagnostics\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EcscMacros\EcscMacros.csproj">

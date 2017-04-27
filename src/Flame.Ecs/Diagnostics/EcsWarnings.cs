@@ -1,7 +1,7 @@
 ﻿using System;
 using Flame.Compiler;
 
-namespace Flame.Ecs
+namespace Flame.Ecs.Diagnostics
 {
     /// <summary>
     /// Lists a number of EC#-specific warnings.

@@ -8,6 +8,7 @@ using Flame.Compiler.Statements;
 using System.Collections.Generic;
 using Flame.Compiler.Variables;
 using Pixie;
+using Flame.Ecs.Diagnostics;
 using Flame.Ecs.Semantics;
 using Loyc;
 using Flame.Ecs.Syntax;

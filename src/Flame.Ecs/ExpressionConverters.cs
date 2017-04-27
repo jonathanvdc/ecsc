@@ -7,6 +7,7 @@ using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
 using Flame.Compiler.Emit;
+using Flame.Ecs.Diagnostics;
 using Flame.Ecs.Semantics;
 using Loyc;
 using Loyc.Syntax;
