@@ -77,8 +77,8 @@ namespace Flame.Ecs
                         "type resolution",
                         NodeHelpers.HighlightEven(
                             "attribute type '", Node.ToString(), "' is ambiguous " +
-                            "between classes '", Scope.TypeNamer.Convert(simpleType), 
-                            "' and '", Scope.TypeNamer.Convert(suffixedType), "'."),
+                            "between classes '", Scope.Renderer.Name(simpleType), 
+                            "' and '", Scope.Renderer.Name(suffixedType), "'."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
 

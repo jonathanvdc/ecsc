@@ -542,8 +542,8 @@ namespace Flame.Ecs
             return false;
         }
 
-        private static string CreateExpectedSignatureDescription(
-            TypeConverterBase<string> TypeNamer, IType ReturnType, 
+        private static MarkupNode CreateExpectedSignatureDescription(
+            TypeRenderer Renderer, IType ReturnType,
             IType[] ArgumentTypes)
         {
             // Create a method signature, then turn that
@@ -558,28 +558,35 @@ namespace Flame.Ecs
                     new DescribedParameter("param" + i, ArgumentTypes[i]));
             }
 
-            return TypeNamer.Convert(MethodType.Create(descMethod));
+            return Renderer.Convert(MethodType.Create(descMethod));
         }
 
         private static MarkupNode CreateSignatureDiff(
-            TypeConverterBase<string> TypeNamer, IType[] ArgumentTypes, 
+            TypeRenderer Renderer, IType[] ArgumentTypes, 
             IMethod Target)
         {
-            var methodDiffBuilder = new MethodDiffComparer(TypeNamer);
+            var methodDiffBuilder = new MethodDiffComparer(Renderer);
             var argDiff = methodDiffBuilder.CompareArguments(ArgumentTypes, Target);
 
             var nodes = new List<MarkupNode>();
             if (Target.IsStatic)
             {
-                nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "static "));
+                nodes.Add(Renderer.CreateTextNode("static "));
             }
             if (Target.IsConstructor)
             {
-                nodes.Add(new MarkupNode(NodeConstants.TextNodeType, "new " + TypeNamer.Convert(Target.DeclaringType)));
+                nodes.Add(Renderer.CreateTextNode("new "));
+                nodes.Add(Renderer.Convert(Target.DeclaringType));
             }
             else
             {
-                nodes.Add(new MarkupNode(NodeConstants.TextNodeType, TypeNamer.Convert(Target.ReturnType) + " " + Target.FullName));
+                nodes.Add(Renderer.Convert(Target.ReturnType));
+                nodes.Add(Renderer.CreateTextNode(" "));
+                nodes.Add(
+                    Renderer.MakeNestedType(
+                        Renderer.Convert(Target.DeclaringType),
+                        Renderer.CreateTextNode(Renderer.UnqualifiedNameToString(Target.Name)),
+                        Renderer.DefaultStyle));
             }
 
             nodes.Add(argDiff);
@@ -623,7 +630,14 @@ namespace Flame.Ecs
             var target = IntersectionExpression.Create(Candidates);
 
             var matches = target.GetMethodGroup();
-            var namer = Scope.TypeNamer;
+
+            // Construct the set of all types that we might end up rendering.
+            var allTypes = SimpleTypeFinder.Instance.ConvertAndMerge(ArgumentTypes);
+            allTypes.UnionWith(SimpleTypeFinder.Instance.ConvertAndMerge(matches));
+            allTypes.ExceptWith(EcsTypeRenderer.KeywordPrimitiveTypes);
+
+            // Create an abbreviating type renderer.
+            var namer = Scope.Renderer.AbbreviateTypeNames(allTypes);
 
             var retType = matches.Any() ? matches.First().ReturnType : ErrorType.Instance;
             var expectedSig = CreateExpectedSignatureDescription(namer, retType, ArgumentTypes);
@@ -651,9 +665,11 @@ namespace Flame.Ecs
                                             m => CreateSignatureDiff(namer, ArgumentTypes, m));
 
                 var explanationNodes = NodeHelpers.HighlightEven(
-                                           FunctionType + " call could not be resolved. " +
-                                           "Expected signature compatible with '", expectedSig,
-                                           "'. Incompatible or ambiguous matches:");
+                    namer.CreateTextNode(
+                        FunctionType + " call could not be resolved. " +
+                        "Expected signature compatible with '"),
+                    expectedSig,
+                    namer.CreateTextNode("'. Incompatible or ambiguous matches:"));
 
                 var failedMatchesNode = ListExtensions.Instance.CreateList(failedMatchesList);
                 log.LogError(new LogEntry(
@@ -669,9 +685,13 @@ namespace Flame.Ecs
                 log.LogError(new LogEntry(
                     FunctionType + " resolution",
                     NodeHelpers.HighlightEven(
-                        FunctionType + " call could not be resolved because the call's target was not invocable. " +
-                        "Expected signature compatible with '", expectedSig,
-                        "', got an expression of type '", namer.Convert(target.Type), "'."),
+                        namer.CreateTextNode(
+                            FunctionType + " call could not be resolved because the call's target was not invocable. " +
+                            "Expected signature compatible with '"),
+                        expectedSig,
+                        namer.CreateTextNode("', got an expression of type '"),
+                        namer.Convert(target.Type),
+                        namer.CreateTextNode("'.")),
                     Location));
             }
             return innerExpr;

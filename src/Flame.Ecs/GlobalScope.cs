@@ -19,20 +19,20 @@ namespace Flame.Ecs
     {
         public GlobalScope(
             IBinder Binder, ConversionRules ConversionRules,
-            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            ICompilerLog Log, TypeRenderer Renderer,
             IDocumentationParser DocumentationParser)
             : this(
                 new QualifiedBinder(Binder), ConversionRules,
-                Log, TypeNamer, DocumentationParser)
+                Log, Renderer, DocumentationParser)
         {
         }
 
         public GlobalScope(
             QualifiedBinder Binder, ConversionRules ConversionRules,
-            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            ICompilerLog Log, TypeRenderer Renderer,
             IDocumentationParser DocumentationParser)
             : this(
-                Binder, ConversionRules, Log, TypeNamer, DocumentationParser,
+                Binder, ConversionRules, Log, Renderer, DocumentationParser,
                 new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()),
                 new WarningStack())
         {
@@ -40,7 +40,7 @@ namespace Flame.Ecs
 
         private GlobalScope(
             QualifiedBinder Binder, ConversionRules ConversionRules,
-            ICompilerLog Log, TypeConverterBase<string> TypeNamer,
+            ICompilerLog Log, TypeRenderer Renderer,
             IDocumentationParser DocumentationParser,
             ThreadLocal<GlobalMemberCache> MemberCache,
             WarningStack Warnings)
@@ -48,7 +48,7 @@ namespace Flame.Ecs
             this.Binder = Binder;
             this.ConversionRules = ConversionRules;
             this.Log = Log;
-            this.TypeNamer = TypeNamer;
+            this.Renderer = Renderer;
             this.DocumentationParser = DocumentationParser;
             this.memCache = MemberCache;
             this.extMemCache = new ThreadLocal<ExtensionMemberCache>(
@@ -76,10 +76,10 @@ namespace Flame.Ecs
         public ICompilerLog Log { get; private set; }
 
         /// <summary>
-        /// Gets the type namer for this global scope.
+        /// Gets the type renderer for this global scope.
         /// </summary>
-        /// <value>The type namer.</value>
-        public TypeConverterBase<string> TypeNamer { get; private set; }
+        /// <value>The type renderer.</value>
+        public TypeRenderer Renderer { get; private set; }
 
         /// <summary>
         /// Gets the documentation parser for this global scope.
@@ -151,8 +151,31 @@ namespace Flame.Ecs
         public GlobalScope WithBinder(QualifiedBinder NewBinder)
         {
             return new GlobalScope(
-                NewBinder, ConversionRules, Log, TypeNamer,
+                NewBinder, ConversionRules, Log, Renderer,
                 DocumentationParser, memCache, warningStack);
+        }
+
+        /// <summary>
+        /// Assigns an abbreviated name to the given type.
+        /// </summary>
+        /// <param name="Type">The type to abbreviate.</param>
+        /// <returns>The type's abbreviated name.</returns>
+        public string NameAbbreviatedType(IType Type)
+        {
+            return Renderer.AbbreviateTypeNames(
+                SimpleTypeFinder.Instance.Convert(Type)).Name(Type);
+        }
+
+        /// <summary>
+        /// Creates a type renderer that abbreviates the given set of types provided
+        /// that this does not cause ambiguity.
+        /// </summary>
+        /// <param name="AbbreviatableTypes">The set of types to abbreviate.</param>
+        /// <returns>An abbreviating type renderer.</returns>
+        public TypeRenderer CreateAbbreviatingRenderer(params IType[] AbbreviatableTypes)
+        {
+            return Renderer.AbbreviateTypeNames(
+                SimpleTypeFinder.Instance.ConvertAndMerge(AbbreviatableTypes));
         }
 
         /// <summary>
@@ -163,7 +186,7 @@ namespace Flame.Ecs
         public GlobalScope DisableWarnings(params string[] WarningNames)
         {
             return new GlobalScope(
-                Binder, ConversionRules, Log, TypeNamer,
+                Binder, ConversionRules, Log, Renderer,
                 DocumentationParser, memCache, warningStack.PushDisable(WarningNames));
         }
 
@@ -175,7 +198,7 @@ namespace Flame.Ecs
         public GlobalScope RestoreWarnings(params string[] WarningNames)
         {
             return new GlobalScope(
-                Binder, ConversionRules, Log, TypeNamer,
+                Binder, ConversionRules, Log, Renderer,
                 DocumentationParser, memCache, warningStack.PushRestore(WarningNames));
         }
 

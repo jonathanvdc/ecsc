@@ -58,6 +58,29 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Produces an array of markup nodes, where the
+        /// even arguments are highlighted.
+        /// </summary>
+        public static MarkupNode[] HighlightEven(params MarkupNode[] Nodes)
+        {
+            var results = new MarkupNode[Nodes.Length];
+            for (int i = 0; i < Nodes.Length; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    results[i] = Nodes[i];
+                }
+                else
+                {
+                    results[i] = new MarkupNode(
+                        NodeConstants.BrightNodeType,
+                        new MarkupNode[] { Nodes[i] });
+                }
+            }
+            return results;
+        }
+
+        /// <summary>
         /// Creates a list of markup nodes that speak of
         /// of a redefinition. A message, the new definition
         /// and the original definition are presented.

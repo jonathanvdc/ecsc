@@ -257,23 +257,25 @@ namespace Flame.Ecs
                         {
                             if (innerTy.GetIsValueType())
                             {
+                                var renderer = Scope.CreateAbbreviatingRenderer(descTy, innerTy);
                                 Scope.Log.LogError(new LogEntry(
                                     "invalid base type",
                                     NodeHelpers.HighlightEven(
-                                        "'", Scope.TypeNamer.Convert(descTy), 
-                                        "' cannot inherit from '", "struct", 
-                                        "' type '", 
-                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                        "'", renderer.Name(descTy),
+                                        "' cannot inherit from '", "struct",
+                                        "' type '",
+                                        renderer.Name(innerTy), "'."),
                                     NodeHelpers.ToSourceLocation(item.Range)));
                             }
                             else if (innerTy.GetIsGenericParameter())
                             {
+                                var renderer = Scope.CreateAbbreviatingRenderer(descTy, innerTy);
                                 Scope.Log.LogError(new LogEntry(
                                     "invalid base type",
                                     NodeHelpers.HighlightEven(
-                                        "'", Scope.TypeNamer.Convert(descTy), 
+                                        "'", renderer.Name(descTy), 
                                         "' cannot inherit from generic parameter '", 
-                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                        renderer.Name(innerTy), "'."),
                                     NodeHelpers.ToSourceLocation(item.Range)));
                             }
 
@@ -283,13 +285,14 @@ namespace Flame.Ecs
                             }
                             else
                             {
+                                var renderer = Scope.CreateAbbreviatingRenderer(descTy, baseClass, innerTy);
                                 Scope.Log.LogError(new LogEntry(
                                     "multiple base classes",
                                     NodeHelpers.HighlightEven(
-                                        "'", Scope.TypeNamer.Convert(descTy), 
-                                        "' cannot have multiple base classes '", 
-                                        Scope.TypeNamer.Convert(baseClass), "' and '", 
-                                        Scope.TypeNamer.Convert(innerTy), "'."),
+                                        "'", renderer.Name(descTy),
+                                        "' cannot have multiple base classes '",
+                                        renderer.Name(baseClass), "' and '",
+                                        renderer.Name(innerTy), "'."),
                                     NodeHelpers.ToSourceLocation(item.Range)));
                             }
                         }

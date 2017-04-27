@@ -7,6 +7,7 @@ using Flame.Compiler;
 using Flame.Compiler.Expressions;
 using Flame.Compiler.Variables;
 using Flame.Ecs.Semantics;
+using Pixie;
 
 namespace Flame.Ecs
 {
@@ -395,12 +396,7 @@ namespace Flame.Ecs
                 {
                     if (result.Kind != ConversionKind.None)
                     {
-                        Global.Log.LogError(new LogEntry(
-                            "ambiguous implicit conversion",
-                            NodeHelpers.HighlightEven(
-                                "the implicit conversion of type '", Global.TypeNamer.Convert(From.Type),
-                                "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
-                            Location));
+                        LogAmbiguousConversion("implicit", From.Type, To, Location);
                         return result;
                     }
                     else
@@ -414,10 +410,14 @@ namespace Flame.Ecs
             {
                 Global.Log.LogError(new LogEntry(
                     "no implicit conversion",
-                    NodeHelpers.HighlightEven(
-                        "cannot implicitly convert type '", Global.TypeNamer.Convert(From.Type),
-                        "' to '", Global.TypeNamer.Convert(To), "'." +
-                        (convs.Count > 0 ? " An explicit conversion exists. (are you missing a cast?)" : "")),
+                    new MarkupNode[]
+                    {
+                        new MarkupNode(NodeConstants.TextNodeType, "cannot implicitly convert type "),
+                        RenderConversion(From.Type, To),
+                        new MarkupNode(NodeConstants.TextNodeType, "'." + (convs.Count > 0
+                            ? " An explicit conversion exists. (are you missing a cast?)"
+                            : ""))
+                    },
                     Location));
 
                 return PickAnyConversion(convs);
@@ -456,12 +456,7 @@ namespace Flame.Ecs
                 {
                     if (result != null)
                     {
-                        Global.Log.LogError(new LogEntry(
-                            "ambiguous static conversion",
-                            NodeHelpers.HighlightEven(
-                                "the static conversion of type '", Global.TypeNamer.Convert(From.Type),
-                                "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
-                            Location));
+                        LogAmbiguousConversion("static", From.Type, To, Location);
                         return result;
                     }
                     else
@@ -475,10 +470,17 @@ namespace Flame.Ecs
             {
                 Global.Log.LogError(new LogEntry(
                     "no static conversion",
-                    NodeHelpers.HighlightEven(
-                        "cannot guarantee at compile-time that type '", Global.TypeNamer.Convert(From.Type),
-                        "' can safely be converted to '", Global.TypeNamer.Convert(To), "'." +
-                        (convs.Count > 0 ? " An explicit conversion exists." : "")),
+                    new MarkupNode[]
+                    {
+                        new MarkupNode(
+                            NodeConstants.TextNodeType,
+                            "cannot guarantee at compile-time that " +
+                            "there is a safe conversion from type "),
+                        RenderConversion(From.Type, To),
+                        new MarkupNode(NodeConstants.TextNodeType, "'." + (convs.Count > 0
+                            ? " An explicit conversion exists. (are you missing a cast?)"
+                            : ""))
+                    },
                     Location));
 
                 return ApplyAnyConversion(From, To, convs);
@@ -514,12 +516,7 @@ namespace Flame.Ecs
                 {
                     if (result != null)
                     {
-                        Global.Log.LogError(new LogEntry(
-                            "ambiguous explicit conversion",
-                            NodeHelpers.HighlightEven(
-                                "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type),
-                                "' to '", Global.TypeNamer.Convert(To), "' is ambiguous."),
-                            Location));
+                        LogAmbiguousConversion("explicit", From.Type, To, Location);
                         return result;
                     }
                     else
@@ -533,9 +530,12 @@ namespace Flame.Ecs
             {
                 Global.Log.LogError(new LogEntry(
                     "no conversion",
-                    NodeHelpers.HighlightEven(
-                        "cannot convert type '", Global.TypeNamer.Convert(From.Type),
-                        "' to '", Global.TypeNamer.Convert(To), "'."),
+                    new MarkupNode[]
+                    {
+                        new MarkupNode(NodeConstants.TextNodeType, "cannot convert type "),
+                        RenderConversion(From.Type, To),
+                        new MarkupNode(NodeConstants.TextNodeType, "."),
+                    },
                     Location));
 
                 return new UnknownExpression(To);
@@ -544,14 +544,63 @@ namespace Flame.Ecs
             {
                 Global.Log.LogError(new LogEntry(
                     "ambiguous explicit conversion",
-                    NodeHelpers.HighlightEven(
-                        "the explicit conversion of type '", Global.TypeNamer.Convert(From.Type),
-                        "' to '", Global.TypeNamer.Convert(To), "' is ambiguous, because " +
-                        "there no true explicit conversion was applicable, and the implicit " +
-                        "conversion was ambiguous."),
+                    new MarkupNode[]
+                    {
+                        new MarkupNode(NodeConstants.TextNodeType, "the explicit conversion of type "),
+                        RenderConversion(From.Type, To),
+                        new MarkupNode(NodeConstants.TextNodeType,
+                            " is ambiguous because " +
+                            "no true explicit conversion is applicable, and the implicit " +
+                            "conversion is ambiguous."),
+                    },
                     Location));
                 return ApplyAnyConversion(From, To, convs);
             }
+        }
+
+        /// <summary>
+        /// Logs an error that states that the conversion of one type to another
+        /// is ambiguous.
+        /// </summary>
+        /// <param name="ConversionType">The type of conversion that is performed.</param>
+        /// <param name="FromType">The source type.</param>
+        /// <param name="ToType">The target type.</param>
+        /// <param name="Location">The source location.</param>
+        private void LogAmbiguousConversion(
+            string ConversionType, IType FromType, IType ToType, SourceLocation Location)
+        {
+            Global.Log.LogError(new LogEntry(
+                "ambiguous " + ConversionType + " conversion",
+                new MarkupNode[]
+                {
+                    new MarkupNode(NodeConstants.TextNodeType, "the " + ConversionType + " conversion of type "),
+                    RenderConversion(FromType, ToType),
+                    new MarkupNode(NodeConstants.TextNodeType, " is ambiguous.")
+                },
+                Location));
+        }
+
+        /// <summary>
+        /// Renders a conversion as "'FromType' to 'ToType'" where FromType and ToType
+        /// are rendered as bright type diffs.
+        /// </summary>
+        /// <param name="FromType">The type of the value that is converted.</param>
+        /// <param name="ToType">The type to which a value is converted.</param>
+        /// <returns>A formatted type conversion.</returns>
+        public MarkupNode RenderConversion(IType FromType, IType ToType)
+        {
+            var abbreviatingNamer = Global.CreateAbbreviatingRenderer(FromType, ToType);
+            var typeDiffComparer = new TypeDiffComparer(abbreviatingNamer, HasImplicitReferenceConversion);
+            var invTypeDiffComparer = new TypeDiffComparer(
+                abbreviatingNamer, (a, b) => HasImplicitReferenceConversion(b, a));
+            return new MarkupNode(
+                "rendered_conversion",
+                NodeHelpers.HighlightEven(
+                    abbreviatingNamer.CreateTextNode("'"),
+                    typeDiffComparer.Compare(FromType, ToType),
+                    abbreviatingNamer.CreateTextNode("' to '"),
+                    invTypeDiffComparer.Compare(ToType, FromType),
+                    abbreviatingNamer.CreateTextNode("'")));
         }
 
         /// <summary>
@@ -585,29 +634,64 @@ namespace Flame.Ecs
         /// <summary>
         /// Finds out whether a value of the given source type
         /// can be converted to the given target type by using
+        /// an implicit reference conversion.
+        /// </summary>
+        public bool HasImplicitReferenceConversion(IType From, IType To)
+        {
+            foreach (var conv in ClassifyConversion(From, To))
+            {
+                switch (conv.Kind)
+                {
+                    case ConversionKind.Identity:
+                    case ConversionKind.ReinterpretCast:
+                        return true;
+                    default:
+                        break;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Finds out whether a value of the given source type
+        /// can be converted to the given target type by using
         /// a reference conversion.
         /// </summary>
         public bool HasReferenceConversion(IType From, IType To)
         {
             foreach (var conv in ClassifyConversion(From, To))
             {
-                if (conv.Kind == ConversionKind.DynamicCast)
-                    return true;
+                switch (conv.Kind)
+                {
+                    case ConversionKind.DynamicCast:
+                    case ConversionKind.Identity:
+                    case ConversionKind.ReinterpretCast:
+                        return true;
+                    default:
+                        break;
+                }
             }
             return false;
         }
 
         /// <summary>
-        /// Finds out whether the given value
-        /// can be converted to the given target type by using
-        /// a reference conversion.
+        /// Finds out whether the given value can be converted
+        /// to the given target type by using a reference
+        /// conversion.
         /// </summary>
         public bool HasReferenceConversion(IExpression From, IType To)
         {
             foreach (var conv in ClassifyConversion(From, To))
             {
-                if (conv.Kind == ConversionKind.DynamicCast)
-                    return true;
+                switch (conv.Kind)
+                {
+                    case ConversionKind.DynamicCast:
+                    case ConversionKind.Identity:
+                    case ConversionKind.ReinterpretCast:
+                        return true;
+                    default:
+                        break;
+                }
             }
             return false;
         }

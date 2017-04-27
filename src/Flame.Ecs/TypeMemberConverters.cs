@@ -86,7 +86,7 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "parameter '", name.ToString(), "' was annotated " +
                             "with the '", "params", "' modifier, but its type ('", 
-                            Scope.TypeNamer.Convert(paramTy), "') was neither an " +
+                            Scope.NameAbbreviatedType(paramTy), "') was neither an " +
                             "array nor an enumerable type."),
                         NodeHelpers.ToSourceLocation(paramsNode.Range)));
                 }
@@ -610,11 +610,12 @@ namespace Flame.Ecs
             if (EcsConversionRules.ClassifyBuiltinConversion(
                 sourceType, targetType).Exists)
             {
+                var renderer = Scope.CreateAbbreviatingRenderer(sourceType, targetType);
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        "a conversion from '", Scope.TypeNamer.Convert(sourceType), 
-                        "' to '", Scope.TypeNamer.Convert(targetType), 
+                        "a conversion from '", renderer.Name(sourceType), 
+                        "' to '", renderer.Name(targetType), 
                         "' already exists."),
                     OperatorDef.GetSourceLocation()));
             }
@@ -802,7 +803,7 @@ namespace Flame.Ecs
                                     "no base method",
                                     NodeHelpers.HighlightEven(
                                         "method '", methodDef.Name.ToString(), "' is marked '", "override", 
-                                        "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                        "', but base type '", Scope.NameAbbreviatedType(parentTy), 
                                         "' does not define any (visible) methods that match its signature."),
                                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
                             }
@@ -813,7 +814,7 @@ namespace Flame.Ecs
                                     "redundant attribute",
                                     NodeHelpers.HighlightEven(
                                         "method '", methodDef.Name.ToString(), "' is marked '", "new", 
-                                        "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                        "', but base type '", Scope.NameAbbreviatedType(parentTy), 
                                         "' does not define any (visible) methods that match its signature. ")
                                     .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
                                     NodeHelpers.ToSourceLocation(newNode.Range)));
@@ -830,10 +831,10 @@ namespace Flame.Ecs
                                         Scope.Log.LogError(new LogEntry(
                                             "signature mismatch",
                                             NodeHelpers.HighlightEven(
-                                                "method '", methodDef.Name.ToString(), "' is marked '", 
+                                                "method '", methodDef.Name.ToString(), "' is marked '",
                                                 "override", "', but differs in return type. " +
-                                                "Expected return type: ", 
-                                                Scope.TypeNamer.Convert(m.ReturnType), "'."),
+                                                "Expected return type: ",
+                                                Scope.NameAbbreviatedType(m.ReturnType), "'."),
                                             methodDef.GetSourceLocation()));
                                     }
                                     else if (!m.GetIsVirtual())
@@ -881,7 +882,7 @@ namespace Flame.Ecs
                             NodeHelpers.HighlightEven(
                                 "method '", methodDef.Name.ToString(), "' is marked '", 
                                 "override", "' but its declaring type '", 
-                                Scope.TypeNamer.Convert(DeclaringType), 
+                                Scope.NameAbbreviatedType(DeclaringType), 
                                 "' does not have a base type."),
                             NodeHelpers.ToSourceLocation(overrideNode.Range)));
                     }
@@ -1694,7 +1695,7 @@ namespace Flame.Ecs
                                 "no base property",
                                 NodeHelpers.HighlightEven(
                                     "property '", Name.ToString(), "' is marked '", "override", 
-                                    "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                    "', but base type '", Scope.NameAbbreviatedType(parentTy), 
                                     "' does not define any (visible) properties that match its signature."),
                                 NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                         }
@@ -1705,7 +1706,7 @@ namespace Flame.Ecs
                                 "redundant attribute",
                                 NodeHelpers.HighlightEven(
                                     "property '", Name.ToString(), "' is marked '", "new", 
-                                    "', but base type '", Scope.TypeNamer.Convert(parentTy), 
+                                    "', but base type '", Scope.NameAbbreviatedType(parentTy), 
                                     "' does not define any (visible) properties that match its signature. ")
                                 .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
                                 NodeHelpers.ToSourceLocation(NewNode.Range)));
@@ -1722,10 +1723,10 @@ namespace Flame.Ecs
                                     Scope.Log.LogError(new LogEntry(
                                         "signature mismatch",
                                         NodeHelpers.HighlightEven(
-                                            "property '", Name.ToString(), "' is marked '", 
+                                            "property '", Name.ToString(), "' is marked '",
                                             "override", "', but differs in property type. " +
-                                        "Expected property type: ", 
-                                            Scope.TypeNamer.Convert(m.PropertyType), "'."),
+                                        "Expected property type: ",
+                                            Scope.NameAbbreviatedType(m.PropertyType), "'."),
                                         Property.GetSourceLocation()));
                                 }
                                 else
@@ -1761,9 +1762,9 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         NodeHelpers.HighlightEven(
-                            "property '", Name.ToString(), "' is marked '", 
-                            "override", "' but its declaring type '", 
-                            Scope.TypeNamer.Convert(declTy), 
+                            "property '", Name.ToString(), "' is marked '",
+                            "override", "' but its declaring type '",
+                            Scope.NameAbbreviatedType(declTy),
                             "' does not have a base type."),
                         NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                 }
@@ -1826,9 +1827,9 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "no base accessor",
                             NodeHelpers.HighlightEven(
-                                "property '", declProp.Name.ToString(), "' is marked '", "override", 
-                                "', but base type '", Scope.TypeNamer.Convert(declTy.GetParent()), 
-                                "' does not define any (visible) property accessors that match the '", 
+                                "property '", declProp.Name.ToString(), "' is marked '", "override",
+                                "', but base type '", Scope.NameAbbreviatedType(declTy.GetParent()),
+                                "' does not define any (visible) property accessors that match the '",
                                 Accessor.AccessorType.ToString().ToLower(), "' accessor's signature."),
                             NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                     }

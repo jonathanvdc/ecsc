@@ -57,7 +57,7 @@ namespace Flame.Ecs
                         "type error",
                         NodeHelpers.HighlightEven(
                             "the '", OperatorName, "' operator cannot be applied to an operand of type '", 
-                            scope.Function.Global.TypeNamer.Convert(innerTy), "'."),
+                            scope.Function.Global.NameAbbreviatedType(innerTy), "'."),
                         loc));
                     return innerExpr.CreateGetExpressionOrError(scope, loc);
                 }
@@ -232,7 +232,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "type error",
                             NodeHelpers.HighlightEven(
-                                "index inside ", "[]", " of type '", Scope.Function.Global.TypeNamer.Convert(ty),
+                                "index inside ", "[]", " of type '", Scope.Function.Global.NameAbbreviatedType(ty),
                                 "' was not an integer."),
                             loc));
                     }
@@ -254,9 +254,9 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "type error", 
                         NodeHelpers.HighlightEven(
-                            "cannot apply indexing with '", "[]", 
-                            "' to an expression of type '", 
-                            Scope.Function.Global.TypeNamer.Convert(containerTy), "'."),
+                            "cannot apply indexing with '", "[]",
+                            "' to an expression of type '",
+                            Scope.Function.Global.NameAbbreviatedType(containerTy), "'."),
                         loc));
                     return VoidExpression.Instance;
                 }
@@ -311,7 +311,7 @@ namespace Flame.Ecs
                         "operator application",
                         NodeHelpers.HighlightEven(
                             "operator '", Op.Name, "' cannot be applied to an operand of type '", 
-                            Scope.Global.TypeNamer.Convert(ty), "'."),
+                            Scope.Global.NameAbbreviatedType(ty), "'."),
                         Location));
                     return new UnknownExpression(ty);
                 }

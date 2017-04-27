@@ -539,9 +539,10 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "return statement",
                         NodeHelpers.HighlightEven(
-                            "an object of a type convertible to '",
-                            Scope.Function.Global.TypeNamer.Convert(Scope.ReturnType),
-                            "' is required for the return statement."),
+                            "non-void returning function return a value. (expected return type: '",
+                            Scope.Function.Global.Renderer.AbbreviateTypeNames(
+                                SimpleTypeFinder.Instance.Convert(Scope.ReturnType)).Name(Scope.ReturnType),
+                            "')"),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                     return ToExpression(new ReturnStatement(new UnknownExpression(Scope.ReturnType)));
                 }
@@ -625,12 +626,16 @@ namespace Flame.Ecs
                 {
                     // Check that this type argument is okay for
                     // the parameter's (transformed) constraints.
+                    var abbrevRenderer = Scope.Renderer.AbbreviateTypeNames(
+                        SimpleTypeFinder.Instance.ConvertAndMerge(
+                            new IType[] { tArg, tParam }));
+
                     Scope.Log.LogError(new LogEntry(
                         "generic constraint",
                         NodeHelpers.HighlightEven(
-                            "type '", Scope.TypeNamer.Convert(tArg),
+                            "type '", abbrevRenderer.Name(tArg),
                             "' does not satisfy the generic constraints on type parameter '",
-                            Scope.TypeNamer.Convert(tParam), "'."),
+                            abbrevRenderer.Name(tParam), "'."),
                         Location));
                 }
             }
@@ -1050,8 +1055,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "object creation",
                     NodeHelpers.HighlightEven(
-                        "pointer type '", Scope.Function.Global.TypeNamer.Convert(ctorType),
-                        "' cannot be used in an object creation expression."),
+                        "an object creation expression cannot create an instance of a pointer type."),
                     loc));
                 return new UnknownExpression(ctorType);
             }
@@ -1061,7 +1065,7 @@ namespace Flame.Ecs
                     "object creation",
                     NodeHelpers.HighlightEven(
                         "cannot create an instance of static type '",
-                        Scope.Function.Global.TypeNamer.Convert(ctorType),
+                        Scope.Function.Global.NameAbbreviatedType(ctorType),
                         "'."),
                     loc));
                 return new UnknownExpression(ctorType);
@@ -1073,7 +1077,7 @@ namespace Flame.Ecs
                     "object creation",
                     NodeHelpers.HighlightEven(
                         "cannot create an instance of generic parameter type '",
-                        Scope.Function.Global.TypeNamer.Convert(ctorType),
+                        Scope.Function.Global.NameAbbreviatedType(ctorType),
                         "'."),
                     loc));
                 return new UnknownExpression(ctorType);
@@ -1195,7 +1199,7 @@ namespace Flame.Ecs
                         "missing root constructor",
                         NodeHelpers.HighlightEven(
                             "could not create an anonymous type, because " +
-                            "root type '", Scope.Function.Global.TypeNamer.Convert(rootTy),
+                            "root type '", Scope.Function.Global.NameAbbreviatedType(rootTy),
                             "' does not have a parameterless constructor."),
                         Location));
                     ctor.Body = new ReturnStatement();
@@ -1446,31 +1450,33 @@ namespace Flame.Ecs
             // the back-end.
             if (toStringMethods.Length == 0)
             {
+                var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "value of type '", abbreviatingNamer.Name(valTy),
                         "' cannot not be converted to type '",
-                        fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        abbreviatingNamer.Name(PrimitiveTypes.String),
                         "', because it does not have a parameterless, non-generic '",
                         "ToString", "' method that returns a '",
-                        fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        abbreviatingNamer.Name(PrimitiveTypes.String),
                         "' instance."),
                     Location));
                 return new UnknownExpression(PrimitiveTypes.String);
             }
             else if (toStringMethods.Length > 1)
             {
+                var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
                 // This shouldn't happen, but we should check for it anyway.
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
-                        "value of type '", fScope.Global.TypeNamer.Convert(valTy),
+                        "value of type '", abbreviatingNamer.Name(valTy),
                         "' cannot not be converted to type '",
-                        fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        abbreviatingNamer.Name(PrimitiveTypes.String),
                         "', there is more than one parameterless, non-generic '",
                         "ToString", "' method that returns a '",
-                        fScope.Global.TypeNamer.Convert(PrimitiveTypes.String),
+                        abbreviatingNamer.Name(PrimitiveTypes.String),
                         "' instance."),
                     Location));
                 return new UnknownExpression(PrimitiveTypes.String);
@@ -1503,6 +1509,25 @@ namespace Flame.Ecs
                 else
                     return null;
             }
+        }
+
+        private static IExpression LogNoBinaryOperator(
+            IType LeftType,
+            Operator Op,
+            IType RightType,
+            SourceLocation LeftLocation,
+            SourceLocation RightLocation,
+            GlobalScope Scope)
+        {
+            var abbreviatingRenderer = Scope.CreateAbbreviatingRenderer(LeftType, RightType);
+            Scope.Log.LogError(new LogEntry(
+                "operator application",
+                NodeHelpers.HighlightEven(
+                    "operator '", Op.Name, "' cannot be applied to operands of type '",
+                    abbreviatingRenderer.Name(LeftType), "' and '",
+                    abbreviatingRenderer.Name(RightType), "'."),
+                LeftLocation.Concat(RightLocation)));
+            return new UnknownExpression(LeftType);
         }
 
         /// <summary>
@@ -1559,14 +1584,7 @@ namespace Flame.Ecs
                     }
                     else
                     {
-                        globalScope.Log.LogError(new LogEntry(
-                            "operator application",
-                            NodeHelpers.HighlightEven(
-                                "operator '", Op.Name, "' cannot be applied to operands of type '",
-                                globalScope.TypeNamer.Convert(lTy), "' and '",
-                                globalScope.TypeNamer.Convert(rTy), "'."),
-                            LeftLocation.Concat(RightLocation)));
-                        return new UnknownExpression(lTy);
+                        return LogNoBinaryOperator(lTy, Op, rTy, LeftLocation, RightLocation, globalScope);
                     }
                 }
 
@@ -1650,16 +1668,7 @@ namespace Flame.Ecs
             {
                 // Print a special message, and return an unknown-expression
                 // with as type the lhs's type.
-                Scope.Global.Log.LogError(new LogEntry(
-                    "operator resolution", 
-                    NodeHelpers.HighlightEven(
-                        "operator '", Op.Name, 
-                        "' could not be applied to operands of types '",
-                        Scope.Global.TypeNamer.Convert(lTy),
-                        "' and '", Scope.Global.TypeNamer.Convert(rTy),
-                        "'."),
-                    errLoc));
-                return new UnknownExpression(lTy);
+                return LogNoBinaryOperator(lTy, Op, rTy, LeftLocation, RightLocation, globalScope);
             }
         }
 
@@ -2301,7 +2310,7 @@ namespace Flame.Ecs
                     "invalid expression",
                     NodeHelpers.HighlightEven(
                         "the '", "as", "' operator cannot be applied to an operand of pointer type '",
-                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                        Scope.Function.Global.NameAbbreviatedType(ty), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
@@ -2314,7 +2323,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "the second operand of an '", "as",
                         "' operator cannot be '", "static", "' type '",
-                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                        Scope.Function.Global.NameAbbreviatedType(ty), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
@@ -2328,7 +2337,7 @@ namespace Flame.Ecs
                         "invalid expression",
                         NodeHelpers.HighlightEven(
                             "the '", "as", "' operator cannot be used with non-reference type parameter '",
-                            Scope.Function.Global.TypeNamer.Convert(ty), "'. Consider adding '",
+                            Scope.Function.Global.NameAbbreviatedType(ty), "'. Consider adding '",
                             "class", "' or a reference type constraint."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
@@ -2338,7 +2347,7 @@ namespace Flame.Ecs
                         "invalid expression",
                         NodeHelpers.HighlightEven(
                             "the '", "as", "' operator cannot be used with non-nullable value type '",
-                            Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                            Scope.Function.Global.NameAbbreviatedType(ty), "'."),
                         NodeHelpers.ToSourceLocation(Node.Range)));
                 }
                 return new AsInstanceExpression(op, ty);
@@ -2355,14 +2364,18 @@ namespace Flame.Ecs
                 return new ReinterpretCastExpression(op, ty);
             }
 
-            if (Scope.Function.HasReferenceConversion(op.Type, ty))
+            if (!Scope.Function.HasReferenceConversion(op.Type, ty))
             {
                 Scope.Log.LogError(new LogEntry(
                     "invalid expression",
-                    NodeHelpers.HighlightEven(
-                        "there is no legal conversion from type '",
-                        Scope.Function.Global.TypeNamer.Convert(op.Type), "' to type '",
-                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                    new MarkupNode[]
+                    {
+                        new MarkupNode(
+                            NodeConstants.TextNodeType,
+                            "there is no legal conversion from type "),
+                        Scope.Function.RenderConversion(op.Type, ty),
+                        new MarkupNode(NodeConstants.TextNodeType, "."),
+                    },
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return new AsInstanceExpression(op, ty);
             }
@@ -2424,7 +2437,7 @@ namespace Flame.Ecs
                     NodeHelpers.HighlightEven(
                         "the second operand of an '", "is",
                         "' operator cannot be '", "static", "' type '",
-                        Scope.Function.Global.TypeNamer.Convert(ty), "'."),
+                        Scope.Function.Global.NameAbbreviatedType(ty), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return result;
             }
@@ -2436,7 +2449,7 @@ namespace Flame.Ecs
                     "invalid expression",
                     NodeHelpers.HighlightEven(
                         "the '", "is", "' operator cannot be applied to an operand of pointer type '",
-                        (Scope.Function.Global.TypeNamer.Convert(opType.GetIsPointer() ? opType : ty)), "'."),
+                        (Scope.Function.Global.NameAbbreviatedType(opType.GetIsPointer() ? opType : ty)), "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
                 return result;
             }
@@ -2780,7 +2793,7 @@ namespace Flame.Ecs
                 "method resolution",
                 NodeHelpers.HighlightEven(
                     "type '", 
-                    Scope.Function.Global.TypeNamer.Convert(Target.ExpressionType),
+                    Scope.Function.Global.NameAbbreviatedType(Target.ExpressionType),
                     "' used in a '", "using", "' statement must " +
                     "have an unambiguous parameterless '",
                     "Dispose", "' method."),
@@ -2989,7 +3002,7 @@ namespace Flame.Ecs
                     "type error",
                     NodeHelpers.HighlightEven(
                         "the condition of the '", EcscMacros.EcscSymbols.BuiltinStaticIf.Name, 
-                        "' had type '", Scope.Function.Global.TypeNamer.Convert(result.Type),
+                        "' had type '", Scope.Function.Global.NameAbbreviatedType(result.Type),
                         "', but '", "bool", "' was expected."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 return ErrorTypeExpression;
