@@ -14,9 +14,10 @@ namespace Flame.Ecs
         {
             this.directMemberCache = new Dictionary<IType, Dictionary<string, List<ITypeMember>>>();
             this.namedMemberCache = new Dictionary<Tuple<IType, string>, ITypeMember[]>();
+            this.memberNames = new Dictionary<IType, string[]>();
         }
 
-        // This member cache consists of two dictionaries:
+        // This member cache consists of three dictionaries:
         //
         //     1. `directMemberCache` which maps types to a dictionary of member names to
         //        lists of members defined directly by the types.
@@ -24,17 +25,76 @@ namespace Flame.Ecs
         //     2. `namedMemberCache` which maps (type, member name) pairs to arrays of
         //        non-hidden members defined either directly or indirectly by `type`.
         //
+        //     3. `memberNames` maps types to the sets of names of type members they define.
+        //
         // When type member lookup is performed, all members are first stored by name in
         // the `directMemberCache`. Lookups for specific names then extract lists from
         // `directMemberCache`. The results of those lookups are stored in `namedMemberCache`,
         // so no element is ever extracted more than once from `directMemberCache`.
         private Dictionary<IType, Dictionary<string, List<ITypeMember>>> directMemberCache;
         private Dictionary<Tuple<IType, string>, ITypeMember[]> namedMemberCache;
+        private Dictionary<IType, string[]> memberNames;
 
         /// <summary>
         /// Gets all members that are directly defined by the given type.
         /// </summary>
         public abstract IReadOnlyList<ITypeMember> GetMembers(IType Type);
+
+        /// <summary>
+        /// Gets all members that are defined by the given type
+        /// or one of its base types and have the given name.
+        /// Standard hiding rules apply: once a match is found, 
+        /// this method returns.
+        /// </summary>
+        public IReadOnlyList<ITypeMember> GetAllMembers(IType Type, string Name)
+        {
+            return GetAllMembers(Tuple.Create(Type, Name));
+        }
+
+        /// <summary>
+        /// Gets all members that are defined by the given type or
+        /// one of its base types. Standard hiding rules apply.
+        /// </summary>
+        /// <param name="Type">The type for which member lookup is performed.</param>
+        /// <returns>
+        /// The list of all non-hidden members defined by the given type or
+        /// one of its base types.</returns>
+        /// <remarks>The use case for this method is to add a "Did you mean ...?"
+        /// message to error diagnostics. Don't put calls to this method on
+        /// the fast-path.</remarks>
+        public IReadOnlyList<ITypeMember> GetAllMembers(IType Type)
+        {
+            var results = new List<ITypeMember>();
+            foreach (var name in GetPotentialMemberNames(Type))
+            {
+                results.AddRange(GetAllMembers(Type, name));
+            }
+            return results;
+        }
+
+        /// <summary>
+        /// Gets the set of all member names defined by the given type
+        /// and its base types.
+        /// </summary>
+        /// <param name="Type">The type to examine.</param>
+        /// <returns>A set of member names.</returns>
+        private HashSet<string> GetPotentialMemberNames(IType Type)
+        {
+            // Materialize the member cache.
+            GetDirectMemberCache(Type);
+
+            // Initialize the set with all member names defined
+            // directly by the type.
+            var results = new HashSet<string>(memberNames[Type]);
+
+            // Update the set with all type names from all base
+            // types.
+            foreach (var baseType in Type.BaseTypes)
+            {
+                results.UnionWith(GetPotentialMemberNames(Type));
+            }
+            return results;
+        }
 
         /// <summary>
         /// Gets all members that are defined by the given type
@@ -73,17 +133,6 @@ namespace Flame.Ecs
             {
                 return members;
             }
-        }
-
-        /// <summary>
-        /// Gets all members that are defined by the given type
-        /// or one of its base types, and have the given name.
-        /// Standard hiding rules apply: once a match is found, 
-        /// this method returns.
-        /// </summary>
-        public IReadOnlyList<ITypeMember> GetAllMembers(IType Type, string Name)
-        {
-            return GetAllMembers(Tuple.Create(Type, Name));
         }
 
         /// <summary>
@@ -178,6 +227,16 @@ namespace Flame.Ecs
         /// <returns>A list of type members.</returns>
         private IEnumerable<ITypeMember> ExtractDirectMembers(IType Type, string Name)
         {
+            return ExtractDirectMembersFromCache(GetDirectMemberCache(Type), Name);
+        }
+
+        /// <summary>
+        /// Gets or creates the direct member cache for the given type.
+        /// </summary>
+        /// <param name="Type">The type to get or create the direct member cache for.</param>
+        /// <returns>The direct member cache for the given type.</returns>
+        private Dictionary<string, List<ITypeMember>> GetDirectMemberCache(IType Type)
+        {
             Dictionary<string, List<ITypeMember>> typeMemberDictionary;
             if (!directMemberCache.TryGetValue(Type, out typeMemberDictionary))
             {
@@ -197,8 +256,9 @@ namespace Flame.Ecs
                     }
                 }
                 directMemberCache[Type] = typeMemberDictionary;
+                memberNames[Type] = typeMemberDictionary.Keys.ToArray();
             }
-            return ExtractDirectMembersFromCache(typeMemberDictionary, Name);
+            return typeMemberDictionary;
         }
 
         public virtual void Dispose()
