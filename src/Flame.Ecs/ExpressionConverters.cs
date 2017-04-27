@@ -44,7 +44,7 @@ namespace Flame.Ecs
         }
 
         private static IValue LookupUnqualifiedNameExpression(
-            Symbol Name, ILocalScope Scope)
+            Symbol Name, ILocalScope Scope, SourceLocation Location)
         {
             // Early-out for local variables.
             var local = Scope.GetVariable(Name);
@@ -55,30 +55,9 @@ namespace Flame.Ecs
 
             // Create a set of potential results.
             var exprSet = new HashSet<IValue>();
-            foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name.Name))
-            {
-                var acc = AccessMember(null, item, Scope.Function.Global);
-                if (acc != null)
-                    exprSet.Add(acc);
-            }
-
-            var declType = Scope.Function.DeclaringType;
-
-            if (declType != null)
-            {
-                var thisVar = GetThisVariable(Scope);
-                if (thisVar != null)
-                {
-                    foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name.Name))
-                    {
-                        var acc = AccessMember(
-                            new VariableValue(thisVar), 
-                            item, Scope.Function.Global);
-                        if (acc != null)
-                            exprSet.Add(acc);
-                    }
-                }
-            }
+            IMethod method = null;
+            CreateUnqualifiedNameExpressionAccess(
+                Name.Name, new IType[] { }, Scope, Location, exprSet, ref method);
 
             return IntersectionValue.Create(exprSet);
         }
@@ -98,18 +77,21 @@ namespace Flame.Ecs
         {
             var member = Member;
             MethodResult = member as IMethod;
-            if (MethodResult != null)
+            if (TypeArguments.Count > 0)
             {
-                if (!CheckGenericConstraints(MethodResult, TypeArguments, Scope, Location))
-                    // Just ignore this method for now.
-                    return;
+                if (MethodResult != null)
+                {
+                    if (!CheckGenericConstraints(MethodResult, TypeArguments, Scope, Location))
+                        // Just ignore this method for now.
+                        return;
 
-                member = MethodResult.MakeGenericMethod(TypeArguments);
-            }
-            else if (TypeArguments.Count > 0)
-            {
-                LogCannotInstantiate(Member.Name.ToString(), Scope, Location);
-                return;
+                    member = MethodResult.MakeGenericMethod(TypeArguments);
+                }
+                else
+                {
+                    LogCannotInstantiate(Member.Name.ToString(), Scope, Location);
+                    return;
+                }
             }
 
             var acc = AccessMember(TargetExpression, member, Scope);
@@ -117,19 +99,15 @@ namespace Flame.Ecs
                 Results.Add(acc);
         }
 
-        private static IValue LookupUnqualifiedNameExpressionInstance(
+        private static void CreateUnqualifiedNameExpressionAccess(
             string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
-            SourceLocation Location)
+            SourceLocation Location, HashSet<IValue> Results, ref IMethod MethodResult)
         {
-            IMethod method = null;
-
-            // Create a set of potential results.
-            var exprSet = new HashSet<IValue>();
             foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(Name))
             {
                 CreateMemberAccess(
-                    item, TypeArguments, null, exprSet,
-                    Scope.Function.Global, Location, ref method);
+                    item, TypeArguments, null, Results,
+                    Scope.Function.Global, Location, ref MethodResult);
             }
 
             var declType = Scope.Function.DeclaringType;
@@ -142,11 +120,23 @@ namespace Flame.Ecs
                     foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, Name))
                     {
                         CreateMemberAccess(
-                            item, TypeArguments, new ExpressionValue(thisVar.CreateGetExpression()), exprSet,
-                            Scope.Function.Global, Location, ref method);
+                            item, TypeArguments, new VariableValue(thisVar), Results,
+                            Scope.Function.Global, Location, ref MethodResult);
                     }
                 }
             }
+        }
+
+        private static IValue LookupUnqualifiedNameExpressionInstance(
+            string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
+            SourceLocation Location)
+        {
+            IMethod method = null;
+
+            // Create a set of potential results.
+            var exprSet = new HashSet<IValue>();
+            CreateUnqualifiedNameExpressionAccess(
+                Name, TypeArguments, Scope, Location, exprSet, ref method);
 
             if (exprSet.Count == 0 && method != null)
             {
@@ -189,11 +179,11 @@ namespace Flame.Ecs
             }
         }
 
-        public static TypeOrExpression LookupUnqualifiedName(Symbol Name, ILocalScope Scope)
+        public static TypeOrExpression LookupUnqualifiedName(LNode Name, ILocalScope Scope)
         {
-            var qualName = new QualifiedName(Name.Name);
+            var qualName = new QualifiedName(Name.Name.Name);
             return new TypeOrExpression(
-                LookupUnqualifiedNameExpression(Name, Scope),
+                LookupUnqualifiedNameExpression(Name.Name, Scope, NodeHelpers.ToSourceLocation(Name.Range)),
                 LookupUnqualifiedNameTypes(qualName, Scope),
                 qualName);
         }
