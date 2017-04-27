@@ -226,10 +226,7 @@ namespace Flame.Ecs
         {
             return GetMembers(
                 Type, Name, extensionMemberCache,
-                Global.ExtensionMemberCache, item =>
-                {
-                    return CanAccess(item);
-                });
+                Global.ExtensionMemberCache, CanAccess);
         }
 
         /// <summary>
@@ -245,8 +242,27 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Gets the set of all instance and extension members that can be
+        /// accessed on an instance of the given type.
+        /// </summary>
+        /// <param name="Type">The type for which members are to be found.</param>
+        /// <returns>The set of all instance and extension members
+        /// that can be accessed on an instance of the given type.</returns>
+        /// <remarks>The use case for this method is to add a "Did you mean ...?"
+        /// message to error diagnostics. Don't put calls to this method on
+        /// the fast-path.</remarks>
+        public IEnumerable<ITypeMember> GetInstanceAndExtensionMembers(IType Type)
+        {
+            return Global.MemberCache.GetAllMembers(Type)
+                .Where(member => !member.IsStatic)
+                .Concat(Global.ExtensionMemberCache.GetAllMembers(Type))
+                .Where(CanAccess)
+                .ToArray();
+        }
+
+        /// <summary>
         /// Gets all members with the given name that can be accessed
-        /// on the given type's name.
+        /// on the given type.
         /// </summary>
         public IEnumerable<ITypeMember> GetStaticMembers(IType Type, string Name)
         {
@@ -254,6 +270,23 @@ namespace Flame.Ecs
                 {
                     return item.IsStatic && CanAccess(item);
                 });
+        }
+
+        /// <summary>
+        /// Gets the set of all static members that can be accessed
+        /// on the given type.
+        /// </summary>
+        /// <param name="Type">The type for which members are to be found.</param>
+        /// <returns>The set of all static members that can be accessed
+        /// on the given type.</returns>
+        /// <remarks>The use case for this method is to add a "Did you mean ...?"
+        /// message to error diagnostics. Don't put calls to this method on
+        /// the fast-path.</remarks>
+        public IEnumerable<ITypeMember> GetStaticMembers(IType Type)
+        {
+            return Global.MemberCache.GetAllMembers(Type)
+                .Where(member => member.IsStatic && CanAccess(member))
+                .ToArray();
         }
 
         /// <summary>
