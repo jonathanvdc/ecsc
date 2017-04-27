@@ -91,7 +91,7 @@ namespace Flame.Ecs
             // types.
             foreach (var baseType in Type.BaseTypes)
             {
-                results.UnionWith(GetPotentialMemberNames(Type));
+                results.UnionWith(GetPotentialMemberNames(baseType));
             }
             return results;
         }
