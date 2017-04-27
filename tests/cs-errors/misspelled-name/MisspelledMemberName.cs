@@ -21,5 +21,6 @@ public static class Program
     {
         WriteLine(printCounter.Increment().Coutn);
         WriteLine(printCounter.Inrement().Count);
+        WriteLine(printCoutner.Increment().Count);
     }
 }
