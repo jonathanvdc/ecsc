@@ -1,0 +1,22 @@
+// A compare-test test description.
+// This test compares ecsc to the reference implementation (csc or mcs).
+
+build
+{
+    _ = @($(compiler) $(Filename) $(Flags), -1);
+}
+
+configs
+{
+    Ecsc
+    {
+        compiler = $ecsc;
+        Flags = -platform clr -Werror -Wno-everything $(EnabledWarnings);
+    }
+}
+
+init
+{
+    Filename = IntegerDivision2.cs;
+    EnabledWarnings = -Winteger-division;
+}
