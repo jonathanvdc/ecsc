@@ -8,6 +8,7 @@ using Flame.Compiler.Expressions;
 using Flame.Compiler.Variables;
 using Flame.Ecs.Semantics;
 using Pixie;
+using Flame.Ecs.Diagnostics;
 
 namespace Flame.Ecs
 {
@@ -510,7 +511,34 @@ namespace Flame.Ecs
         /// </summary>
         public IExpression ConvertImplicit(IExpression From, IType To, SourceLocation Location)
         {
-            return ApplyOrUnknown(From, To, GetImplicitConversion(From, To, Location));
+            var conv = GetImplicitConversion(From, To, Location);
+            if (conv.IsStatic
+                && EcsWarnings.IntegerDivisionWarning.UseWarning(Global.Log.Options)
+                && To.GetIsFloatingPoint())
+            {
+                // Check for integer division followed by a cast to a floating-point
+                // type.
+                var divExpr = From.GetEssentialExpression() as DivideExpression;
+                if (divExpr != null && divExpr.Type.GetIsInteger())
+                {
+                    var namer = Global.CreateAbbreviatingRenderer(divExpr.Type, To);
+                    Global.Log.LogWarning(new LogEntry(
+                        "integer division",
+                        EcsWarnings.IntegerDivisionWarning.CreateMessage(new MarkupNode(
+                            "message",
+                            NodeHelpers.HighlightEven(
+                                namer.CreateTextNode("division of '"),
+                                namer.Convert(divExpr.Type),
+                                namer.CreateTextNode(
+                                    "' values followed by an implicit conversion to '"),
+                                namer.Convert(To),
+                                namer.CreateTextNode(
+                                    "' will always truncate the division's result. " +
+                                    "Is that what you intended? ")))),
+                        Location));
+                }
+            }
+            return ApplyOrUnknown(From, To, conv);
         }
 
         /// <summary>

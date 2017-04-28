@@ -124,6 +124,16 @@ namespace Flame.Ecs.Diagnostics
             new WarningDescription("redundant-as", Warnings.Instance.All);
 
         /// <summary>
+        /// The -Winteger-division, which notifies the user when integer division
+        /// is followed by an implicit cast to a floating-point type.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription IntegerDivisionWarning =
+            new WarningDescription("integer-division", Warnings.Instance.All);
+
+        /// <summary>
         /// The -Wecs warning group.
         /// </summary>
         /// <remarks>
