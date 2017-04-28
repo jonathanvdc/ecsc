@@ -85,7 +85,7 @@ namespace Flame.Ecs
                         NodeHelpers.HighlightEven(
                             "name '",
                             Name.Name,
-                            "' is not defined in this scope.")
+                            "' is not defined here.")
                             .Concat(
                                 suggestedName == null
                                 ? Enumerable.Empty<MarkupNode>()
