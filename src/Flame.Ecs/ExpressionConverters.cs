@@ -61,36 +61,39 @@ namespace Flame.Ecs
 
             if (exprSet.Count == 0)
             {
-                // If the set of expressions is empty, then we want to return
-                // an error value.
-                // First of all, let's see if we can guess what the user meant.
-                var suggestedName = NameSuggestionHelpers.SuggestName(
-                    Name.Name,
-                    Scope.VariableNames
-                        .Where(symbol => symbol.Pool == Name.Pool)
-                        .Select(symbol => symbol.Name)
-                        .Concat(
-                            Scope.Function.GetUnqualifiedStaticMembers()
-                            .Concat(Scope.Function.DeclaringType == null
-                                ? Enumerable.Empty<ITypeMember>()
-                                : Scope.Function.GetInstanceMembers(Scope.Function.DeclaringType))
-                            .Select(member => member.Name)
-                            .OfType<SimpleName>()
-                            .Select(member => member.Name)));
-
-                return new ErrorValue(new LogEntry(
-                    "name lookup",
-                    NodeHelpers.HighlightEven(
-                        "name '",
+                return new ErrorValue(() =>
+                {
+                    // If the set of expressions is empty, then we want to return
+                    // an error value.
+                    // First of all, let's see if we can guess what the user meant.
+                    var suggestedName = NameSuggestionHelpers.SuggestName(
                         Name.Name,
-                        "' is not defined in this scope.")
-                        .Concat(
-                            suggestedName == null
-                            ? Enumerable.Empty<MarkupNode>()
-                            : NodeHelpers.HighlightEven(
-                                " Did you mean '", suggestedName, "'?")
-                        .ToArray()),
-                    Location));
+                        Scope.VariableNames
+                            .Where(symbol => symbol.Pool == Name.Pool)
+                            .Select(symbol => symbol.Name)
+                            .Concat(
+                                Scope.Function.GetUnqualifiedStaticMembers()
+                                .Concat(Scope.Function.DeclaringType == null
+                                    ? Enumerable.Empty<ITypeMember>()
+                                    : Scope.Function.GetInstanceMembers(Scope.Function.DeclaringType))
+                                .Select(member => member.Name)
+                                .OfType<SimpleName>()
+                                .Select(member => member.Name)));
+
+                    return new LogEntry(
+                        "name lookup",
+                        NodeHelpers.HighlightEven(
+                            "name '",
+                            Name.Name,
+                            "' is not defined in this scope.")
+                            .Concat(
+                                suggestedName == null
+                                ? Enumerable.Empty<MarkupNode>()
+                                : NodeHelpers.HighlightEven(
+                                    " Did you mean '", suggestedName, "'?")
+                            .ToArray()),
+                        Location);
+                });
             }
             else
             {
@@ -707,7 +710,7 @@ namespace Flame.Ecs
                     // The member-access expression tries to access a member on an expression
                     // whose type is not the error type. Return an error value, which will
                     // log an error only if it's used.
-                    return new ErrorValue(
+                    return new ErrorValue(() =>
                         CreateFailedMemberAccessLogEntry(
                             "value of type",
                             Target.Expression.Type,
@@ -733,19 +736,21 @@ namespace Flame.Ecs
                     // which is not the error type. Return an error value, which will
                     // log an error only if it's used.
                     var typeArray = Target.Types.ToArray();
-                    var intersectionType = typeArray[0];
-                    foreach (var type in typeArray.Skip(1))
+                    return new ErrorValue(() =>
                     {
-                        intersectionType = new IntersectionType(intersectionType, type);
-                    }
-                    return new ErrorValue(
-                        CreateFailedMemberAccessLogEntry(
+                        var intersectionType = typeArray[0];
+                        foreach (var type in typeArray.Skip(1))
+                        {
+                            intersectionType = new IntersectionType(intersectionType, type);
+                        }
+                        return CreateFailedMemberAccessLogEntry(
                             "type",
                             intersectionType,
                             MemberName,
                             typeArray.SelectMany(Scope.Function.GetStaticMembers).Distinct(),
                             MemberLocation,
-                            Scope));
+                            Scope);
+                    });
                 }
             }
             else
