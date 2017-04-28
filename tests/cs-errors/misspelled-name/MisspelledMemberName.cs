@@ -11,6 +11,12 @@ public class Counter
         Count++;
         return this;
     }
+
+    public Counter Decrement<T>()
+    {
+        Count--;
+        return this;
+    }
 }
 
 public static class Program
@@ -22,5 +28,6 @@ public static class Program
         WriteLine(printCounter.Increment().Coutn);
         WriteLine(printCounter.Inrement().Count);
         WriteLine(printCoutner.Increment().Count);
+        WriteLine(printCounter.Dcrement<int>().Count);
     }
 }
