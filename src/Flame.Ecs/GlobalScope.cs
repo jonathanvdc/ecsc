@@ -161,8 +161,7 @@ namespace Flame.Ecs
         /// <returns>The type's abbreviated name.</returns>
         public string NameAbbreviatedType(IType Type)
         {
-            return Renderer.AbbreviateTypeNames(
-                SimpleTypeFinder.Instance.Convert(Type)).Name(Type);
+            return CreateAbbreviatingRenderer(Type).Name(Type);
         }
 
         /// <summary>
@@ -173,8 +172,9 @@ namespace Flame.Ecs
         /// <returns>An abbreviating type renderer.</returns>
         public TypeRenderer CreateAbbreviatingRenderer(params IType[] AbbreviatableTypes)
         {
-            return Renderer.AbbreviateTypeNames(
-                SimpleTypeFinder.Instance.ConvertAndMerge(AbbreviatableTypes));
+            var typeNameSet = SimpleTypeFinder.Instance.ConvertAndMerge(AbbreviatableTypes);
+            typeNameSet.ExceptWith(EcsTypeRenderer.KeywordPrimitiveTypes);
+            return Renderer.AbbreviateTypeNames(typeNameSet);
         }
 
         /// <summary>
