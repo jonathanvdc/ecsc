@@ -1057,9 +1057,8 @@ namespace Flame.Ecs
                 }
             }));
 
-            // Analyze the field type lazily, as well.
-            var lazyFieldType = new Lazy<IType>(() => 
-                Converter.ConvertType(typeNode, Scope, DeclaringType));
+            // Analyze the field type lazily as well.
+            IType fieldType = null;
 
             // Iterate over each field definition, analyze them 
             // individually.
@@ -1075,7 +1074,11 @@ namespace Flame.Ecs
                                 fieldDef =>
                     {
                         // Set the field's type.
-                        fieldDef.FieldType = lazyFieldType.Value;
+                        if (fieldType == null)
+                        {
+                            fieldType = Converter.ConvertType(typeNode, Scope, DeclaringType);
+                        }
+                        fieldDef.FieldType = fieldType;
 
                         // Update the attribute list.
                         UpdateTypeMemberAttributes(lazyAttrPair.Value, fieldDef);

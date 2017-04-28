@@ -109,11 +109,16 @@ namespace Flame.Ecs
                     Defs[i].Name, genParameters[i]));
             }
 
-            var localScope = Scope.CreateLocalScope(
-                DeclaringMember as IType
-                ?? (DeclaringMember is ITypeMember
-                    ? ((ITypeMember)DeclaringMember).DeclaringType
-                    : null));
+            IType declType = null;
+            if (DeclaringMember is IType)
+            {
+                declType = ((IType)DeclaringMember).DeclaringNamespace as IType;
+            }
+            else if (DeclaringMember is ITypeMember)
+            {
+                declType = ((ITypeMember)DeclaringMember).DeclaringType;
+            }
+            var localScope = Scope.CreateLocalScope(declType);
 
             // And use that to convert generic parameters.
             for (int i = 0; i < Defs.Count; i++)
@@ -171,6 +176,8 @@ namespace Flame.Ecs
                             descTy.GetSourceLocation())));
                 }
 
+                var declTy = descTy.DeclaringNamespace as IType;
+
                 // Analyze the attribute list.
                 bool isClass = TypeKind.AttributeType.Equals(
                                    PrimitiveAttributes.Instance.ReferenceTypeAttribute.AttributeType);
@@ -201,7 +208,7 @@ namespace Flame.Ecs
                     {
                         return false;
                     }
-                }, Scope.CreateLocalScope(descTy));
+                }, Scope.CreateLocalScope(declTy));
 
                 if (!isRedefinition)
                 {
@@ -246,7 +253,7 @@ namespace Flame.Ecs
                 foreach (var item in Node.Args[1].Args)
                 {
                     // Convert the base types.
-                    var innerTy = Converter.ConvertType(item, innerScope, descTy);
+                    var innerTy = Converter.ConvertType(item, innerScope, declTy);
                     if (innerTy == null)
                     {
                         Scope.Log.LogError(new LogEntry(
@@ -394,10 +401,11 @@ namespace Flame.Ecs
                     return;
                 }
 
+                var declTy = descTy.DeclaringNamespace as IType;
                 // Analyze the attribute list.
                 var convAttrs = Converter.ConvertAttributeListWithAccess(
                     Node.Attrs, AccessModifier.Assembly,
-                    node => false, Scope.CreateLocalScope(descTy));
+                    node => false, Scope.CreateLocalScope(declTy));
                 descTy.AddAttribute(PrimitiveAttributes.Instance.EnumAttribute);
                 descTy.AddAttribute(PrimitiveAttributes.Instance.ValueTypeAttribute);
                 descTy.AddAttribute(new SourceLocationAttribute(NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
@@ -421,7 +429,7 @@ namespace Flame.Ecs
                     }
 
                     var item = Node.Args[1].Args[0];
-                    var innerTy = Converter.ConvertType(item, Scope, descTy);
+                    var innerTy = Converter.ConvertType(item, Scope, declTy);
                     if (innerTy == null)
                     {
                         Scope.Log.LogError(new LogEntry(
@@ -453,8 +461,8 @@ namespace Flame.Ecs
                 {
                     // Convert the enum's fields.
                     var field = ConvertEnumField(
-                                    item, descTy, underlyingType, Scope, 
-                                    Converter, pred);
+                        item, descTy, underlyingType, Scope, 
+                        Converter, pred);
                     
                     if (field != null)
                     {
