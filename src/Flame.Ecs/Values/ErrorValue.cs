@@ -10,10 +10,18 @@ namespace Flame.Ecs
     {
         public ErrorValue(LogEntry Error)
         {
+            this.Error = new Lazy<LogEntry>(() => Error);
+        }
+        public ErrorValue(Lazy<LogEntry> Error)
+        {
             this.Error = Error;
         }
+        public ErrorValue(Func<LogEntry> ErrorFactory)
+        {
+            this.Error = new Lazy<LogEntry>(ErrorFactory);
+        }
 
-        public LogEntry Error { get; private set; }
+        public Lazy<LogEntry> Error { get; private set; }
 
         /// <inheritdoc/>
         public IType Type { get { return ErrorType.Instance; } }
@@ -22,14 +30,14 @@ namespace Flame.Ecs
         public ResultOrError<IExpression, LogEntry> CreateGetExpression(
             ILocalScope Scope, SourceLocation Location)
         {
-            return ResultOrError<IExpression, LogEntry>.FromError(Error);
+            return ResultOrError<IExpression, LogEntry>.FromError(Error.Value);
         }
 
         /// <inheritdoc/>
         public ResultOrError<IExpression, LogEntry> CreateAddressOfExpression(
             ILocalScope Scope, SourceLocation Location)
         {
-            return ResultOrError<IExpression, LogEntry>.FromError(Error);
+            return ResultOrError<IExpression, LogEntry>.FromError(Error.Value);
         }
 
         /// <inheritdoc/>
@@ -37,7 +45,7 @@ namespace Flame.Ecs
             IExpression Value, ILocalScope Scope, 
             SourceLocation Location)
         {
-            return ResultOrError<IStatement, LogEntry>.FromError(Error);
+            return ResultOrError<IStatement, LogEntry>.FromError(Error.Value);
         }
     }
 }
