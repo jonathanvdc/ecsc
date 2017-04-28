@@ -43,57 +43,6 @@ namespace Flame.Ecs
             return Scope.GetVariable(CodeSymbols.This);
         }
 
-        private static IValue LookupUnqualifiedNameExpression(
-            Symbol Name, ILocalScope Scope, SourceLocation Location)
-        {
-            // Create a set of potential results.
-            var exprSet = new HashSet<IValue>();
-            IMethod method = null;
-            CreateUnqualifiedNameExpressionAccess(
-                Name, new IType[] { }, Scope, Location, exprSet, ref method);
-
-            if (exprSet.Count == 0)
-            {
-                return new ErrorValue(() =>
-                {
-                    // If the set of expressions is empty, then we want to return
-                    // an error value.
-                    // First of all, let's see if we can guess what the user meant.
-                    var suggestedName = NameSuggestionHelpers.SuggestName(
-                        Name.Name,
-                        Scope.VariableNames
-                            .Where(symbol => symbol.Pool == Name.Pool)
-                            .Select(symbol => symbol.Name)
-                            .Concat(
-                                Scope.Function.GetUnqualifiedStaticMembers()
-                                .Concat(Scope.Function.DeclaringType == null
-                                    ? Enumerable.Empty<ITypeMember>()
-                                    : Scope.Function.GetInstanceMembers(Scope.Function.DeclaringType))
-                                .Select(member => member.Name)
-                                .OfType<SimpleName>()
-                                .Select(member => member.Name)));
-
-                    return new LogEntry(
-                        "name lookup",
-                        NodeHelpers.HighlightEven(
-                            "name '",
-                            Name.Name,
-                            "' is not defined here.")
-                            .Concat(
-                                suggestedName == null
-                                ? Enumerable.Empty<MarkupNode>()
-                                : NodeHelpers.HighlightEven(
-                                    " Did you mean '", suggestedName, "'?")
-                            .ToArray()),
-                        Location);
-                });
-            }
-            else
-            {
-                return IntersectionValue.Create(exprSet);
-            }
-        }
-
         /// <summary>
         /// Creates a member-access expression for the given
         /// accessed member, list of type arguments, target
@@ -171,7 +120,7 @@ namespace Flame.Ecs
             }
         }
 
-        private static IValue LookupUnqualifiedNameExpressionInstance(
+        private static IValue LookupUnqualifiedNameExpression(
             Symbol Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
@@ -182,20 +131,65 @@ namespace Flame.Ecs
             CreateUnqualifiedNameExpressionAccess(
                 Name, TypeArguments, Scope, Location, exprSet, ref method);
 
-            if (exprSet.Count == 0 && method != null)
+            if (exprSet.Count == 0)
             {
-                // We want to provide a diagnostic here if we
-                // encountered a method, but it was not given
-                // the right amount of type arguments.
-                LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
-                // Add the error-type expression to the set, to
-                // keep the node converter from logging a diagnostic
-                // about the fact that the expression returned here is
-                // not a value.
-                exprSet.Add(new ExpressionValue(ErrorTypeExpression));
-            }
+                if (method != null)
+                {
+                    // We want to provide a diagnostic here if we
+                    // encountered a method, but it was not given
+                    // the right amount of type arguments.
+                    LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
+                    // Add the error-type expression to the set, to
+                    // keep the node converter from logging a diagnostic
+                    // about the fact that the expression returned here is
+                    // not a value.
+                    return new ExpressionValue(ErrorTypeExpression);
+                }
+                else
+                {
+                    return new ErrorValue(() =>
+                    {
+                        // If the set of expressions is empty, then we want to return
+                        // an error value.
+                        // First of all, let's see if we can guess what the user meant.
+                        var suggestedName = NameSuggestionHelpers.SuggestName(
+                            Name.Name,
+                            Scope.Function.GetUnqualifiedStaticMembers()
+                                .Concat(Scope.Function.DeclaringType == null
+                                    || (Scope.Function.CurrentMethod != null
+                                        && Scope.Function.CurrentMethod.IsStatic)
+                                    ? Enumerable.Empty<ITypeMember>()
+                                    : Scope.Function.GetInstanceMembers(Scope.Function.DeclaringType))
+                                .Select(member => member.Name)
+                                .OfType<SimpleName>()
+                                .Select(member => member.Name)
+                                .Concat(
+                                    TypeArguments.Count == 0
+                                    ? Scope.VariableNames
+                                        .Where(symbol => symbol.Pool == Name.Pool)
+                                        .Select(symbol => symbol.Name)
+                                    : Enumerable.Empty<string>()));
 
-            return IntersectionValue.Create(exprSet);
+                        return new LogEntry(
+                            "name lookup",
+                            NodeHelpers.HighlightEven(
+                                "name '",
+                                Name.Name,
+                                "' is not defined here.")
+                                .Concat(
+                                    suggestedName == null
+                                    ? Enumerable.Empty<MarkupNode>()
+                                    : NodeHelpers.HighlightEven(
+                                        " Did you mean '", suggestedName, "'?")
+                                .ToArray()),
+                            Location);
+                    });
+                }
+            }
+            else
+            {
+                return IntersectionValue.Create(exprSet);
+            }
         }
 
         private static IEnumerable<IType> LookupUnqualifiedNameTypes(QualifiedName Name, ILocalScope Scope)
@@ -227,7 +221,9 @@ namespace Flame.Ecs
         {
             var qualName = new QualifiedName(Name.Name.Name);
             return new TypeOrExpression(
-                LookupUnqualifiedNameExpression(Name.Name, Scope, NodeHelpers.ToSourceLocation(Name.Range)),
+                LookupUnqualifiedNameExpression(
+                    Name.Name, new IType[] { }, Scope,
+                    NodeHelpers.ToSourceLocation(Name.Range)),
                 LookupUnqualifiedNameTypes(qualName, Scope),
                 qualName);
         }
@@ -237,7 +233,7 @@ namespace Flame.Ecs
             SourceLocation Location)
         {
             return new TypeOrExpression(
-                LookupUnqualifiedNameExpressionInstance(Name, TypeArguments, Scope, Location),
+                LookupUnqualifiedNameExpression(Name, TypeArguments, Scope, Location),
                 LookupUnqualifiedNameTypeInstances(Name.Name, TypeArguments, Scope, Location),
                 default(QualifiedName));
         }
