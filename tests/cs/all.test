@@ -27,6 +27,7 @@ tests
     int-main/IntMain.test;
     interface/Interface.test;
     internal/Internal.test;
+    list-count/ListCount.test;
     literal-conversion/LiteralConversion.test;
     local-decl/LocalDecl.test;
     lock/Lock.test;
