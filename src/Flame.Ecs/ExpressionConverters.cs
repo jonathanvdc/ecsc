@@ -819,11 +819,28 @@ namespace Flame.Ecs
             if (Target.IsExpression)
             {
                 var targetTy = Target.Expression.Type;
-                foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(targetTy, MemberName))
+                foreach (var item in Scope.Function.GetInstanceMembers(targetTy, MemberName))
                 {
                     CreateMemberAccess(
                         item, TypeArguments, Target.Expression, exprSet,
                         Scope.Function.Global, MemberLocation, ref method);
+                }
+
+                if (exprSet.Count == 0)
+                {
+                    // The spec states that extension member lookup is a last resort, so we should only
+                    // use it if we can't find any applicable instance members.
+                    //
+                    //     Otherwise, an attempt is made to process E.I as an extension method invocation
+                    //     (Extension method invocations). If this fails, E.I is an invalid member
+                    //     reference, and a binding-time error occurs.
+                    //
+                    foreach (var item in Scope.Function.GetExtensionMembers(targetTy, MemberName))
+                    {
+                        CreateMemberAccess(
+                            item, TypeArguments, Target.Expression, exprSet,
+                            Scope.Function.Global, MemberLocation, ref method);
+                    }
                 }
             }
 
