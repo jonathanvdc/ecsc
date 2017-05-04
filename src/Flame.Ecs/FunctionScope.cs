@@ -699,9 +699,9 @@ namespace Flame.Ecs
                 "rendered_conversion",
                 NodeHelpers.HighlightEven(
                     abbreviatingNamer.CreateTextNode("'"),
-                    typeDiffComparer.Compare(FromType, ToType),
+                    typeDiffComparer.Compare(ToType, FromType),
                     abbreviatingNamer.CreateTextNode("' to '"),
-                    invTypeDiffComparer.Compare(ToType, FromType),
+                    invTypeDiffComparer.Compare(FromType, ToType),
                     abbreviatingNamer.CreateTextNode("'")));
         }
 
