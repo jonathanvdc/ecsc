@@ -1678,7 +1678,7 @@ namespace Flame.Ecs
                     abbreviatingRenderer.Name(LeftType), "' and '",
                     abbreviatingRenderer.Name(RightType), "'."),
                 LeftLocation.Concat(RightLocation)));
-            return new UnknownExpression(LeftType);
+            return ErrorTypeExpression;
         }
 
         /// <summary>
