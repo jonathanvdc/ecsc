@@ -835,7 +835,7 @@ namespace Flame.Ecs
                                             NodeHelpers.HighlightEven(
                                                 "method '", methodDef.Name.ToString(), "' is marked '",
                                                 "override", "', but differs in return type. " +
-                                                "Expected return type: ",
+                                                "Expected return type: '",
                                                 Scope.NameAbbreviatedType(m.ReturnType), "'."),
                                             methodDef.GetSourceLocation()));
                                     }
