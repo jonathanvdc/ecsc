@@ -246,7 +246,7 @@ namespace Flame.Ecs
                         .Select(
                             p => new IndexerDelegateExpression(
                                 p, ExpressionConverters.AsTargetValue(
-                                    containerVal, Scope, loc, true).ResultOrLog(Scope.Log)))
+                                    containerVal, p.DeclaringType, Scope, loc, true).ResultOrLog(Scope.Log)))
                         .ToArray();
 
                 if (indexers.Length == 0)

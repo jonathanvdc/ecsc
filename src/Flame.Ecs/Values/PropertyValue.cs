@@ -61,7 +61,7 @@ namespace Flame.Ecs.Values
             else
             {
                 return ExpressionConverters.AsTargetValue(
-                    Target, Scope, Location, true)
+                    Target, Property.DeclaringType, Scope, Location, true)
                     .MapResult<IExpression>(targetExpr =>
                     {
                         return new InvocationExpression(getAccessor, targetExpr, new IsExpression[] { });
@@ -111,7 +111,7 @@ namespace Flame.Ecs.Values
             else
             {
                 return ExpressionConverters.AsTargetValue(
-                    Target, Scope, Location, true)
+                    Target, Property.DeclaringType, Scope, Location, true)
                         .MapResult<IStatement>(targetExpr =>
                             {
                                 return new ExpressionStatement(

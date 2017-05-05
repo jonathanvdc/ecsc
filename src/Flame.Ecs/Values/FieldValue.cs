@@ -37,7 +37,7 @@ namespace Flame.Ecs.Values
             ILocalScope Scope, SourceLocation Location)
         {
             return ExpressionConverters.AsTargetValue(
-                Target, Scope, Location, true)
+                Target, Field.DeclaringType, Scope, Location, true)
                 .MapResult<IExpression>(targetExpr =>
                 {
                     return new FieldGetExpression(Field, targetExpr);
@@ -49,7 +49,7 @@ namespace Flame.Ecs.Values
             ILocalScope Scope, SourceLocation Location)
         {
             return ExpressionConverters.AsTargetValue(
-                Target, Scope, Location, false)
+                Target, Field.DeclaringType, Scope, Location, false)
                 .BindResult(targetExpr =>
                 {
                     if (Field.GetIsConstant())
@@ -73,7 +73,7 @@ namespace Flame.Ecs.Values
             SourceLocation Location)
         {
             return ExpressionConverters.AsTargetValue(
-                Target, Scope, Location, false)
+                Target, Field.DeclaringType, Scope, Location, false)
                 .BindResult(targetExpr =>
                 {
                     if (Field.HasAttribute(

@@ -350,21 +350,51 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Creates a value that can be used
-        /// as the target object for a member-access expression.
+        /// Creates a value that can be used as the target object for a
+        /// member-access expression.
         /// </summary>
         public static ResultOrError<IExpression, LogEntry> AsTargetValue(
-            IValue Value, ILocalScope Scope, 
+            IValue Value, IType TargetType, ILocalScope Scope,
             SourceLocation Location, bool CreateTemporary)
         {
             if (Value == null)
+            {
                 return ResultOrError<IExpression, LogEntry>.FromResult(null);
-            else if (Value.Type.GetIsReferenceType())
-                return Value.CreateGetExpression(Scope, Location);
-            else if (CreateTemporary)
-                return ToValueAddress(Value, Scope, Location);
+            }
+
+            var valType = Value.Type;
+            if (valType.GetIsReferenceType())
+            {
+                var result = Value.CreateGetExpression(Scope, Location);
+                if (!valType.Equals(TargetType) && TargetType.GetIsReferenceType())
+                {
+                    return result.MapResult<IExpression>(expr =>
+                        new ReinterpretCastExpression(expr, TargetType));
+                }
+                else
+                {
+                    return result;
+                }
+            }
             else
-                return Value.CreateAddressOfExpression(Scope, Location);
+            {
+                var address = CreateTemporary
+                    ? ToValueAddress(Value, Scope, Location)
+                    : Value.CreateAddressOfExpression(Scope, Location);
+
+                if (!valType.Equals(TargetType) && !TargetType.GetIsReferenceType())
+                {
+                    return address.MapResult<IExpression>(expr =>
+                        new ReinterpretCastExpression(
+                            expr,
+                            TargetType.MakePointerType(
+                                expr.Type.AsPointerType().PointerKind)));
+                }
+                else
+                {
+                    return address;
+                }
+            }
         }
 
         /// <summary>
@@ -438,7 +468,7 @@ namespace Flame.Ecs
                         var boxedVal = UsingBoxValue.GetBoxedValue(Target);
                         if (boxedVal == null)
                         {
-                            return AsTargetValue(Target, scope, srcLoc, true)
+                            return AsTargetValue(Target, method.DeclaringType, scope, srcLoc, true)
                                 .MapResult<IExpression>(targetExpr =>
                             {
                                 return new GetMethodExpression(method, targetExpr);
@@ -446,7 +476,7 @@ namespace Flame.Ecs
                         }
                         else
                         {
-                            return AsTargetValue(boxedVal, scope, srcLoc, true)
+                            return AsTargetValue(boxedVal, method.DeclaringType, scope, srcLoc, true)
                                 .MapResult<IExpression>(targetExpr =>
                             {
                                 // Log a warning whenever we elide a boxing conversion, because
@@ -1597,12 +1627,6 @@ namespace Flame.Ecs
                 return Value.CreateGetExpressionOrError(Scope, Location);
 
             var fScope = Scope.Function;
-            var targetVal = AsTargetValue(Value, Scope, Location, true);
-            if (targetVal.IsError)
-            {
-                fScope.Global.Log.LogError(targetVal.Error);
-                return new UnknownExpression(PrimitiveTypes.String);
-            }
 
             var valTy = Value.Type;
             var toStringMethods =
@@ -1647,6 +1671,14 @@ namespace Flame.Ecs
                         abbreviatingNamer.Name(PrimitiveTypes.String),
                         "' instance."),
                     Location));
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+
+            var targetVal = AsTargetValue(
+                Value, toStringMethods[0].DeclaringType, Scope, Location, true);
+            if (targetVal.IsError)
+            {
+                fScope.Global.Log.LogError(targetVal.Error);
                 return new UnknownExpression(PrimitiveTypes.String);
             }
 
