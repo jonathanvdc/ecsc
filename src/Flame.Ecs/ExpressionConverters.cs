@@ -683,13 +683,12 @@ namespace Flame.Ecs
             {
                 var tParam = genericParamArr[i];
                 var tArg = TypeArguments[i];
-                if (!tParam.Constraint.Transform(conv).Satisfies(tArg))
+                if (!tParam.Constraint.Transform(conv).Satisfies(
+                    Scope.Environment.GetEquivalentType(tArg)))
                 {
                     // Check that this type argument is okay for
                     // the parameter's (transformed) constraints.
-                    var abbrevRenderer = Scope.Renderer.AbbreviateTypeNames(
-                        SimpleTypeFinder.Instance.ConvertAndMerge(
-                            new IType[] { tArg, tParam }));
+                    var abbrevRenderer = Scope.CreateAbbreviatingRenderer(tArg, tParam);
 
                     Scope.Log.LogError(new LogEntry(
                         "generic constraint",
