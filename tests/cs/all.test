@@ -46,6 +46,7 @@ tests
     sealed/Sealed.test;
     sequence-equal/SequenceEqual.test;
     static-properties/StaticProperties.test;
+    string-format/StringFormat.test;
     switch/Switch.test;
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
