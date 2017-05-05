@@ -10,12 +10,19 @@ namespace Flame.Ecs
     /// </summary>
     public sealed class GlobalMemberCache : MemberCacheBase
     {
-        public GlobalMemberCache()
+        public GlobalMemberCache(IEnvironment Environment)
         {
+            this.Environment = Environment;
             this.globalMemberCache = new Dictionary<IType, ITypeMember[]>();
             this.indexerCache = new Dictionary<IType, IProperty[]>();
             this.operatorCache = new Dictionary<IType, SmallMultiDictionary<Operator, IMethod>>();
         }
+
+        /// <summary>
+        /// Gets the runtime environment description for this member cache.
+        /// </summary>
+        /// <returns>A description of this member cache's runtime environment.</returns>
+        public IEnvironment Environment { get; private set; }
 
         private Dictionary<IType, ITypeMember[]> globalMemberCache;
         private Dictionary<IType, IProperty[]> indexerCache;
@@ -33,13 +40,20 @@ namespace Flame.Ecs
             }
             else
             {
-                result = Type.Fields
-                    .Concat<ITypeMember>(Type.Properties)
-                    .Concat<ITypeMember>(Type.Methods)
+                var envType = Environment.GetEquivalentType(Type);
+                result = envType.Fields
+                    .Concat<ITypeMember>(envType.Properties)
+                    .Concat<ITypeMember>(envType.Methods)
                     .ToArray();
                 globalMemberCache[Type] = result;
                 return result;
             }
+        }
+
+        /// <inheritdoc/>
+        public override IReadOnlyList<IType> GetBaseTypes(IType Type)
+        {
+            return Environment.GetEquivalentType(Type).BaseTypes.ToArray();
         }
 
         private IEnumerable<IProperty> GetVisibleIndexers(

@@ -41,6 +41,13 @@ namespace Flame.Ecs
         public abstract IReadOnlyList<ITypeMember> GetMembers(IType Type);
 
         /// <summary>
+        /// Gets the given type's list of base types.
+        /// </summary>
+        /// <param name="Type">The type whose base are to be found.</param>
+        /// <returns>The given type's base type.</returns>
+        public abstract IReadOnlyList<IType> GetBaseTypes(IType Type);
+
+        /// <summary>
         /// Gets all members that are defined by the given type
         /// or one of its base types and have the given name.
         /// Standard hiding rules apply: once a match is found, 
@@ -89,7 +96,7 @@ namespace Flame.Ecs
 
             // Update the set with all type names from all base
             // types.
-            foreach (var baseType in Type.BaseTypes)
+            foreach (var baseType in GetBaseTypes(Type))
             {
                 results.UnionWith(GetPotentialMemberNames(baseType));
             }
@@ -168,26 +175,32 @@ namespace Flame.Ecs
             if (HidesAll(results))
                 return results.ToArray();
 
+            var baseTypes = GetBaseTypes(ty);
             // Then try the base type.
-            var bType = ty.GetParent();
-            if (bType != null)
+            foreach (var bType in baseTypes)
             {
-                results.UnionWith(
-                    GetVisibleMembers(
-                        bType, name,
-                        results.OfType<IMethod>().ToArray()));
+                if (!bType.GetIsInterface())
+                {
+                    results.UnionWith(
+                        GetVisibleMembers(
+                            bType, name,
+                            results.OfType<IMethod>().ToArray()));
 
-                if (results.Count > 0)
-                    return results.ToArray();
+                    if (results.Count > 0)
+                        return results.ToArray();
+                }
             }
 
             // Okay, so that didn't work. Maybe we'll
             // have more luck in examining the interfaces.
             var hidingMethods = results.OfType<IMethod>().ToArray();
-            foreach (var inter in ty.GetInterfaces())
+            foreach (var inter in baseTypes)
             {
-                results.UnionWith(GetVisibleMembers(
-                    inter, name, hidingMethods));
+                if (inter.GetIsInterface())
+                {
+                    results.UnionWith(GetVisibleMembers(
+                        inter, name, hidingMethods));
+                }
             }
             return results.ToArray();
         }

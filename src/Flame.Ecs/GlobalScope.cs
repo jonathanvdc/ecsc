@@ -33,7 +33,7 @@ namespace Flame.Ecs
             IDocumentationParser DocumentationParser)
             : this(
                 Binder, ConversionRules, Log, Renderer, DocumentationParser,
-                new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache()),
+                new ThreadLocal<GlobalMemberCache>(() => new GlobalMemberCache(Binder.Environment)),
                 new WarningStack())
         {
         }

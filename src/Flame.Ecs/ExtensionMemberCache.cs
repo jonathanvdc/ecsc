@@ -64,6 +64,12 @@ namespace Flame.Ecs
             }
         }
 
+        /// <inheritdoc/>
+        public override IReadOnlyList<IType> GetBaseTypes(IType Type)
+        {
+            return binder.Environment.GetEquivalentType(Type).BaseTypes.ToArray();
+        }
+
         public override void Dispose()
         {
             base.Dispose();
