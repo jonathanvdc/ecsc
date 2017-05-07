@@ -61,6 +61,12 @@ namespace Flame.Ecs.Semantics
         NumberToEnumStaticCast,
 
         /// <summary>
+        /// An explicit static cast is used to perform
+        /// an enum-to-enum conversion.
+        /// </summary>
+        EnumToEnumStaticCast,
+
+        /// <summary>
         /// A dynamic cast is used to perform this conversion.
         /// </summary>
         DynamicCast,
@@ -187,6 +193,7 @@ namespace Flame.Ecs.Semantics
                     case ConversionKind.ExplicitBoxingConversion:
                     case ConversionKind.NumberToEnumStaticCast:
                     case ConversionKind.EnumToNumberStaticCast:
+                    case ConversionKind.EnumToEnumStaticCast:
                     case ConversionKind.UnboxValueConversion:
                         return true;
                     case ConversionKind.ReinterpretCast:
@@ -255,6 +262,12 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         public static readonly ConversionDescription NumberToEnumStaticCast
             = new SimpleConversionDescription(ConversionKind.NumberToEnumStaticCast);
+
+        /// <summary>
+        /// A conversion description for enum-to-enum static casts.
+        /// </summary>
+        public static readonly ConversionDescription EnumToEnumStaticCast
+            = new SimpleConversionDescription(ConversionKind.EnumToEnumStaticCast);
 
         /// <summary>
         /// A conversion description for dynamic casts.
@@ -390,12 +403,21 @@ namespace Flame.Ecs.Semantics
                         // type itself.
                         return new ReinterpretCastExpression(
                             new StaticCastExpression(
-                                Value, TargetType.GetParent()),
+                                Value, TargetType.GetParent()).Simplify(),
                             TargetType);
                     case ConversionKind.EnumToNumberStaticCast:
                         return new StaticCastExpression(
                             new ReinterpretCastExpression(
                                 Value, Value.Type.GetParent()),
+                            TargetType).Simplify();
+                    case ConversionKind.EnumToEnumStaticCast:
+                        // Implement enum-to-enum conversions by first casting the
+                        // source enum to its underlying type and then casting it to
+                        // the target enum.
+                        return NumberToEnumStaticCast.Convert(
+                            EnumToNumberStaticCast.Convert(
+                                Value,
+                                Value.Type.GetParent()),
                             TargetType);
                     case ConversionKind.ReinterpretCast:
                         return new ReinterpretCastExpression(Value, TargetType);

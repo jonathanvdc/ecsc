@@ -164,12 +164,21 @@ namespace Flame.Ecs.Semantics
                 }
             }
 
-            if (SourceType.GetIsEnum() && IsNumberPrimitive(TargetType))
+            if (SourceType.GetIsEnum())
             {
-                // enum-to-integer
-                return ConversionDescription.EnumToNumberStaticCast;
+                if (IsNumberPrimitive(TargetType))
+                {
+                    // enum-to-integer
+                    return ConversionDescription.EnumToNumberStaticCast;
+                }
+                else if (TargetType.GetIsEnum())
+                {
+                    // enum-to-enum
+                    return ConversionDescription.EnumToEnumStaticCast;
+                }
             }
-            else if (TargetType.GetIsEnum() && IsNumberPrimitive(SourceType))
+
+            if (TargetType.GetIsEnum() && IsNumberPrimitive(SourceType))
             {
                 // integer-to-enum
                 return ConversionDescription.NumberToEnumStaticCast;
@@ -949,6 +958,8 @@ namespace Flame.Ecs.Semantics
                     return ConversionDescription.EnumToNumberStaticCast;
                 case ConversionKind.EnumToNumberStaticCast:
                     return ConversionDescription.NumberToEnumStaticCast;
+                case ConversionKind.EnumToEnumStaticCast:
+                    return ConversionDescription.EnumToEnumStaticCast;
                 case ConversionKind.ReinterpretCast:
                     return ConversionDescription.DynamicCast;
                 default:
