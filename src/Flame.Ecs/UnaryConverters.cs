@@ -6,6 +6,7 @@ using Flame.Compiler.Expressions;
 using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
 using Flame.Ecs.Semantics;
+using Flame.Ecs.Values;
 using Loyc.Syntax;
 
 namespace Flame.Ecs
@@ -188,11 +189,11 @@ namespace Flame.Ecs
         /// <summary>
         /// Converts an indexing expression (type @_[]).
         /// </summary>
-        public static IExpression ConvertIndex(
+        public static IValue ConvertIndex(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 2, Scope.Log))
-                return VoidExpression.Instance;
+                return new ExpressionValue(ExpressionConverters.ErrorTypeExpression);
 
             var containerVal = Converter.ConvertValue(Node.Args[0], Scope);
             var dimExprs = OverloadResolution.ConvertArguments(Node.Args.Slice(1), Scope, Converter);
@@ -221,7 +222,7 @@ namespace Flame.Ecs
                             "wrong number of indexes '", dimExprs.Count.ToString(), "' inside ", 
                             "[]", ", expected '", dims.ToString(), "'."),
                         loc));
-                    return new UnknownExpression(elemTy);
+                    return new ExpressionValue(new UnknownExpression(elemTy));
                 }
 
                 foreach (var item in dimExprs)
@@ -237,7 +238,7 @@ namespace Flame.Ecs
                             loc));
                     }
                 }
-                return new ElementVariable(containerExpr, dimExprs.Select(t => t.Item1)).CreateGetExpression();
+                return new VariableValue(new ElementVariable(containerExpr, dimExprs.Select(t => t.Item1)));
             }
             else
             {
@@ -258,12 +259,13 @@ namespace Flame.Ecs
                             "' to an expression of type '",
                             Scope.Function.Global.NameAbbreviatedType(containerTy), "'."),
                         loc));
-                    return VoidExpression.Instance;
+                    return new ExpressionValue(ExpressionConverters.ErrorTypeExpression);
                 }
 
-                return OverloadResolution.CreateCheckedInvocation(
-                    "indexer", indexers, dimExprs, 
-                    Scope.Function, loc);
+                return new ExpressionValue(
+                    OverloadResolution.CreateCheckedInvocation(
+                        "indexer", indexers, dimExprs,
+                        Scope.Function, loc));
             }
         }
 

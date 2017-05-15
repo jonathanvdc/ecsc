@@ -699,7 +699,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.PostDec, UnaryConverters.ConvertPostfixDecrement);
                 result.AddExprConverter(CodeSymbols.NotBits, UnaryConverters.CreateUnaryOpConverter(UnaryOperatorResolution.BitwiseComplement));
                 result.AddExprConverter(CodeSymbols.Not, UnaryConverters.CreateUnaryOpConverter(Operator.Not));
-                result.AddExprConverter(CodeSymbols.IndexBracks, UnaryConverters.ConvertIndex);
+                result.AddValueConverter(CodeSymbols.IndexBracks, UnaryConverters.ConvertIndex);
 
                 // - Assignment operator
                 result.AddExprConverter(CodeSymbols.Assign, ExpressionConverters.ConvertAssignment);
