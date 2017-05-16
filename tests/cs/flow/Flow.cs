@@ -71,6 +71,22 @@ public static class Program
         return j;
     }
 
+    public static int SumEmptyFor(int N)
+    {
+        int j = 0;
+        int i = 0;
+        for (;;)
+        {
+            if (i >= N)
+                break;
+
+            j += i;
+            i++;
+        }
+
+        return j;
+    }
+
     public static void Main(string[] Args)
     {
         Console.WriteLine(Select(true, 3, 4));
@@ -80,5 +96,6 @@ public static class Program
         Console.WriteLine(CountBreakContinue(17));
         Console.WriteLine(DoCountBreakContinue(17));
         Console.WriteLine(Sum(17));
+        Console.WriteLine(SumEmptyFor(17));
     }
 }
