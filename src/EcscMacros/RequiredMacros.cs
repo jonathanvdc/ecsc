@@ -52,23 +52,23 @@ namespace EcscMacros
             var iName = pool.Get("i");
             return F.Braces(
                 F.Var(
-                    F.Id(GSymbol.Empty), 
-                    colName, 
+                    F.Id(GSymbol.Empty),
+                    colName,
                     Collection),
                 F.Var(
-                    F.Id(GSymbol.Empty), 
-                    colLenName, 
+                    F.Id(GSymbol.Empty),
+                    colLenName,
                     F.Dot(colName, GSymbol.Get("Length"))),
                 F.Call(
                     CodeSymbols.For,
                     F.Tuple(F.Var(
                         F.Call(
-                            EcscSymbols.BuiltinDecltype, 
+                            EcscSymbols.BuiltinDecltype,
                             F.Id(colLenName)),
-                        iName, 
+                        iName,
                         F.Literal(0))),
                     F.Call(
-                        CodeSymbols.LT, 
+                        CodeSymbols.LT,
                         F.Id(iName), F.Id(colLenName)),
                     F.Tuple(F.Call(
                         CodeSymbols.PostInc,
@@ -112,10 +112,10 @@ namespace EcscMacros
 
             return F.Braces(
                 F.Var(
-                    F.Id(GSymbol.Empty), 
-                    enumeratorName, 
+                    F.Id(GSymbol.Empty),
+                    enumeratorName,
                     F.Call(F.Dot(
-                        Collection, 
+                        Collection,
                         GSymbol.Get("GetEnumerator")))),
                 F.Call(
                     CodeSymbols.Try,
@@ -130,7 +130,7 @@ namespace EcscMacros
                         CodeSymbols.Finally,
                         F.Braces(
                             F.Call(
-                                EcscSymbols.DisposeLocal, 
+                                EcscSymbols.DisposeLocal,
                                 F.Id(enumeratorName))))));
         }
 
@@ -163,7 +163,7 @@ namespace EcscMacros
             var body = Node.Args[2];
 
             return F.Call(
-                EcscSymbols.BuiltinStaticIf, 
+                EcscSymbols.BuiltinStaticIf,
                 F.Call(
                     EcscSymbols.BuiltinStaticIsArray,
                     F.Call(
@@ -243,8 +243,8 @@ namespace EcscMacros
         }
 
         [LexicalMacro(
-            "#var(T, variable = #arrayInit(values...))", 
-            "lowers array initializers to new-array expressions", 
+            "#var(T, variable = #arrayInit(values...))",
+            "lowers array initializers to new-array expressions",
             "#var", Mode = MacroMode.Passive | MacroMode.Normal)]
         public static LNode LowerArrayInitializer(LNode Node, IMacroContext Sink)
         {
@@ -287,6 +287,52 @@ namespace EcscMacros
                 return Node.WithArgs(newArgs);
             else
                 return null;
+        }
+
+        [LexicalMacro(
+            "x ?? y",
+            "lowers the null-coalescing operator to a ternary conditional",
+            "'??",
+            "'??=",
+            Mode = MacroMode.Passive | MacroMode.Normal)]
+        public static LNode LowerNullConditional(LNode Node, IMacroContext Sink)
+        {
+            if (!Node.Calls(CodeSymbols.NullCoalesce, 2) && !Node.Calls(CodeSymbols.NullCoalesceAssign, 2))
+                return Reject(Sink, Node, "'??' takes exactly two arguments.");
+
+            var pool = new SymbolPool();
+            var tempName = pool.Get("temp");
+            var tempNode = F.Id(tempName);
+
+            // #var(@``, temp = lhs);
+            var storeTemp = F.Var(
+                F.Id(GSymbol.Empty),
+                F.Call(
+                    CodeSymbols.Assign,
+                    tempNode,
+                    Node.Args[0]));
+
+            // temp == null ? rhs : temp
+            var ternary = F.Call(
+                CodeSymbols.QuestionMark,
+                F.Call(
+                    CodeSymbols.Eq,
+                    tempNode,
+                    F.Literal(null)),
+                Node.Args[1],
+                tempNode);
+
+            if (Node.Calls(CodeSymbols.NullCoalesceAssign))
+            {
+                // lhs = <ternary>
+                ternary = F.Call(
+                    CodeSymbols.Assign,
+                    Node.Args[0],
+                    ternary);
+            }
+
+            // { temp = lhs; #result([lhs = ] temp == null ? rhs : temp) }
+            return F.Braces(storeTemp, F.Result(ternary));
         }
     }
 }
