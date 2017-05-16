@@ -1,5 +1,8 @@
 version: 0.1.1.{build}
 
+cache:
+  - C:\Users\appveyor\AppData\Local\NuGet\Cache
+
 install:
   - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.2/compare-test.zip > compare-test.zip
   - mkdir bin
