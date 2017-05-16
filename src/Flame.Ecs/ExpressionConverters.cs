@@ -2451,7 +2451,9 @@ namespace Flame.Ecs
             var tag = new UniqueTag("for");
 
             var init = Converter.ConvertStatementBlock(Node.Args[0].Args, childScope);
-            var cond = Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
+            var cond = Node.Args[1].IsIdNamed(GSymbol.Empty)
+                ? new BooleanExpression(true)
+                : Converter.ConvertExpression(Node.Args[1], childScope, PrimitiveTypes.Boolean);
             var delta = Converter.ConvertStatementBlock(Node.Args[2].Args, childScope);
             var body = Converter.ConvertScopedStatement(
                 Node.Args[3], new FlowScope(childScope, new LocalFlow(tag, tag)));
