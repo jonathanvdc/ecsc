@@ -50,6 +50,7 @@ tests
     static-properties/StaticProperties.test;
     string-format/StringFormat.test;
     switch/Switch.test;
+    synthesized-parameterless-ctor/SynthesizedParameterlessCtor.test;
     this-keyword/ThisKeyword.test;
     unary/Unary.test;
     user-defined-conversions/UserDefinedConversions.test;
