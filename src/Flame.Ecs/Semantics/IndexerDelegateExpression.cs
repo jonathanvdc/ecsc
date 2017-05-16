@@ -86,12 +86,55 @@ namespace Flame.Ecs
 
         public IExpression CreateInvocationExpression(IEnumerable<IExpression> Arguments)
         {
-            return new PropertyVariable(Property, Target, Arguments).CreateGetExpression();
+            return new AccessIndexerExpression(Property, Target, Arguments);
         }
 
         public IDelegateExpression MakeGenericExpression(IEnumerable<IType> TypeArguments)
         {
             throw new InvalidOperationException("indexer-delegate expressions cannot be instantiated with type arguments.");
+        }
+    }
+
+    /// <summary>
+    /// An expression that accesses an indexer.
+    /// </summary>
+    public class AccessIndexerExpression : ComplexExpressionBase
+    {
+        public AccessIndexerExpression(IProperty Property, IExpression Target, IEnumerable<IExpression> Arguments)
+        {
+            this.Property = Property;
+            this.Target = Target;
+            this.Arguments = Arguments;
+        }
+
+        /// <summary>
+        /// Gets the accessor that this indexer-access expression uses.
+        /// </summary>
+        public IProperty Property { get; private set; }
+
+        /// <summary>
+        /// Gets the target expression for this indexer-access expression.
+        /// </summary>
+        public IExpression Target { get; private set; }
+
+        /// <summary>
+        /// Gets the argument list for this indexer-access expression.
+        /// </summary>
+        public IEnumerable<IExpression> Arguments { get; private set; }
+
+        /// <inheritdoc/>
+        public override IType Type
+        {
+            get
+            {
+                return Property.PropertyType;
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override IExpression Lower()
+        {
+            return new PropertyVariable(Property, Target, Arguments).CreateGetExpression();
         }
     }
 }
