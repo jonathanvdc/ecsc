@@ -5,6 +5,8 @@ using Flame.Build;
 using Flame.Build.Lazy;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
+using Flame.Compiler.Statements;
+using Flame.Compiler.Variables;
 using Flame.Ecs.Syntax;
 using System.Collections.Generic;
 
@@ -329,9 +331,56 @@ namespace Flame.Ecs
                     // Convert the type definition's members.
                     innerScope = Converter.ConvertTypeMember(item, descTy, innerScope);
                 }
-            });
+                return innerScope;
+            }, SynthesizeParameterlessConstructor);
 
             return Scope;
+        }
+
+        /// <summary>
+        /// Synthesizes a parameterless constructor for the given type if applicable.
+        /// </summary>
+        /// <param name="DeclaringType">The type to synthesize a parameterless constructor for.</param>
+        /// <param name="Scope">The type's global scope.</param>
+        private static void SynthesizeParameterlessConstructor(
+            LazyDescribedType DeclaringType, GlobalScope Scope)
+        {
+            if (DeclaringType.GetIsReferenceType()
+                && !DeclaringType.GetIsInterface()
+                && !DeclaringType.GetIsStaticType()
+                && !DeclaringType.GetConstructors().Any())
+            {
+                // Synthesize a parameterless constructor.
+                var parameterlessCtor = new DescribedBodyMethod("this", DeclaringType, PrimitiveTypes.Void, false);
+                parameterlessCtor.IsConstructor = true;
+
+                var ctorScope = Scope.CreateFunctionScope(parameterlessCtor);
+
+                var bodyStmts = new List<IStatement>();
+
+                // First order of business is to find a parameterless base constructor to call.
+                var parentType = DeclaringType.GetParent();
+
+                if (parentType != null)
+                {
+                    var parentCtors = parentType.Methods
+                        .Where(m => !m.IsStatic && m.IsConstructor)
+                        .Select(m => new GetMethodExpression(m, new ThisVariable(DeclaringType).CreateGetExpression()))
+                        .ToArray();
+
+                    var invocation = OverloadResolution.CreateCheckedInvocation(
+                        "parameterless base constructor",
+                        parentCtors,
+                        new Tuple<IExpression, SourceLocation>[] { },
+                        ctorScope,
+                        DeclaringType.GetSourceLocation());
+                    bodyStmts.Add(new ExpressionStatement(invocation));
+                }
+
+                bodyStmts.Add(new ReturnStatement());
+                parameterlessCtor.Body = new BlockStatement(bodyStmts);
+                DeclaringType.AddMethod(parameterlessCtor);
+            }
         }
 
         /// <summary>

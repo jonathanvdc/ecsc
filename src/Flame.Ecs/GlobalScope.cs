@@ -131,6 +131,15 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Creates a function scope that is enclosed by this global scope.
+        /// </summary>
+        /// <returns>A new function scope.</returns>
+        public FunctionScope CreateFunctionScope(IMethod Method)
+        {
+            return TypeMemberConverters.CreateFunctionScope(Method, this);
+        }
+
+        /// <summary>
         /// Creates a local scope that is enclosed by
         /// this global scope. The resulting local scope
         /// has no enclosing function or parameter list.

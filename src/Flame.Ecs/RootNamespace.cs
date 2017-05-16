@@ -105,21 +105,23 @@ namespace Flame.Ecs
         /// make sure to define all versions of said type before querying
         /// the type's properties or methods.
         /// </remarks>
-        public static IType DefineType<T1, T2>(
+        public static IType DefineType<T1, T2, T3>(
             this IMutableNamespace Namespace,
             UnqualifiedName Name, 
             Func<LazyDescribedType, bool, T1> PhaseOne,
             Func<LazyDescribedType, T1, T2> PhaseTwo,
-            Action<LazyDescribedType, T2> PhaseThree)
+            Func<LazyDescribedType, T2, T3> PhaseThree,
+            Action<LazyDescribedType, T3> PhaseFour)
         {
             return Namespace.DefineType(Name, 
                 new Func<LazyDescribedType, object, object>[]
                 {
                     (descTy, isRedef) => PhaseOne(descTy, (bool)isRedef),
                     (descTy, prevResult) => PhaseTwo(descTy, (T1)prevResult),
+                    (descTy, prevResult) => PhaseThree(descTy, (T2)prevResult),
                     (descTy, prevResult) =>
                     {
-                        PhaseThree(descTy, (T2)prevResult);
+                        PhaseFour(descTy, (T3)prevResult);
                         return null;
                     }
                 });
