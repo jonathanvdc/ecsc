@@ -262,10 +262,17 @@ namespace Flame.Ecs
                     return new ExpressionValue(ExpressionConverters.ErrorTypeExpression);
                 }
 
-                return new ExpressionValue(
-                    OverloadResolution.CreateCheckedInvocation(
-                        "indexer", indexers, dimExprs,
-                        Scope.Function, loc));
+                var invocation = OverloadResolution.CreateCheckedInvocation(
+                    "indexer", indexers, dimExprs,
+                    Scope.Function, loc);
+
+                if (invocation is AccessIndexerExpression)
+                {
+                    var accessExpr = (AccessIndexerExpression)invocation;
+                    return new IndexerValue(accessExpr.Property, accessExpr.Target, accessExpr.Arguments);
+                }
+
+                return new ExpressionValue(invocation);
             }
         }
 

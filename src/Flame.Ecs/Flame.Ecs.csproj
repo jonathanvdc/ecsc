@@ -191,6 +191,7 @@
     <Compile Include="Values\SourceValue.cs" />
     <Compile Include="Values\UsingBoxValue.cs" />
     <Compile Include="Values\VariableValue.cs" />
+    <Compile Include="Values\IndexerValue.cs" />
     <Compile Include="Values\IntersectionValue.cs" />
     <Compile Include="Values\FieldValue.cs" />
     <Compile Include="ResultOrError.cs" />
