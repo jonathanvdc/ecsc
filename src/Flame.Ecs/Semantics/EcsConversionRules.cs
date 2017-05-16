@@ -11,11 +11,16 @@ namespace Flame.Ecs.Semantics
     /// </summary>
     public sealed class EcsConversionRules : ConversionRules
     {
-        private EcsConversionRules()
+        public EcsConversionRules(IEnvironment Environment)
         {
+            this.Environment = Environment;
         }
 
-        public static readonly EcsConversionRules Instance = new EcsConversionRules();
+        /// <summary>
+        /// Gets a description of the run-time environment of the target platform.
+        /// </summary>
+        /// <returns>The run-time environment of the target platform.</returns>
+        public IEnvironment Environment { get; private set; }
 
         /// <summary>
         /// Classifies a conversion of the given expression to the given type.
@@ -133,7 +138,7 @@ namespace Flame.Ecs.Semantics
         /// Classifies a conversion of the given source type to the given target type.
         /// User-defined conversions are not considered.
         /// </summary>
-        public static ConversionDescription ClassifyBuiltinConversion(
+        public override ConversionDescription ClassifyBuiltinConversion(
             IType SourceType, IType TargetType)
         {
             if (SourceType.Equals(TargetType))
@@ -187,29 +192,37 @@ namespace Flame.Ecs.Semantics
             {
                 return ConversionDescription.UnboxValueConversion;
             }
-            else if (IsCSharpReferenceType(SourceType) && IsCSharpReferenceType(TargetType))
+
+            var envSourceType = Environment.GetEquivalentType(SourceType);
+            var envTargetType = Environment.GetEquivalentType(TargetType);
+            if (IsCSharpReferenceType(envSourceType) && IsCSharpReferenceType(envTargetType))
             {
-                if (HasImplicitReferenceConversion(SourceType, TargetType))
+                if (HasImplicitReferenceConversion(envSourceType, envTargetType))
                 {
                     // Implicit reference conversion.
                     return ConversionDescription.ReinterpretCast;
                 }
-                else if (HasExplicitReferenceConversion(SourceType, TargetType))
+                else if (HasExplicitReferenceConversion(envSourceType, envTargetType))
                 {
-                    // Downcast. 
+                    // Downcast.
                     return ConversionDescription.DynamicCast;
                 }
                 else
                 {
-                    return NoConversion(SourceType, TargetType);
+                    return NoConversion(envSourceType, envTargetType);
                 }
             }
-            else if (ConversionExpression.Instance.UseExplicitBox(SourceType, TargetType))
+            else if (ConversionExpression.Instance.UseExplicitBox(envSourceType, envTargetType))
             {
                 // Boxing conversion.
-                return SourceType.Is(TargetType)
-                    ? ConversionDescription.ImplicitBoxingConversion
-                    : ConversionDescription.ExplicitBoxingConversion;
+                if (envSourceType.Is(envTargetType))
+                {
+                    return ConversionDescription.ImplicitBoxingConversion;
+                }
+                else if (envSourceType.GetIsGenericParameter())
+                {
+                    return ConversionDescription.ExplicitBoxingConversion;
+                }
             }
 
             // TODO: pointer conversions
@@ -545,7 +558,7 @@ namespace Flame.Ecs.Semantics
         /// <param name="TargetType">The target type.</param>
         /// <param name="Scope">The scope in which the conversion is performed.</param>
         /// <param name="IsExplicit">Specifies if an explicit conversion is performed.</param>
-        private static IReadOnlyList<ConversionDescription> ClassifyUserDefinedConversion(
+        private IReadOnlyList<ConversionDescription> ClassifyUserDefinedConversion(
             IType SourceType, IType TargetType, 
             FunctionScope Scope, bool IsExplicit)
         {
@@ -577,7 +590,7 @@ namespace Flame.Ecs.Semantics
             return PickMostSpecificConversions(srcType, tgtType, candidates);
         }
 
-        private static IType GetMostSpecificSourceTypeImplicit(
+        private IType GetMostSpecificSourceTypeImplicit(
             IType SourceType, 
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
@@ -603,7 +616,7 @@ namespace Flame.Ecs.Semantics
                 return GetMostEncompassedType(paramTypes);
         }
 
-        private static IType GetMostSpecificSourceTypeExplicit(
+        private IType GetMostSpecificSourceTypeExplicit(
             IType SourceType, 
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
@@ -635,7 +648,7 @@ namespace Flame.Ecs.Semantics
                 return GetMostEncompassingType(paramTypes);
         }
 
-        private static IType GetMostSpecificTargetTypeImplicit(
+        private IType GetMostSpecificTargetTypeImplicit(
             IType TargetType, 
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
@@ -660,7 +673,7 @@ namespace Flame.Ecs.Semantics
                 return GetMostEncompassingType(retTypes);
         }
 
-        private static IType GetMostSpecificTargetTypeExplicit(
+        private IType GetMostSpecificTargetTypeExplicit(
             IType TargetType, 
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
@@ -728,7 +741,7 @@ namespace Flame.Ecs.Semantics
             return results;
         }
 
-        private static IReadOnlyList<UserDefinedConversionDescription> GetUserDefinedConversionCandidates(
+        private IReadOnlyList<UserDefinedConversionDescription> GetUserDefinedConversionCandidates(
             IType SourceType, IType TargetType, 
             FunctionScope Scope, bool IsExplicit)
         {
@@ -837,7 +850,7 @@ namespace Flame.Ecs.Semantics
         /// <param name="From">The source type.</param>
         /// <param name="To">The target type.</param>
         /// <param name="Scope">The enclosing scope.</param>
-        private static UserDefinedConversionDescription CreateUserDefinedConversionCandidate(
+        private UserDefinedConversionDescription CreateUserDefinedConversionCandidate(
             IMethod CandidateMethod, bool IsExplicit,
             IType From, IType To, FunctionScope Scope)
         {
@@ -889,7 +902,7 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         /// <param name="Encompasser">The first type.</param>
         /// <param name="Encompassed">The second type.</param>
-        private static ConversionDescription GetEncompassingConversion(
+        private ConversionDescription GetEncompassingConversion(
             IType From, IType To)
         {
             // The spec says that 
@@ -926,7 +939,7 @@ namespace Flame.Ecs.Semantics
         /// <returns>The standard conversion.</returns>
         /// <param name="From">The type to convert from.</param>
         /// <param name="To">The type to convert to.</param>
-        private static ConversionDescription GetStandardConversion(
+        private ConversionDescription GetStandardConversion(
             IType From, IType To)
         {
             var implicitConv = GetEncompassingConversion(From, To);
@@ -973,7 +986,7 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         /// <returns>The most encompassed type.</returns>
         /// <param name="Types">The set of types to search for a most encompassed type.</param>
-        private static IType GetMostEncompassedType(IEnumerable<IType> Types)
+        private IType GetMostEncompassedType(IEnumerable<IType> Types)
         {
             // Quote from the spec:
             // 
@@ -994,7 +1007,7 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         /// <returns>The most encompassing type.</returns>
         /// <param name="Types">The set of types to search for a most encompassing type.</param>
-        private static IType GetMostEncompassingType(IEnumerable<IType> Types)
+        private IType GetMostEncompassingType(IEnumerable<IType> Types)
         {
             // Quote from the spec:
             // 
@@ -1015,7 +1028,7 @@ namespace Flame.Ecs.Semantics
         /// <returns><c>true</c> if the first type is encompassed by the second; otherwise, <c>false</c>.</returns>
         /// <param name="Encompassed">The first type.</param>
         /// <param name="Encompasser">The second type.</param>
-        private static bool IsEncompassedBy(IType Encompassed, IType Encompasser)
+        private bool IsEncompassedBy(IType Encompassed, IType Encompasser)
         {
             return GetEncompassingConversion(Encompassed, Encompasser).Exists;
         }
@@ -1025,7 +1038,7 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         /// <param name="First">The first type.</param>
         /// <param name="Second">The second type.</param>
-        private static Betterness Encompassed(IType First, IType Second)
+        private Betterness Encompassed(IType First, IType Second)
         {
             bool firstEncompassedBySecond = IsEncompassedBy(First, Second);
             bool secondEncompassedByFirst = IsEncompassedBy(Second, First);
@@ -1050,12 +1063,12 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         /// <param name="First">The first type.</param>
         /// <param name="Second">The second type.</param>
-        private static Betterness Encompasses(IType First, IType Second)
+        private Betterness Encompasses(IType First, IType Second)
         {
             return Encompassed(First, Second).Flip();
         }
 
-        private static IReadOnlyList<ConversionDescription> ClassifyMethodGroupConversion(
+        private IReadOnlyList<ConversionDescription> ClassifyMethodGroupConversion(
             IEnumerable<IExpression> SourceSignatures, IMethod TargetSignature, FunctionScope Scope)
         {
             // The spec on method group conversions:
@@ -1141,7 +1154,7 @@ namespace Flame.Ecs.Semantics
         /// The signature of the delegate value whose compatiblity with the reference delegate type is examined.</param>
         /// <param name="ReferenceSignature">The signature of the reference delegate type.</param>
         /// <returns><c>true</c> if the first signature is compatible with the second; otherwise, <c>false</c>.</returns>
-        public static bool IsCompatibleDelegate(IMethod CompatibleSignature, IMethod ReferenceSignature)
+        public bool IsCompatibleDelegate(IMethod CompatibleSignature, IMethod ReferenceSignature)
         {
             // According to the spec,
             //

@@ -609,7 +609,7 @@ namespace Flame.Ecs
             // Check that 'Excluding user-defined conversions, 
             // a conversion does not exist from S to T or 
             // from T to S.'
-            if (EcsConversionRules.ClassifyBuiltinConversion(
+            if (Scope.ConversionRules.ClassifyBuiltinConversion(
                 sourceType, targetType).Exists)
             {
                 var renderer = Scope.CreateAbbreviatingRenderer(sourceType, targetType);

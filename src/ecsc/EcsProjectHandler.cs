@@ -201,7 +201,7 @@ namespace ecsc
             var converter = NodeConverter.DefaultNodeConverter;
             NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var globalScope = new GlobalScope(
-                Binder, EcsConversionRules.Instance,
+                Binder, new EcsConversionRules(Binder.Environment),
                 Log, EcsTypeRenderer.Instance,
                 Log.Options.GetDocumentationParser());
 

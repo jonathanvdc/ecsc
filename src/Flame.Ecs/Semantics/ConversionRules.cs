@@ -27,6 +27,15 @@ namespace Flame.Ecs.Semantics
         /// </summary>
         public abstract IReadOnlyList<ConversionDescription> ClassifyConversion(
             IType SourceType, IType TargetType, FunctionScope Scope);
+
+        /// <summary>
+        /// Classifies a built-in conversion of the given source type to the given target type.
+        /// </summary>
+        /// <param name="SourceType">The type of an expression to convert.</param>
+        /// <param name="TargetType">The type to convert an expression to.</param>
+        /// <returns>A conversion description.</returns>
+        public abstract ConversionDescription ClassifyBuiltinConversion(
+            IType SourceType, IType TargetType);
     }
 }
 
