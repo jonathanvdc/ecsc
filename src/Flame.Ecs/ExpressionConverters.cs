@@ -1641,24 +1641,27 @@ namespace Flame.Ecs
             // the back-end.
             if (toStringMethods.Length == 0)
             {
-                var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
-                fScope.Global.Log.LogError(new LogEntry(
-                    "missing conversion",
-                    NodeHelpers.HighlightEven(
-                        "value of type '", abbreviatingNamer.Name(valTy),
-                        "' cannot not be converted to type '",
-                        abbreviatingNamer.Name(PrimitiveTypes.String),
-                        "', because it does not have a parameterless, non-generic '",
-                        "ToString", "' method that returns a '",
-                        abbreviatingNamer.Name(PrimitiveTypes.String),
-                        "' instance."),
-                    Location));
+                if (!valTy.Equals(ErrorType.Instance))
+                {
+                    var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
+                    fScope.Global.Log.LogError(new LogEntry(
+                        "missing conversion",
+                        NodeHelpers.HighlightEven(
+                            "value of type '", abbreviatingNamer.Name(valTy),
+                            "' cannot not be converted to type '",
+                            abbreviatingNamer.Name(PrimitiveTypes.String),
+                            "', because it does not have a parameterless, non-generic '",
+                            "ToString", "' method that returns a '",
+                            abbreviatingNamer.Name(PrimitiveTypes.String),
+                            "' instance."),
+                        Location));
+                }
                 return new UnknownExpression(PrimitiveTypes.String);
             }
             else if (toStringMethods.Length > 1)
             {
-                var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
                 // This shouldn't happen, but we should check for it anyway.
+                var abbreviatingNamer = fScope.Global.CreateAbbreviatingRenderer(valTy, PrimitiveTypes.String);
                 fScope.Global.Log.LogError(new LogEntry(
                     "missing conversion",
                     NodeHelpers.HighlightEven(
