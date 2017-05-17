@@ -1489,7 +1489,7 @@ namespace Flame.Ecs
                                     loc.CreateDiagnosticsNode(),
                                     fieldDecls[fieldName].GetSourceLocation()
                                         .CreateRemarkDiagnosticsNode("previous declaration: ")
-                                    })));
+                                })));
                     continue;
                 }
 
