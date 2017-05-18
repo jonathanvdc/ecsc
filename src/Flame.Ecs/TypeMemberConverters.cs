@@ -1529,18 +1529,30 @@ namespace Flame.Ecs
             BasePropertySpec BaseProperties,
             GlobalScope Scope, NodeConverter Converter)
         {
-            bool isGetter = Node.Calls(CodeSymbols.get) || Node.IsIdNamed(CodeSymbols.get);
-            if (!isGetter && !Node.Calls(CodeSymbols.set) && !Node.IsIdNamed(CodeSymbols.set))
+            bool usesArrowSyntax = Node.Calls(CodeSymbols.Lambda, 2);
+            var accessorName = usesArrowSyntax
+                ? Node.Args[0]
+                : (Node.IsCall
+                    ? Node.Target
+                    : Node);
+
+            var accessorBody = usesArrowSyntax
+                ? Node.Args[1]
+                : (Node.ArgCount > 0
+                    ? Node.Args[0]
+                    : null);
+
+            bool isGetter = accessorName.IsIdNamed(CodeSymbols.get);
+            if (!isGetter && !accessorName.IsIdNamed(CodeSymbols.set))
             {
-                // The given node is neither a 'get' nor a 'set'
-                // call.
+                // The given node is neither a 'get' nor a 'set' call.
                 LogInvalidAccessorName(
                     Scope.Log, 
                     NodeHelpers.ToSourceLocation(Node.Range));
                 return;
             }
             
-            if (!NodeHelpers.CheckMaxArity(Node, 1, Scope.Log))
+            if (!usesArrowSyntax && !NodeHelpers.CheckMaxArity(Node, 1, Scope.Log))
                 return;
 
             var accKind = isGetter 
@@ -1586,7 +1598,7 @@ namespace Flame.Ecs
                 bool isAbstract = DeclaringProperty.GetIsAbstract() 
                     || DeclaringProperty.DeclaringType.GetIsInterface();
 
-                if (Node.ArgCount == 0)
+                if (accessorBody == null)
                 {
                     // Accessor doesn't have a body.
                     if (!isAbstract)
@@ -1629,8 +1641,8 @@ namespace Flame.Ecs
                     }
                     // Analyze the body.
                     accDef.Body = ExpressionConverters.AutoReturn(
-                        accDef.ReturnType, Converter.ConvertExpression(Node.Args[0], localScope), 
-                        NodeHelpers.ToSourceLocation(Node.Args[0].Range), localScope.Function);  
+                        accDef.ReturnType, Converter.ConvertExpression(accessorBody, localScope), 
+                        NodeHelpers.ToSourceLocation(accessorBody.Range), localScope.Function);  
                 }
             });
 
