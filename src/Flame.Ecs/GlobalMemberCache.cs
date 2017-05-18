@@ -53,7 +53,18 @@ namespace Flame.Ecs
         /// <inheritdoc/>
         public override IReadOnlyList<IType> GetBaseTypes(IType Type)
         {
-            return Environment.GetEquivalentType(Type).BaseTypes.ToArray();
+            var results = Environment.GetEquivalentType(Type).BaseTypes.ToArray();
+            if (Type.GetIsGenericParameter() && results.All(t => t.GetIsInterface()))
+            {
+                var extendedResults = new IType[results.Length + 1];
+                extendedResults[0] = Environment.RootType;
+                Array.Copy(results, 0, extendedResults, 1, results.Length);
+                return extendedResults;
+            }
+            else
+            {
+                return results;
+            }
         }
 
         private IEnumerable<IProperty> GetVisibleIndexers(
