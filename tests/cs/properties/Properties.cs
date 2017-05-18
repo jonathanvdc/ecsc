@@ -24,6 +24,12 @@ public struct Vector2
         }
     }
 
+    public double this[uint i]
+    {
+        get => this[(int)i];
+        private set => this[(uint)i] = value;
+    }
+
     public double this[long i] => i == 1 ? Y : X;
 
     public double LengthSquared
