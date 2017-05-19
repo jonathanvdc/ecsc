@@ -2,6 +2,7 @@
 tests
 {
     cs/all.test;
+    cs-7.0/all.test;
     cs-errors/all.test;
     warnings/all.test;
     ecs/all.test;

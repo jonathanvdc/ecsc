@@ -9,7 +9,7 @@ public struct Vector2
     }
 
     private double x;
-    public double X { get { return x; } private set { x = value; } }
+    public double X { get => x; private set => x = value; }
     public double Y { get; private set; }
 
     public double this[int i]
@@ -28,7 +28,7 @@ public struct Vector2
 
     public double LengthSquared
     {
-        get { return X * X + Y * Y; }
+        get => return X * X + Y * Y;
     }
 
     public double Length => Math.Sqrt(LengthSquared);

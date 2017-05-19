@@ -1,0 +1,39 @@
+init
+{
+    template CSharp7Test<Filename>
+    {
+        build
+        {
+            $(compiler) $(Filename).cs $(Flags);
+        }
+
+        run
+        {
+            return = @($(net-runtime) $(Executable));
+        }
+
+        configs
+        {
+            EcscOg
+            {
+                compiler = $ecsc;
+                Flags = -Og -platform clr -o $(Executable);
+            }
+            EcscO3
+            {
+                compiler = $ecsc;
+                Flags = -O3 -platform clr -o $(Executable);
+            }
+        }
+
+        init
+        {
+            Executable = bin/$(Filename).exe;
+        }
+    }
+}
+
+tests
+{
+    expression-bodied-accessors/ExpressionBodiedAccessors.test;
+}
