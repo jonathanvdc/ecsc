@@ -19,8 +19,7 @@ namespace Flame.Ecs
         /// <summary>
         /// Gets the sequence of assembly-targeting attributes defined in this namespace.
         /// </summary>
-        /// <returns></returns>
-        IEnumerable<IAttribute> AssemblyAttributes { get; }
+        IEnumerable<IAttribute> GetAssemblyAttributes();
 
         /// <summary>
         /// Defines a type with the given name. A sequence of callbacks
@@ -54,11 +53,11 @@ namespace Flame.Ecs
         IMutableNamespace DefineNamespace(string Name);
 
         /// <summary>
-        /// Tries to add an assembly attribute to this namespace.
+        /// Tries to add a sequence of assembly attribute to this namespace.
         /// </summary>
-        /// <param name="Attribute">The assembly attribute.</param>
-        /// <returns><c>true</c> if the assembly attribute was added; otherwise, <c>false</c>.</returns>
-        bool AddAssemblyAttribute(IAttribute Attribute);
+        /// <param name="Attribute">The sequence of assembly attributes to add.</param>
+        /// <returns><c>true</c> if the assembly attribute were added; otherwise, <c>false</c>.</returns>
+        bool AddAssemblyAttributes(Lazy<IEnumerable<IAttribute>> Attribute);
     }
 
     public static class MutableNamespaceExtensions
@@ -244,7 +243,7 @@ namespace Flame.Ecs
         {
             this.typeManager = new PartialTypeManager(CreateType);
             this.nsBranches = new ConcurrentDictionary<string, ChildNamespace>();
-            this.assemblyAttrs = new List<IAttribute>();
+            this.assemblyAttrs = new List<Lazy<IEnumerable<IAttribute>>>();
         }
 
         public abstract IAssembly DeclaringAssembly { get; }
@@ -262,10 +261,18 @@ namespace Flame.Ecs
 
         public IEnumerable<INamespaceBranch> Namespaces { get { return nsBranches.Values; } }
 
-        private List<IAttribute> assemblyAttrs;
+        private List<Lazy<IEnumerable<IAttribute>>> assemblyAttrs;
 
         /// <inheritdoc/>
-        public IEnumerable<IAttribute> AssemblyAttributes => assemblyAttrs;
+        public IEnumerable<IAttribute> GetAssemblyAttributes()
+        {
+            var results = new List<IAttribute>();
+            foreach (var item in assemblyAttrs)
+            {
+                results.AddRange(item.Value);
+            }
+            return results;
+        }
 
         private LazyDescribedType CreateType(
             UnqualifiedName Name, 
@@ -290,9 +297,9 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public bool AddAssemblyAttribute(IAttribute Attribute)
+        public bool AddAssemblyAttributes(Lazy<IEnumerable<IAttribute>> Attributes)
         {
-            assemblyAttrs.Add(Attribute);
+            assemblyAttrs.Add(Attributes);
             return true;
         }
     }
@@ -370,7 +377,10 @@ namespace Flame.Ecs
 
         public AttributeMap Attributes { get { return Type.Attributes; } }
 
-        public IEnumerable<IAttribute> AssemblyAttributes => Enumerable.Empty<IAttribute>();
+        public IEnumerable<IAttribute> GetAssemblyAttributes()
+        {
+            return Enumerable.Empty<IAttribute>();
+        }
 
         private PartialTypeManager typeManager;
 
@@ -401,7 +411,7 @@ namespace Flame.Ecs
         }
 
         /// <inheritdoc/>
-        public bool AddAssemblyAttribute(IAttribute Attribute)
+        public bool AddAssemblyAttributes(Lazy<IEnumerable<IAttribute>> Attribute)
         {
             return false;
         }

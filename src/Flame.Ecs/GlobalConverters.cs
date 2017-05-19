@@ -9,6 +9,8 @@ using Flame.Compiler.Statements;
 using Flame.Compiler.Variables;
 using Flame.Ecs.Syntax;
 using System.Collections.Generic;
+using Flame.Ecs.Diagnostics;
+using Pixie;
 
 namespace Flame.Ecs
 {
@@ -585,6 +587,53 @@ namespace Flame.Ecs
                         fieldDef.Value = new DefaultValueExpression(UnderlyingType).Optimize();
                     }
                 });
+        }
+
+        /// <summary>
+        /// Converts an assembly attribute. These attributes are identified by their
+        /// type: #assembly.
+        /// </summary>
+        /// <param name="Node">The assembly attribute node.</param>
+        /// <param name="Namespace">The namespace that defines the assembly attribute.</param>
+        /// <param name="Scope">The global scope.</param>
+        /// <param name="Converter">The node converter.</param>
+        /// <returns>The global scope.</returns>
+        public static GlobalScope ConvertAssemblyAttribute(
+            LNode Node, IMutableNamespace Namespace, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+            {
+                return Scope;
+            }
+
+            var dummyType = new DescribedType(
+                new SimpleName("assembly"),
+                null);
+
+            var asmAttribute = new Lazy<IEnumerable<IAttribute>>(() =>
+                Converter.ConvertAttribute(
+                    Node.Args[0],
+                    Scope.CreateLocalScope(dummyType)));
+
+            var shouldLogWarning = EcsWarnings.CustomAttributeIgnoredWarning
+                .UseWarning(Scope.Log.Options);
+
+            if (!Namespace.AddAssemblyAttributes(asmAttribute) && shouldLogWarning)
+            {
+                Scope.Log.LogWarning(
+                    new LogEntry(
+                        "attribute ignored",
+                        EcsWarnings.CustomAttributeIgnoredWarning.CreateMessage(
+                            new MarkupNode(
+                                "warning_message",
+                                NodeHelpers.HighlightEven(
+                                    "this '", "assembly", "' attribute is not meaningful here and will be ignored. " +
+                                    "Try moving it to the top-level namespace. "))),
+                        NodeHelpers.ToSourceLocation(Node.Target.Range)));
+            }
+
+            return Scope;
         }
     }
 }

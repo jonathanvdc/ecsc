@@ -614,6 +614,7 @@ namespace Flame.Ecs
                 result.AddGlobalConverter(CodeSymbols.Struct, GlobalConverters.ConvertStructDefinition);
                 result.AddGlobalConverter(CodeSymbols.Interface, GlobalConverters.ConvertInterfaceDefinition);
                 result.AddGlobalConverter(CodeSymbols.Enum, GlobalConverters.ConvertEnumDefinition);
+                result.AddGlobalConverter(CodeSymbols.Assembly, GlobalConverters.ConvertAssemblyAttribute);
 
                 // Type members
                 result.AddMemberConverter(CodeSymbols.Fn, TypeMemberConverters.ConvertFunction);

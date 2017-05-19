@@ -88,8 +88,8 @@ namespace ecsc
             var asm = new LazyDescribedAssembly(new SimpleName(name), extBinder.Environment, descAsm =>
             {
                 descAsm.AddNamespace(mainNs);
-                AddAssemblyAttributes(descAsm, mainNs);
                 descAsm.EntryPoint = EntryPointHelpers.InferEntryPoint(descAsm, Parameters.Log);
+                AddAssemblyAttributes(descAsm, mainNs);
             });
 
             var asmBinder = new CachingBinder(new DualBinder(asm.CreateBinder(), extBinder));
@@ -100,10 +100,14 @@ namespace ecsc
 
         private static void AddAssemblyAttributes(LazyDescribedAssembly Assembly, INamespaceBranch Namespace)
         {
-            if (Namespace is IMutableNamespace)
+            if (Namespace == null)
+            {
+                return;
+            }
+            else if (Namespace is IMutableNamespace)
             {
                 var mutNs = (IMutableNamespace)Namespace;
-                Assembly.AddAttributes(mutNs.AssemblyAttributes);
+                Assembly.AddAttributes(mutNs.GetAssemblyAttributes());
             }
             foreach (var child in Namespace.Namespaces)
             {

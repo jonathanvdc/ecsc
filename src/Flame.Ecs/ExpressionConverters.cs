@@ -2503,7 +2503,12 @@ namespace Flame.Ecs
                 return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope);
+            var ty = Converter.ConvertCheckedType(Node.Args[1], Scope);
+
+            if (ty == null)
+            {
+                return ErrorTypeExpression;
+            }
 
             // In an operation of the form E as T, E must be an expression and T must be a
             // reference type, a type parameter known to be a reference type, or a nullable type.
@@ -2631,7 +2636,13 @@ namespace Flame.Ecs
                 return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope);
+            var ty = Converter.ConvertCheckedType(Node.Args[1], Scope);
+
+            if (ty == null)
+            {
+                return ErrorTypeExpression;
+            }
+
             var result = new IsExpression(op, ty);
 
             if (ty.GetIsStaticType())
@@ -2706,7 +2717,12 @@ namespace Flame.Ecs
                 return ErrorTypeExpression;
 
             var op = Converter.ConvertExpression(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope);
+            var ty = Converter.ConvertCheckedType(Node.Args[1], Scope);
+
+            if (ty == null)
+            {
+                return ErrorTypeExpression;
+            }
 
             return Scope.Function.ConvertExplicit(
                 op, ty, NodeHelpers.ToSourceLocation(Node.Range));
@@ -2734,7 +2750,12 @@ namespace Flame.Ecs
             // where `x` is a struct and `T` is not.
 
             var op = Converter.ConvertValue(Node.Args[0], Scope);
-            var ty = Converter.ConvertType(Node.Args[1], Scope);
+            var ty = Converter.ConvertCheckedType(Node.Args[1], Scope);
+
+            if (ty == null)
+            {
+                return new ExpressionValue(ErrorTypeExpression);
+            }
 
             var expr = op.CreateGetExpressionOrError(Scope, NodeHelpers.ToSourceLocation(Node.Range));
             var implConv = Scope.Function.GetImplicitConversion(

@@ -50,6 +50,16 @@ namespace Flame.Ecs.Diagnostics
             new WarningDescription("duplicate-access-modifier", Warnings.Instance.All);
 
         /// <summary>
+        /// The -Wcustom-attribute-ignored warning, which tells people when they've
+        /// placed a custom attribute someplace where it will be ignored.
+        /// </summary>
+        /// <remarks>
+        /// This is a -Wall warning.
+        /// </remarks>
+        public static readonly WarningDescription CustomAttributeIgnoredWarning =
+            new WarningDescription("custom-attribute-ignored", Warnings.Instance.All);
+
+        /// <summary>
         /// The -Winvalid-main-sig warning.
         /// </summary>
         /// <remarks>
