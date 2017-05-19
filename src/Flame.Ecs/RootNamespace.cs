@@ -17,6 +17,12 @@ namespace Flame.Ecs
     public interface IMutableNamespace : IMember
     {
         /// <summary>
+        /// Gets the sequence of assembly-targeting attributes defined in this namespace.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<IAttribute> AssemblyAttributes { get; }
+
+        /// <summary>
         /// Defines a type with the given name. A sequence of callbacks
         /// is used to analyze the type's body.
         /// </summary>
@@ -46,6 +52,13 @@ namespace Flame.Ecs
         /// <returns>The child namespace.</returns>
         /// <param name="Name">The child namespace's name.</param>
         IMutableNamespace DefineNamespace(string Name);
+
+        /// <summary>
+        /// Tries to add an assembly attribute to this namespace.
+        /// </summary>
+        /// <param name="Attribute">The assembly attribute.</param>
+        /// <returns><c>true</c> if the assembly attribute was added; otherwise, <c>false</c>.</returns>
+        bool AddAssemblyAttribute(IAttribute Attribute);
     }
 
     public static class MutableNamespaceExtensions
@@ -231,6 +244,7 @@ namespace Flame.Ecs
         {
             this.typeManager = new PartialTypeManager(CreateType);
             this.nsBranches = new ConcurrentDictionary<string, ChildNamespace>();
+            this.assemblyAttrs = new List<IAttribute>();
         }
 
         public abstract IAssembly DeclaringAssembly { get; }
@@ -247,6 +261,11 @@ namespace Flame.Ecs
         public IEnumerable<IType> Types { get { return typeManager.Types; } }
 
         public IEnumerable<INamespaceBranch> Namespaces { get { return nsBranches.Values; } }
+
+        private List<IAttribute> assemblyAttrs;
+
+        /// <inheritdoc/>
+        public IEnumerable<IAttribute> AssemblyAttributes => assemblyAttrs;
 
         private LazyDescribedType CreateType(
             UnqualifiedName Name, 
@@ -268,6 +287,13 @@ namespace Flame.Ecs
         {
             return nsBranches.GetOrAdd(
                 Name, name => new ChildNamespace(new SimpleName(name), this));
+        }
+
+        /// <inheritdoc/>
+        public bool AddAssemblyAttribute(IAttribute Attribute)
+        {
+            assemblyAttrs.Add(Attribute);
+            return true;
         }
     }
 
@@ -344,6 +370,8 @@ namespace Flame.Ecs
 
         public AttributeMap Attributes { get { return Type.Attributes; } }
 
+        public IEnumerable<IAttribute> AssemblyAttributes => Enumerable.Empty<IAttribute>();
+
         private PartialTypeManager typeManager;
 
         private LazyDescribedType CreateType(
@@ -370,6 +398,12 @@ namespace Flame.Ecs
                 new SimpleName(Name), (descTy, isRedef) =>
             {
             }));
+        }
+
+        /// <inheritdoc/>
+        public bool AddAssemblyAttribute(IAttribute Attribute)
+        {
+            return false;
         }
     }
 }

@@ -88,6 +88,7 @@ namespace ecsc
             var asm = new LazyDescribedAssembly(new SimpleName(name), extBinder.Environment, descAsm =>
             {
                 descAsm.AddNamespace(mainNs);
+                AddAssemblyAttributes(descAsm, mainNs);
                 descAsm.EntryPoint = EntryPointHelpers.InferEntryPoint(descAsm, Parameters.Log);
             });
 
@@ -95,6 +96,19 @@ namespace ecsc
             mainNs = await ParseCompilationUnitsAsync(Project.GetSourceItems(), Parameters, asmBinder, asm);
 
             return asm;
+        }
+
+        private static void AddAssemblyAttributes(LazyDescribedAssembly Assembly, INamespaceBranch Namespace)
+        {
+            if (Namespace is IMutableNamespace)
+            {
+                var mutNs = (IMutableNamespace)Namespace;
+                Assembly.AddAttributes(mutNs.AssemblyAttributes);
+            }
+            foreach (var child in Namespace.Namespaces)
+            {
+                AddAssemblyAttributes(Assembly, child);
+            }
         }
 
         private static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
