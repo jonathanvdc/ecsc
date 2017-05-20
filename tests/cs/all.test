@@ -20,6 +20,7 @@ tests
     foreach/Foreach.test;
     fractal/Fractal.test;
     generic-constraints/GenericConstraints.test;
+    generic-parameter-object/GenericParameterObject.test;
     generics/Generics.test;
     hello-world/HelloWorld.test;
     in-place-construction/InPlaceConstruction.test;
@@ -48,6 +49,7 @@ tests
     sealed/Sealed.test;
     sequence-equal/SequenceEqual.test;
     static-properties/StaticProperties.test;
+    string-as-enumerable/StringAsEnumerable.test;
     string-format/StringFormat.test;
     switch/Switch.test;
     synthesized-parameterless-ctor/SynthesizedParameterlessCtor.test;
