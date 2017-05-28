@@ -24,5 +24,8 @@ public static class Program
         Console.WriteLine(((Foo)foo.Clone()).CloneCounter);
         Console.WriteLine(((Foo)BoxAndCast<Foo>(foo).Clone()).CloneCounter);
         Console.WriteLine(foo.CloneCounter);
+
+        object i = 42;
+        Console.WriteLine((int)i);
     }
 }
