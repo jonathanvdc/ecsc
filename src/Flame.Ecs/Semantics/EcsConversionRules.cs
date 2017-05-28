@@ -201,7 +201,9 @@ namespace Flame.Ecs.Semantics
             var envSourceType = Environment.GetEquivalentType(SourceType);
             var envTargetType = Environment.GetEquivalentType(TargetType);
             if (IsCSharpReferenceType(envSourceType)
-                && IsCSharpValueType(envTargetType)
+                && (IsCSharpValueType(envTargetType) ||
+                    (envTargetType.GetIsGenericParameter()
+                    && !IsCSharpReferenceType(envTargetType)))
                 && envTargetType.Is(envSourceType))
             {
                 // Here's what the C# spec says about unboxing conversions:
@@ -215,6 +217,35 @@ namespace Flame.Ecs.Semantics
                 //
                 //     [...]
                 //
+                //     The following explicit conversions exist for a given type parameter `T`:
+                //
+                //         *  From the effective base class `C` of `T` to `T` and from any
+                //            base class of `C` to `T`. At run-time, if `T` is a value type,
+                //            the conversion is executed as an unboxing conversion. Otherwise,
+                //            the conversion is executed as an explicit reference conversion or
+                //            identity conversion.
+                //
+                //         *  From any interface type to `T`. At run-time, if `T` is a value type,
+                //            the conversion is executed as an unboxing conversion. Otherwise, the
+                //            conversion is executed as an explicit reference conversion or identity
+                //            conversion.
+                //
+                //         *  From `T` to any *interface_type* `I` provided there is not already an
+                //            implicit conversion from `T` to `I`. At run-time, if `T` is a value type,
+                //            the conversion is executed as a boxing conversion followed by an explicit
+                //            reference conversion. Otherwise, the conversion is executed as an explicit
+                //            reference conversion or identity conversion.
+                //
+                //         *  From a type parameter `U` to `T`, provided `T` depends on `U`.
+                //            At run-time, if `U` is a value type, then `T` and `U` are necessarily
+                //            the same type and no conversion is performed. Otherwise, if `T` is a
+                //            value type, the conversion is executed as an unboxing conversion.
+                //            Otherwise, the conversion is executed as an explicit reference
+                //            conversion or identity conversion.
+                //
+                //     If `T` is known to be a reference type, the conversions above are all classified
+                //     as explicit reference conversions. If `T` is not known to be a reference type,
+                //     the conversions above are classified as unboxing conversions.
                 //
                 // To implement this spec excerpt, we simply test if the environment equivalent
                 // of the target type is a subtype of the environment equivalent of the source
