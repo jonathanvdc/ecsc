@@ -85,6 +85,15 @@ namespace Flame.Ecs.Semantics
             return Type.GetIsReferenceType() && !Type.GetIsEnum();
         }
 
+        /// <summary>
+        /// Checks if the given type is a C# value type.
+        /// This includes enum types.
+        /// </summary>
+        public static bool IsCSharpValueType(IType Type)
+        {
+            return Type.GetIsValueType() || Type.GetIsEnum();
+        }
+
         private static ConversionDescription NoConversion(
             IType SourceType, IType TargetType)
         {
@@ -121,7 +130,7 @@ namespace Flame.Ecs.Semantics
             // Try implicit user-defined conversions.
             var implicitUserDefConv = ClassifyUserDefinedConversion(
                 SourceType, TargetType, Scope, false);
-            
+
             if (implicitUserDefConv.Count > 0)
                 return implicitUserDefConv;
 
@@ -188,13 +197,32 @@ namespace Flame.Ecs.Semantics
                 // integer-to-enum
                 return ConversionDescription.NumberToEnumStaticCast;
             }
-            else if (ConversionExpression.Instance.UseUnboxValue(SourceType, TargetType))
-            {
-                return ConversionDescription.UnboxValueConversion;
-            }
 
             var envSourceType = Environment.GetEquivalentType(SourceType);
             var envTargetType = Environment.GetEquivalentType(TargetType);
+            if (IsCSharpReferenceType(envSourceType)
+                && IsCSharpValueType(envTargetType)
+                && envTargetType.Is(envSourceType))
+            {
+                // Here's what the C# spec says about unboxing conversions:
+                //
+                //     An unboxing conversion permits a reference type to be explicitly
+                //     converted to a *value_type*. An unboxing conversion exists from the
+                //     types `object`, `dynamic` and `System.ValueType` to any
+                //     *non_nullable_value_type*, and from any *interface_type* to any
+                //     *non_nullable_value_type* that implements the *interface_type*.
+                //     Furthermore type `System.Enum` can be unboxed to any *enum_type*.
+                //
+                //     [...]
+                //
+                //
+                // To implement this spec excerpt, we simply test if the environment equivalent
+                // of the target type is a subtype of the environment equivalent of the source
+                // type. We also make sure that the source type is a reference type and the
+                // target type a value type.
+                return ConversionDescription.UnboxValueConversion;
+            }
+
             if (IsCSharpReferenceType(envSourceType) && IsCSharpReferenceType(envTargetType))
             {
                 if (HasImplicitReferenceConversion(envSourceType, envTargetType))
@@ -251,34 +279,34 @@ namespace Flame.Ecs.Semantics
             // *  From any class_type S to any class_type T, provided S is derived from T.
             // *  From any class_type S to any interface_type T, provided S implements T.
             // *  From any interface_type S to any interface_type T, provided S is derived from T.
-            // *  From an array_type S with an element type SE to an array_type T with an element 
+            // *  From an array_type S with an element type SE to an array_type T with an element
             //    type TE, provided all of the following are true:
-            //     *  S and T differ only in element type. In other words, S and T have the same 
+            //     *  S and T differ only in element type. In other words, S and T have the same
             //        number of dimensions.
             //     *  Both SE and TE are reference_types.
             //     *  An implicit reference conversion exists from SE to TE.
             // *  From any array_type to System.Array and the interfaces it implements.
-            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
-            //    and its base interfaces, provided that there is an implicit identity or 
+            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T>
+            //    and its base interfaces, provided that there is an implicit identity or
             //    reference conversion from S to T.
             // *  From any delegate_type to System.Delegate and the interfaces it implements.
             // *  From the null literal to any reference_type.
-            // *  From any reference_type to a reference_type T if it has an implicit identity 
-            //    or reference conversion to a reference_type T0 and T0 has an identity conversion 
+            // *  From any reference_type to a reference_type T if it has an implicit identity
+            //    or reference conversion to a reference_type T0 and T0 has an identity conversion
             //    to T.
-            // *  From any reference_type to an interface or delegate type T if it has an implicit 
-            //    identity or reference conversion to an interface or delegate type T0 and T0 is 
+            // *  From any reference_type to an interface or delegate type T if it has an implicit
+            //    identity or reference conversion to an interface or delegate type T0 and T0 is
             //    variance-convertible (Variance conversion) to T.
-            // *  Implicit conversions involving type parameters that are known to be reference 
-            //    types. See Implicit conversions involving type parameters for more details 
+            // *  Implicit conversions involving type parameters that are known to be reference
+            //    types. See Implicit conversions involving type parameters for more details
             //    on implicit conversions involving type parameters.
             //
-            // The implicit reference conversions are those conversions between reference_types 
+            // The implicit reference conversions are those conversions between reference_types
             // that can be proven to always succeed, and therefore require no checks at run-time.
             //
-            // Reference conversions, implicit or explicit, never change the referential identity 
-            // of the object being converted. In other words, while a reference conversion may 
-            // change the type of the reference, it never changes the type or value of the object 
+            // Reference conversions, implicit or explicit, never change the referential identity
+            // of the object being converted. In other words, while a reference conversion may
+            // change the type of the reference, it never changes the type or value of the object
             // being referred to.
 
             if (TargetReferenceType.GetIsRootType())
@@ -297,18 +325,18 @@ namespace Flame.Ecs.Semantics
                     && HasImplicitReferenceConversion(
                         srcArr.ElementType, tgtArr.ElementType);
                 }
-                // TODO: implement the conversion rules listed below. They are somewhat 
-                // troublesome to implement because relying on specific type names 
+                // TODO: implement the conversion rules listed below. They are somewhat
+                // troublesome to implement because relying on specific type names
                 // constrains us to a specific standard library. Ideally, we'd get this
                 // information from the back-end in the future.
-                // 
+                //
                 // *  From any array_type to System.Array and the interfaces it implements.
-                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
-                //    and its base interfaces, provided that there is an implicit identity or 
+                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T>
+                //    and its base interfaces, provided that there is an implicit identity or
                 //    reference conversion from S to T.
                 //
                 // HACK: allow conversions from S[] to IEnumerable<T> as a temporary fix.
-                else if (srcArr.ArrayRank == 1 
+                else if (srcArr.ArrayRank == 1
                     && TargetReferenceType.GetIsEnumerableType())
                 {
                     var enumerableElemType = TargetReferenceType.GetEnumerableElementType();
@@ -354,53 +382,53 @@ namespace Flame.Ecs.Semantics
             // The explicit reference conversions are:
             // *  From object and dynamic to any other reference_type.
             // *  From any class_type S to any class_type T, provided S is a base class of T.
-            // *  From any class_type S to any interface_type T, provided S is not sealed and 
+            // *  From any class_type S to any interface_type T, provided S is not sealed and
             //    provided S does not implement T.
-            // *  From any interface_type S to any class_type T, provided T is not sealed or 
+            // *  From any interface_type S to any class_type T, provided T is not sealed or
             //    provided T implements S.
-            // *  From any interface_type S to any interface_type T, provided S is not derived 
+            // *  From any interface_type S to any interface_type T, provided S is not derived
             //    from T.
-            // *  From an array_type S with an element type SE to an array_type T with an element 
+            // *  From an array_type S with an element type SE to an array_type T with an element
             //    type TE, provided all of the following are true:
-            //     *  S and T differ only in element type. In other words, S and T have the same 
+            //     *  S and T differ only in element type. In other words, S and T have the same
             //        number of dimensions.
             //     *  Both SE and TE are reference_types.
             //     *  An explicit reference conversion exists from SE to TE.
             // *  From System.Array and the interfaces it implements to any array_type.
-            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
-            //    and its base interfaces, provided that there is an explicit reference conversion 
+            // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T>
+            //    and its base interfaces, provided that there is an explicit reference conversion
             //    from S to T.
-            // *  From System.Collections.Generic.IList<S> and its base interfaces to a 
-            //    single-dimensional array type T[], provided that there is an explicit identity 
+            // *  From System.Collections.Generic.IList<S> and its base interfaces to a
+            //    single-dimensional array type T[], provided that there is an explicit identity
             //    or reference conversion from S to T.
             // *  From System.Delegate and the interfaces it implements to any delegate_type.
-            // *  From a reference type to a reference type T if it has an explicit reference 
+            // *  From a reference type to a reference type T if it has an explicit reference
             //    conversion to a reference type T0 and T0 has an identity conversion T.
-            // *  From a reference type to an interface or delegate type T if it has an explicit 
-            //    reference conversion to an interface or delegate type T0 and either T0 is 
+            // *  From a reference type to an interface or delegate type T if it has an explicit
+            //    reference conversion to an interface or delegate type T0 and either T0 is
             //    variance-convertible to T or T is variance-convertible to T0 (Variance conversion).
-            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type, 
-            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each 
+            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type,
+            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each
             //    type parameter Xi of D the following holds:
             //     *  If Xi is invariant, then Si is identical to Ti.
-            //     *  If Xi is covariant, then there is an implicit or explicit identity 
+            //     *  If Xi is covariant, then there is an implicit or explicit identity
             //        or reference conversion from Si to Ti.
             //     *  If Xi is contravariant, then Si and Ti are either identical or both reference types.
-            // *  Explicit conversions involving type parameters that are known to be reference types. 
-            //    For more details on explicit conversions involving type parameters, see Explicit 
+            // *  Explicit conversions involving type parameters that are known to be reference types.
+            //    For more details on explicit conversions involving type parameters, see Explicit
             //    conversions involving type parameters.
-            // 
-            // The explicit reference conversions are those conversions between reference-types that 
+            //
+            // The explicit reference conversions are those conversions between reference-types that
             // require run-time checks to ensure they are correct.
             //
-            // For an explicit reference conversion to succeed at run-time, the value of the source 
-            // operand must be null, or the actual type of the object referenced by the source operand 
-            // must be a type that can be converted to the destination type by an implicit reference 
-            // conversion (Implicit reference conversions) or boxing conversion (Boxing conversions). 
+            // For an explicit reference conversion to succeed at run-time, the value of the source
+            // operand must be null, or the actual type of the object referenced by the source operand
+            // must be a type that can be converted to the destination type by an implicit reference
+            // conversion (Implicit reference conversions) or boxing conversion (Boxing conversions).
             // If an explicit reference conversion fails, a System.InvalidCastException is thrown.
             //
-            // Reference conversions, implicit or explicit, never change the referential identity of 
-            // the object being converted. In other words, while a reference conversion may change the 
+            // Reference conversions, implicit or explicit, never change the referential identity of
+            // the object being converted. In other words, while a reference conversion may change the
             // type of the reference, it never changes the type or value of the object being referred to.
 
             if (SourceReferenceType.GetIsRootType())
@@ -419,17 +447,17 @@ namespace Flame.Ecs.Semantics
                     && HasExplicitReferenceConversion(
                         srcArr.ElementType, tgtArr.ElementType);
                 }
-                // TODO: implement the conversion rules listed below. They are somewhat 
-                // troublesome to implement because relying on specific type names 
+                // TODO: implement the conversion rules listed below. They are somewhat
+                // troublesome to implement because relying on specific type names
                 // constrains us to a specific standard library. Ideally, we'd get this
                 // information from the back-end in the future.
-                // 
+                //
                 // *  From System.Array and the interfaces it implements to any array_type.
-                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T> 
-                //    and its base interfaces, provided that there is an explicit reference conversion 
+                // *  From a single-dimensional array type S[] to System.Collections.Generic.IList<T>
+                //    and its base interfaces, provided that there is an explicit reference conversion
                 //    from S to T.
-                // *  From System.Collections.Generic.IList<S> and its base interfaces to a 
-                //    single-dimensional array type T[], provided that there is an explicit identity 
+                // *  From System.Collections.Generic.IList<S> and its base interfaces to a
+                //    single-dimensional array type T[], provided that there is an explicit identity
                 //    or reference conversion from S to T.
                 return false;
             }
@@ -458,7 +486,7 @@ namespace Flame.Ecs.Semantics
             {
                 if (TargetReferenceType.GetIsInterface())
                 {
-                    // We can relax the requirement that "S is not derived from T", 
+                    // We can relax the requirement that "S is not derived from T",
                     // because implicit reference conversions are always preferred
                     // over explicit reference conversions -- if S were derived from
                     // T, then `HasExplicitReferenceConversion` would never have been
@@ -480,7 +508,7 @@ namespace Flame.Ecs.Semantics
             {
                 if (TargetReferenceType.GetIsInterface())
                 {
-                    // We can relax the "and provided S does not implement T" requirement, 
+                    // We can relax the "and provided S does not implement T" requirement,
                     // because implicit reference conversions are always preferred
                     // over explicit reference conversions -- if S actually implemented
                     // T, then `HasExplicitReferenceConversion` would never have been
@@ -504,11 +532,11 @@ namespace Flame.Ecs.Semantics
         {
             // This function implements the following rule (from the C# spec):
             //
-            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type, 
-            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each 
+            // *  From D<S1...Sn> to D<T1...Tn> where D<X1...Xn> is a generic delegate type,
+            //    D<S1...Sn> is not compatible with or identical to D<T1...Tn>, and for each
             //    type parameter Xi of D the following holds:
             //     *  If Xi is invariant, then Si is identical to Ti.
-            //     *  If Xi is covariant, then there is an implicit or explicit identity 
+            //     *  If Xi is covariant, then there is an implicit or explicit identity
             //        or reference conversion from Si to Ti.
             //     *  If Xi is contravariant, then Si and Ti are either identical or both reference types.
 
@@ -533,7 +561,7 @@ namespace Flame.Ecs.Semantics
                 var tgtGenArg = tgtArgs[i];
 
                 bool foundMatch = srcGenArg.Equals(tgtGenArg)
-                    || (genParam.GetIsCovariant() 
+                    || (genParam.GetIsCovariant()
                         && (HasImplicitReferenceConversion(
                             srcGenArg, tgtGenArg)
                             || HasExplicitReferenceConversion(
@@ -541,7 +569,7 @@ namespace Flame.Ecs.Semantics
                     || (genParam.GetIsContravariant()
                         && IsCSharpReferenceType(srcGenArg)
                         && IsCSharpReferenceType(tgtGenArg)));
-                
+
                 if (!foundMatch)
                     return false;
             }
@@ -559,7 +587,7 @@ namespace Flame.Ecs.Semantics
         /// <param name="Scope">The scope in which the conversion is performed.</param>
         /// <param name="IsExplicit">Specifies if an explicit conversion is performed.</param>
         private IReadOnlyList<ConversionDescription> ClassifyUserDefinedConversion(
-            IType SourceType, IType TargetType, 
+            IType SourceType, IType TargetType,
             FunctionScope Scope, bool IsExplicit)
         {
             // Find candidate operators.
@@ -569,7 +597,7 @@ namespace Flame.Ecs.Semantics
             if (candidates.Count == 0)
                 // We found nothing. Early-out here.
                 return candidates;
-            
+
             // Find the most specific source type.
             var srcType = IsExplicit
                 ? GetMostSpecificSourceTypeExplicit(SourceType, candidates)
@@ -591,7 +619,7 @@ namespace Flame.Ecs.Semantics
         }
 
         private IType GetMostSpecificSourceTypeImplicit(
-            IType SourceType, 
+            IType SourceType,
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
             // Quote from the spec for implicit user-defined conversions:
@@ -600,8 +628,8 @@ namespace Flame.Ecs.Semantics
             //
             //     * If any of the operators in U convert from S, then SX is S.
             //
-            //     * Otherwise, SX is the most encompassed type in the combined set of source 
-            //       types of the operators in U. If exactly one most encompassed type cannot 
+            //     * Otherwise, SX is the most encompassed type in the combined set of source
+            //       types of the operators in U. If exactly one most encompassed type cannot
             //       be found, then the conversion is ambiguous and a compile-time error occurs.
             //
 
@@ -617,7 +645,7 @@ namespace Flame.Ecs.Semantics
         }
 
         private IType GetMostSpecificSourceTypeExplicit(
-            IType SourceType, 
+            IType SourceType,
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
             // Quote from the spec for explicit user-defined conversions:
@@ -626,13 +654,13 @@ namespace Flame.Ecs.Semantics
             //
             //     * If any of the operators in U convert from S, then SX is S.
             //
-            //     * Otherwise, if any of the operators in U convert from types that encompass S, 
-            //       then SX is the most encompassed type in the combined set of source types of 
-            //       those operators. If no most encompassed type can be found, then the conversion 
+            //     * Otherwise, if any of the operators in U convert from types that encompass S,
+            //       then SX is the most encompassed type in the combined set of source types of
+            //       those operators. If no most encompassed type can be found, then the conversion
             //       is ambiguous and a compile-time error occurs.
             //
-            //     * Otherwise, SX is the most encompassing type in the combined set of source 
-            //       types of the operators in U. If exactly one most encompassing type cannot be 
+            //     * Otherwise, SX is the most encompassing type in the combined set of source
+            //       types of the operators in U. If exactly one most encompassing type cannot be
             //       found, then the conversion is ambiguous and a compile-time error occurs.
 
             var paramTypes = Conversions.Select(
@@ -649,7 +677,7 @@ namespace Flame.Ecs.Semantics
         }
 
         private IType GetMostSpecificTargetTypeImplicit(
-            IType TargetType, 
+            IType TargetType,
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
             // Quote from the spec for implicit user-defined conversions:
@@ -658,9 +686,9 @@ namespace Flame.Ecs.Semantics
             //
             //     * If any of the operators in U convert to T, then TX is T.
             //
-            //     * Otherwise, TX is the most encompassing type in the combined set of 
-            //       target types of the operators in U. If exactly one most encompassing 
-            //       type cannot be found, then the conversion is ambiguous and a 
+            //     * Otherwise, TX is the most encompassing type in the combined set of
+            //       target types of the operators in U. If exactly one most encompassing
+            //       type cannot be found, then the conversion is ambiguous and a
             //       compile-time error occurs.
             //
 
@@ -674,7 +702,7 @@ namespace Flame.Ecs.Semantics
         }
 
         private IType GetMostSpecificTargetTypeExplicit(
-            IType TargetType, 
+            IType TargetType,
             IReadOnlyList<UserDefinedConversionDescription> Conversions)
         {
             // Quote from the spec for explicit user-defined conversions:
@@ -684,13 +712,13 @@ namespace Flame.Ecs.Semantics
             //     * If any of the operators in U convert to T, then TX is T.
             //
             //     * Otherwise, if any of the operators in U convert to types that are
-            //       encompassed by T, then TX is the most encompassing type in the 
-            //       combined set of target types of those operators. If exactly one most 
-            //       encompassing type cannot be found, then the conversion is ambiguous 
+            //       encompassed by T, then TX is the most encompassing type in the
+            //       combined set of target types of those operators. If exactly one most
+            //       encompassing type cannot be found, then the conversion is ambiguous
             //       and a compile-time error occurs.
             //
-            //     * Otherwise, TX is the most encompassed type in the combined set of 
-            //       target types of the operators in U. If no most encompassed type can 
+            //     * Otherwise, TX is the most encompassed type in the combined set of
+            //       target types of the operators in U. If no most encompassed type can
             //       be found, then the conversion is ambiguous and a compile-time error occurs.
             //
 
@@ -714,15 +742,15 @@ namespace Flame.Ecs.Semantics
             //
             // Find the most specific conversion operator:
             //
-            //     * If U contains exactly one user-defined conversion operator that 
-            //       converts from SX to TX, then this is the most specific conversion 
+            //     * If U contains exactly one user-defined conversion operator that
+            //       converts from SX to TX, then this is the most specific conversion
             //       operator.
             //
-            //     * Otherwise, if U contains exactly one lifted conversion operator 
-            //       that converts from SX to TX, then this is the most specific 
+            //     * Otherwise, if U contains exactly one lifted conversion operator
+            //       that converts from SX to TX, then this is the most specific
             //       conversion operator.
             //
-            //     * Otherwise, the conversion is ambiguous and a compile-time error 
+            //     * Otherwise, the conversion is ambiguous and a compile-time error
             //       occurs.
             //
 
@@ -742,38 +770,38 @@ namespace Flame.Ecs.Semantics
         }
 
         private IReadOnlyList<UserDefinedConversionDescription> GetUserDefinedConversionCandidates(
-            IType SourceType, IType TargetType, 
+            IType SourceType, IType TargetType,
             FunctionScope Scope, bool IsExplicit)
         {
             // This method implements the following piece of logic for implicit conversions
             // (quote from the spec):
             //
-            //     * "Find the set of types, D, from which user-defined conversion operators 
-            //       will be considered. This set consists of 
-            //         - S0 (if S0 is a class or struct), 
-            //         - the base classes of S0 (if S0 is a class), and 
+            //     * "Find the set of types, D, from which user-defined conversion operators
+            //       will be considered. This set consists of
+            //         - S0 (if S0 is a class or struct),
+            //         - the base classes of S0 (if S0 is a class), and
             //         - T0 (if T0 is a class or struct).
             //
-            //     * Find the set of applicable user-defined and lifted conversion operators, U. 
-            //       This set consists of the user-defined and lifted implicit conversion operators 
-            //       declared by the classes or structs in D that convert from a type encompassing 
-            //       S to a type encompassed by T. If U is empty, the conversion is undefined and 
+            //     * Find the set of applicable user-defined and lifted conversion operators, U.
+            //       This set consists of the user-defined and lifted implicit conversion operators
+            //       declared by the classes or structs in D that convert from a type encompassing
+            //       S to a type encompassed by T. If U is empty, the conversion is undefined and
             //       a compile-time error occurs."
             //
             // For explicit conversions, the equivalent excerpt from the spec is:
             //
-            //     * "Find the set of types, D, from which user-defined conversion operators 
-            //       will be considered. This set consists of 
-            //         - S0 (if S0 is a class or struct), 
-            //         - the base classes of S0 (if S0 is a class), 
-            //         - T0 (if T0 is a class or struct), and 
+            //     * "Find the set of types, D, from which user-defined conversion operators
+            //       will be considered. This set consists of
+            //         - S0 (if S0 is a class or struct),
+            //         - the base classes of S0 (if S0 is a class),
+            //         - T0 (if T0 is a class or struct), and
             //         - the base classes of T0 (if T0 is a class).
             //
-            //     * Find the set of applicable user-defined and lifted conversion operators, U. 
-            //       This set consists of the user-defined and lifted implicit or explicit 
-            //       conversion operators declared by the classes or structs in D that convert 
-            //       from a type encompassing or encompassed by S to a type encompassing or 
-            //       encompassed by T. If U is empty, the conversion is undefined and a 
+            //     * Find the set of applicable user-defined and lifted conversion operators, U.
+            //       This set consists of the user-defined and lifted implicit or explicit
+            //       conversion operators declared by the classes or structs in D that convert
+            //       from a type encompassing or encompassed by S to a type encompassing or
+            //       encompassed by T. If U is empty, the conversion is undefined and a
             //       compile-time error occurs."
             //
             // So, the three differences are:
@@ -785,10 +813,10 @@ namespace Flame.Ecs.Semantics
             //        operators. Implicit conversions consider only implicit
             //        operators.
             //
-            //     3. For implicit conversions, operators may only convert from 
-            //        a type encompassing S to a type encompassed by T. For 
-            //        explicit conversions, operators may from a type encompassing 
-            //        or encompassed by S to a type encompassing or 
+            //     3. For implicit conversions, operators may only convert from
+            //        a type encompassing S to a type encompassed by T. For
+            //        explicit conversions, operators may from a type encompassing
+            //        or encompassed by S to a type encompassing or
             //        encompassed by T.
             //
             // This method implements the spec by doing the following:
@@ -827,7 +855,7 @@ namespace Flame.Ecs.Semantics
             {
                 var candidate = CreateUserDefinedConversionCandidate(
                     item, IsExplicit, SourceType, TargetType, Scope);
-                
+
                 if (candidate != null)
                     filteredCandidates.Add(candidate);
             }
@@ -857,8 +885,8 @@ namespace Flame.Ecs.Semantics
             if (CandidateMethod.IsStatic)
             {
                 if (CandidateMethod.Parameters.Count() != 1)
-                    // Static methods with empty parameter lists of 
-                    // non-unit length are not acceptable as 
+                    // Static methods with empty parameter lists of
+                    // non-unit length are not acceptable as
                     // user-defined conversion methods.
                     return null;
             }
@@ -905,11 +933,11 @@ namespace Flame.Ecs.Semantics
         private ConversionDescription GetEncompassingConversion(
             IType From, IType To)
         {
-            // The spec says that 
+            // The spec says that
             //
-            // "If a standard implicit conversion (Standard implicit conversions) 
-            // exists from a type A to a type B, and if neither A nor B are 
-            // interface_types, then A is said to be encompassed by B, and 
+            // "If a standard implicit conversion (Standard implicit conversions)
+            // exists from a type A to a type B, and if neither A nor B are
+            // interface_types, then A is said to be encompassed by B, and
             // B is said to encompass A."
             //
             // This function implements that behavior like so:
@@ -966,7 +994,7 @@ namespace Flame.Ecs.Semantics
                 case ConversionKind.Identity:
                     return Description;
                 case ConversionKind.ImplicitBoxingConversion:
-                    return ConversionDescription.UnboxValueConversion;    
+                    return ConversionDescription.UnboxValueConversion;
                 case ConversionKind.NumberToEnumStaticCast:
                     return ConversionDescription.EnumToNumberStaticCast;
                 case ConversionKind.EnumToNumberStaticCast:
@@ -989,12 +1017,12 @@ namespace Flame.Ecs.Semantics
         private IType GetMostEncompassedType(IEnumerable<IType> Types)
         {
             // Quote from the spec:
-            // 
-            // The most encompassed type in a set of types is the one type that is 
-            // encompassed by all other types in the set. If no single type is 
-            // encompassed by all other types, then the set has no most encompassed type. 
-            // In more intuitive terms, the most encompassed type is the "smallest" type 
-            // in the set—the one type that can be implicitly converted to each of the 
+            //
+            // The most encompassed type in a set of types is the one type that is
+            // encompassed by all other types in the set. If no single type is
+            // encompassed by all other types, then the set has no most encompassed type.
+            // In more intuitive terms, the most encompassed type is the "smallest" type
+            // in the set—the one type that can be implicitly converted to each of the
             // other types.
             //
 
@@ -1010,12 +1038,12 @@ namespace Flame.Ecs.Semantics
         private IType GetMostEncompassingType(IEnumerable<IType> Types)
         {
             // Quote from the spec:
-            // 
-            // The most encompassing type in a set of types is the one type that 
-            // encompasses all other types in the set. If no single type encompasses 
-            // all other types, then the set has no most encompassing type. In more 
-            // intuitive terms, the most encompassing type is the "largest" type in 
-            // the set—the one type to which each of the other types can be 
+            //
+            // The most encompassing type in a set of types is the one type that
+            // encompasses all other types in the set. If no single type encompasses
+            // all other types, then the set has no most encompassing type. In more
+            // intuitive terms, the most encompassing type is the "largest" type in
+            // the set—the one type to which each of the other types can be
             // implicitly converted.
             //
 
@@ -1220,7 +1248,7 @@ namespace Flame.Ecs.Semantics
             return Type.GetIsPointer() && Type.AsPointerType().PointerKind.Equals(PointerKind.ReferencePointer);
         }
 
-        private static readonly Dictionary<KeyValuePair<IType, IType>, ConversionDescription> primitiveConversions = 
+        private static readonly Dictionary<KeyValuePair<IType, IType>, ConversionDescription> primitiveConversions =
             new Dictionary<KeyValuePair<IType, IType>, ConversionDescription>()
             {
                 // string -> T
