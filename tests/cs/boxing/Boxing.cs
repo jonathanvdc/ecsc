@@ -18,6 +18,11 @@ public static class Program
         return (ICloneable)Value;
     }
 
+    public static T Unbox<T>(object Value)
+    {
+        return (T)Value;
+    }
+
     public static void Main(string[] Args)
     {
         var foo = default(Foo);
@@ -27,5 +32,6 @@ public static class Program
 
         object i = 42;
         Console.WriteLine((int)i);
+        Console.WriteLine(Unbox<int>(i));
     }
 }
