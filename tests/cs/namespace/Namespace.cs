@@ -8,12 +8,23 @@ namespace Lib
     }
 }
 
+namespace Lib.BoxTricks
+{
+    public static class BoxUtils
+    {
+        public static void Print<T>(Box<T> box)
+        {
+            Console.WriteLine("box [{0}]", box.value);
+        }
+    }
+}
+
 public static class Program
 {
     public static void Main()
     {
         var b = new Lib.Box<int>();
         b.value = 10;
-        Console.WriteLine(b.value);
+        Lib.BoxTricks.BoxUtils.Print<int>(b);
     }
 }
