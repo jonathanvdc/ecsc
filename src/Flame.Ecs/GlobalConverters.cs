@@ -77,7 +77,7 @@ namespace Flame.Ecs
 
             foreach (var elem in Node.Args[2].Args)
             {
-                nsScope = Converter.ConvertGlobal(elem, Namespace, nsScope);
+                nsScope = Converter.ConvertGlobal(elem, ns, nsScope);
             }
 
             return Scope;
