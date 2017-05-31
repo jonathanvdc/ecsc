@@ -201,12 +201,13 @@ namespace Flame.Ecs
                 return new IType[] { ty };
         }
 
-        private static IEnumerable<IType> LookupUnqualifiedNameTypeInstances(
-            string Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
+        private static IEnumerable<IType> LookupNameTypeInstances(
+            QualifiedName Qualifier, string Name,
+            IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location)
         {
-            var genericName = new SimpleName(Name, TypeArguments.Count);
-            var ty = Scope.Function.Global.Binder.BindType(new QualifiedName(genericName));
+            var genericName = new SimpleName(Name, TypeArguments.Count).Qualify(Qualifier);
+            var ty = Scope.Function.Global.Binder.BindType(genericName);
             if (ty == null)
             {
                 return Enumerable.Empty<IType>();
@@ -234,7 +235,7 @@ namespace Flame.Ecs
         {
             return new TypeOrExpression(
                 LookupUnqualifiedNameExpression(Name, TypeArguments, Scope, Location),
-                LookupUnqualifiedNameTypeInstances(Name.Name, TypeArguments, Scope, Location),
+                LookupNameTypeInstances(new QualifiedName(), Name.Name, TypeArguments, Scope, Location),
                 default(QualifiedName));
         }
 
@@ -932,26 +933,27 @@ namespace Flame.Ecs
             {
                 if (ty is INamespace)
                 {
-                    typeSet.UnionWith(((INamespace)ty).Types.Where(item =>
-                        {
-                            var itemName = item.Name as SimpleName;
-                            return itemName.Name == MemberName
-                                && itemName.TypeParameterCount == TypeArguments.Count;
-                        }));
+                    var resolvedTypes = ((INamespace)ty).Types.Where(item =>
+                    {
+                        var itemName = item.Name as SimpleName;
+                        return itemName.Name == MemberName
+                            && itemName.TypeParameterCount == TypeArguments.Count;
+                    });
+                    typeSet.UnionWith(
+                        InstantiateTypes(
+                            resolvedTypes, TypeArguments,
+                            Scope.Function.Global, MemberLocation));
                 }
             }
             if (Target.IsNamespace)
             {
-                var topLevelTy = Scope.Function.Global.Binder.BindType(nsName);
-                if (topLevelTy != null)
-                    typeSet.Add(topLevelTy);
+                typeSet.UnionWith(
+                    LookupNameTypeInstances(
+                        Target.Namespace, MemberName,
+                        TypeArguments, Scope, MemberLocation));
             }
 
-            return new TypeOrExpression(
-                expr,
-                InstantiateTypes(
-                    typeSet, TypeArguments, Scope.Function.Global, MemberLocation),
-                nsName);
+            return new TypeOrExpression(expr, typeSet, nsName);
         }
 
         /// <summary>
