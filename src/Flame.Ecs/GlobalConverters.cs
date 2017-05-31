@@ -71,8 +71,8 @@ namespace Flame.Ecs
             var nsScope = Scope;
             foreach (var name in qualName.Path)
             {
-                ns = Namespace.DefineNamespace(name.ToString());
-                nsScope = Scope.WithBinder(Scope.Binder.UseNamespace(ns.FullName));
+                ns = ns.DefineNamespace(name.ToString());
+                nsScope = nsScope.WithBinder(nsScope.Binder.UseNamespace(ns.FullName));
             }
 
             foreach (var elem in Node.Args[2].Args)
