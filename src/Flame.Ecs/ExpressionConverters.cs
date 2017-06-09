@@ -1096,14 +1096,14 @@ namespace Flame.Ecs
         /// </summary>
         public static IExpression ConvertNewExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
         {
-            // The given C# new-expressions:
+            // These C# new-expressions
             //
             //     new T(args...) { values... }
             //     new T[args...] { values... }
             //     new[] { values... }
             //     new { values... }
             //
-            // are converted to the given Loyc trees:
+            // are converted to the following Loyc trees
             //
             //     #new(T(args...), values...)
             //     #new(#of(@`[]`, T)(args...), values...)
@@ -1178,17 +1178,7 @@ namespace Flame.Ecs
                 if (arrDims.Length == 0)
                 {
                     // Stuff that looks like: new T[] { values... }
-                    if (initializerExprs.Length == 0)
-                    {
-                        // Syntax error.
-                        Scope.Log.LogError(new LogEntry(
-                            "syntax error",
-                            NodeHelpers.HighlightEven(
-                                "array creation must have array size or array initializer."),
-                            loc));
-                        return new UnknownExpression(ctorType);
-                    }
-                    else if (arrTy.ArrayRank == 1)
+                    if (arrTy.ArrayRank == 1)
                     {
                         // This is actually pretty easy. Just
                         // create a new-array expression.
