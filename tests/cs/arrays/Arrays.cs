@@ -21,5 +21,6 @@ public static class Program
         PrintAll(new int[] { 1, 2, 3 });
         PrintAll(new int[3] { 1, 2, 3 });
         PrintAll(new int[3]);
+        PrintAll(new int[] { });
     }
 }
