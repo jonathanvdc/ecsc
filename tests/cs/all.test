@@ -49,6 +49,7 @@ tests
     return/Return.test;
     sealed/Sealed.test;
     sequence-equal/SequenceEqual.test;
+    sizeof/Sizeof.test;
     static-properties/StaticProperties.test;
     string-as-enumerable/StringAsEnumerable.test;
     string-format/StringFormat.test;
