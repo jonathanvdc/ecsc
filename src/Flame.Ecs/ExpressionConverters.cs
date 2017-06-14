@@ -2486,6 +2486,27 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a sizeof node (type #sizeof).
+        /// </summary>
+        public static IExpression ConvertSizeofExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                return ErrorTypeExpression;
+
+            var ty = Converter.ConvertCheckedType(Node.Args[0], Scope);
+
+            if (ty == null)
+            {
+                return new UnknownExpression(PrimitiveTypes.Int32);
+            }
+            else
+            {
+                return new SizeOfExpression(ty);
+            }
+        }
+
+        /// <summary>
         /// Converts an as-instance expression node (type #as).
         /// </summary>
         public static IExpression ConvertAsInstanceExpression(
