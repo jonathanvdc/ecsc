@@ -11,10 +11,10 @@ namespace Flame.Ecs
     {
         private QualifiedBinder(
             TypeCache allTypes,
-            HashSet<QualifiedName> namespaceUsings, 
+            HashSet<QualifiedName> namespaceUsings,
             Lazy<HashSet<IType>> typeUsings,
             Dictionary<UnqualifiedName, QualifiedName> nameAliases,
-            Dictionary<UnqualifiedName, IType> typeAliases,
+            Dictionary<UnqualifiedName, Lazy<IType>> typeAliases,
             Lazy<Dictionary<UnqualifiedName, IType>> visibleTypeMap,
             Lazy<HashSet<IType>> extTypes)
         {
@@ -30,10 +30,10 @@ namespace Flame.Ecs
 
         private QualifiedBinder(
             TypeCache allTypes,
-            HashSet<QualifiedName> namespaceUsings, 
+            HashSet<QualifiedName> namespaceUsings,
             Lazy<HashSet<IType>> typeUsings,
             Dictionary<UnqualifiedName, QualifiedName> nameAliases,
-            Dictionary<UnqualifiedName, IType> typeAliases,
+            Dictionary<UnqualifiedName, Lazy<IType>> typeAliases,
             Lazy<Dictionary<UnqualifiedName, IType>> visibleTypeMap)
             : this(
                 allTypes, namespaceUsings, typeUsings,
@@ -45,10 +45,10 @@ namespace Flame.Ecs
         public QualifiedBinder(TypeCache Cache)
             : this(
                 Cache,
-                new HashSet<QualifiedName>(), 
+                new HashSet<QualifiedName>(),
                 new Lazy<HashSet<IType>>(() => new HashSet<IType>()),
                 new Dictionary<UnqualifiedName, QualifiedName>(),
-                new Dictionary<UnqualifiedName, IType>(),
+                new Dictionary<UnqualifiedName, Lazy<IType>>(),
                 new Lazy<Dictionary<UnqualifiedName, IType>>(() => FindTopLevelTypes(Cache)))
         { }
 
@@ -88,7 +88,7 @@ namespace Flame.Ecs
         private HashSet<QualifiedName> namespaceUsings;
         private Lazy<HashSet<IType>> typeUsings;
         private Dictionary<UnqualifiedName, QualifiedName> nameAliases;
-        private Dictionary<UnqualifiedName, IType> typeAliases;
+        private Dictionary<UnqualifiedName, Lazy<IType>> typeAliases;
         private Lazy<Dictionary<UnqualifiedName, IType>> visibleTypeMap;
         private ConcurrentDictionary<QualifiedName, IType> qualifiedTypeCache;
         private Lazy<HashSet<IType>> extTypes;
@@ -133,7 +133,7 @@ namespace Flame.Ecs
                 }
             });
             return new QualifiedBinder(
-                allTypes, namespaceUsings, newUsings, 
+                allTypes, namespaceUsings, newUsings,
                 nameAliases, typeAliases, visibleTypeMap,
                 extTypes);
         }
@@ -146,7 +146,7 @@ namespace Flame.Ecs
             var newAliases = new Dictionary<UnqualifiedName, QualifiedName>(nameAliases);
             newAliases[Alias] = Name;
             return new QualifiedBinder(
-                allTypes, namespaceUsings, typeUsings, 
+                allTypes, namespaceUsings, typeUsings,
                 newAliases, typeAliases,
                 visibleTypeMap, extTypes);
         }
@@ -156,10 +156,18 @@ namespace Flame.Ecs
         /// </summary>
         public QualifiedBinder AliasType(UnqualifiedName Alias, IType Type)
         {
-            var tyAliases = new Dictionary<UnqualifiedName, IType>(typeAliases);
+            return AliasType(Alias, new Lazy<IType>(() => Type));
+        }
+
+        /// <summary>
+        /// Creates an alias for the given type.
+        /// </summary>
+        public QualifiedBinder AliasType(UnqualifiedName Alias, Lazy<IType> Type)
+        {
+            var tyAliases = new Dictionary<UnqualifiedName, Lazy<IType>>(typeAliases);
             tyAliases[Alias] = Type;
             return new QualifiedBinder(
-                allTypes, namespaceUsings, typeUsings, 
+                allTypes, namespaceUsings, typeUsings,
                 nameAliases, tyAliases, visibleTypeMap,
                 extTypes);
         }
@@ -179,13 +187,25 @@ namespace Flame.Ecs
 
             if (!Name.IsQualified)
             {
-                IType result;
                 var qual = Name.Qualifier;
-                if (typeAliases.TryGetValue(qual, out result)
-                    || visibleTypeMap.Value.TryGetValue(qual, out result))
+                Lazy<IType> lazyResult;
+                if (typeAliases.TryGetValue(qual, out lazyResult))
+                {
+                    if (lazyResult.Value != null)
+                    {
+                        return lazyResult.Value;
+                    }
+                }
+                
+                IType result;
+                if (visibleTypeMap.Value.TryGetValue(qual, out result))
+                {
                     return result;
+                }
                 else
+                {
                     return null;
+                }
             }
             else
             {
@@ -234,7 +254,7 @@ namespace Flame.Ecs
         }
 
         private static void MergeVisibleTypesImpl(
-            Dictionary<UnqualifiedName, IType> VisibleTypes, 
+            Dictionary<UnqualifiedName, IType> VisibleTypes,
             QualifiedName Namespace,
             TypeCache Cache)
         {
@@ -245,7 +265,7 @@ namespace Flame.Ecs
         }
 
         private static Lazy<Dictionary<UnqualifiedName, IType>> MergeVisibleTypes(
-            Lazy<Dictionary<UnqualifiedName, IType>> VisibleTypes, 
+            Lazy<Dictionary<UnqualifiedName, IType>> VisibleTypes,
             QualifiedName Namespace,
             TypeCache Cache)
         {
@@ -258,7 +278,7 @@ namespace Flame.Ecs
         }
 
         private static Lazy<HashSet<IType>> MergeExtensionTypes(
-            Lazy<HashSet<IType>> ExtensionTypes, 
+            Lazy<HashSet<IType>> ExtensionTypes,
             QualifiedName Namespace,
             TypeCache Cache)
         {

@@ -54,6 +54,48 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts an '#alias' directive.
+        /// </summary>
+        public static GlobalScope ConvertAliasDirective(
+            LNode Node, IMutableNamespace Namespace, 
+            GlobalScope Scope, NodeConverter Converter)
+        {
+            // A using alias looks like this in C# and LES, respectively:
+            //
+            //     using Number = System.Double;
+            //     @[#filePrivate] #alias(Number = System.Double, #());
+            //
+            // TODO: figure out what the empty tuple means.
+
+            if (!NodeHelpers.CheckArity(Node, 2, Scope.Log)
+                || !NodeHelpers.CheckArity(Node.Args[1], 0, Scope.Log))
+                return Scope;
+
+            var assignment = Node.Args[0];
+            if (!NodeHelpers.CheckArity(assignment, 2, Scope.Log))
+                return Scope;
+
+            var aliasNode = assignment.Args[0];
+            var aliasedNode = assignment.Args[1];
+
+            if (!NodeHelpers.CheckId(aliasNode, Scope.Log))
+                return Scope;
+
+            var alias = new SimpleName(aliasNode.Name.Name);
+            var aliasedQualName = NodeHelpers.ToQualifiedName(aliasedNode);
+            var newBinder = Scope.Binder.AliasType(
+                alias,
+                new Lazy<IType>(() => Converter.ConvertType(aliasedNode, Scope, null)));
+
+            if (!aliasedQualName.IsEmpty)
+            {
+                newBinder = newBinder.AliasName(alias, aliasedQualName);
+            }
+
+            return Scope.WithBinder(newBinder);
+        }
+
+        /// <summary>
         /// Converts a '#namespace' node.
         /// </summary>
         public static GlobalScope ConvertNamespaceDefinition(
