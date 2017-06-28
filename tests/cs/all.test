@@ -1,6 +1,7 @@
 
 tests
 {
+    alias/Alias.test;
     anonymous-types/AnonymousTypes.test;
     array-initializers/ArrayInitializers.test;
     arithmetic/Arithmetic.test;
