@@ -628,6 +628,8 @@ namespace Flame.Ecs
                 result.AliasAttribute(CodeSymbols.Extern, PrimitiveAttributes.Instance.ImportAttribute);
                 result.AliasAttribute(CodeSymbols.Virtual, PrimitiveAttributes.Instance.VirtualAttribute);
                 result.AddAttributeConverter(EcscSymbols.TriviaDocumentationComment, TriviaConverters.ConvertDocumentationComment);
+                // Ignore 'unsafe' attributes for now.
+                result.AddAttributeConverter(CodeSymbols.Unsafe, (node, scope, conv) => Enumerable.Empty<IAttribute>());
 
                 // Statements
                 result.AddExprConverter(CodeSymbols.Break, ExpressionConverters.ConvertBreakExpression);
