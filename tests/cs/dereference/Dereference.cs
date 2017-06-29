@@ -8,5 +8,9 @@ public static class Program
         int* localPtr = &local;
         *localPtr = 42;
         Console.WriteLine(*localPtr);
+
+        void* voidPtr = localPtr;
+        localPtr = (int*)voidPtr;
+        Console.WriteLine(*localPtr);
     }
 }
