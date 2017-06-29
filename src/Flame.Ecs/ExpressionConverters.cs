@@ -1887,6 +1887,67 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a call to the asterisk operator, which can be a multiplication
+        /// or a pointer dereference operation.
+        /// </summary>
+        public static IValue ConvertMultiplyOrDereference(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 2, Scope.Log))
+            {
+                return new ExpressionValue(ErrorTypeExpression);
+            }
+
+            if (Node.ArgCount == 2)
+            {
+                return new ExpressionValue(CreateBinary(
+                    Operator.Multiply,
+                    Converter.ConvertValue(Node.Args[0], Scope),
+                    Converter.ConvertValue(Node.Args[1], Scope),
+                    Scope.Function,
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range),
+                    NodeHelpers.ToSourceLocation(Node.Args[1].Range)));
+            }
+            else
+            {
+                var address = Converter.ConvertExpression(Node.Args[0], Scope);
+                var addressType = address.Type;
+                if (addressType == ErrorType.Instance)
+                {
+                    return new ExpressionValue(ErrorTypeExpression);
+                }
+
+                var addressPtrType = addressType.AsPointerType();
+                if (addressPtrType == null
+                    || !addressPtrType.PointerKind.Equals(PointerKind.TransientPointer))
+                {
+                    return new ErrorValue(new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "cannot dereference non-pointer type '",
+                            Scope.Function.Global.NameAbbreviatedType(addressType),
+                            "'."),
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                }
+                else if (addressPtrType.ElementType == PrimitiveTypes.Void)
+                {
+                    return new ErrorValue(new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "cannot dereference a pointer to type '",
+                            Scope.Function.Global.NameAbbreviatedType(addressPtrType.ElementType),
+                            "'."),
+                        NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
+                }
+                else
+                {
+                    return new VariableValue(new AtAddressVariable(address));
+                }
+            }
+        }
+
+        /// <summary>
         /// Converts the given logical-and expression.
         /// </summary>
         public static IExpression ConvertLogicalAnd(

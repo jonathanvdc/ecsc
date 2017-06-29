@@ -680,7 +680,7 @@ namespace Flame.Ecs
                 // - Binary operators
                 result.AddExprConverter(CodeSymbols.Add, UnaryConverters.CreateUnaryOrBinaryOpConverter(Operator.Add));
                 result.AddExprConverter(CodeSymbols.Sub, UnaryConverters.CreateUnaryOrBinaryOpConverter(Operator.Subtract));
-                result.AddExprConverter(CodeSymbols.Mul, ExpressionConverters.CreateBinaryOpConverter(Operator.Multiply));
+                result.AddValueConverter(CodeSymbols.Mul, ExpressionConverters.ConvertMultiplyOrDereference);
                 result.AddExprConverter(CodeSymbols.Div, ExpressionConverters.CreateBinaryOpConverter(Operator.Divide));
                 result.AddExprConverter(CodeSymbols.Mod, ExpressionConverters.CreateBinaryOpConverter(Operator.Remainder));
                 result.AddExprConverter(CodeSymbols.Eq, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckEquality));
