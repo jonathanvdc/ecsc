@@ -12,6 +12,7 @@ tests
     concat/Concat.test;
     const/Const.test;
     constructor/Constructor.test;
+    dereference/Dereference.test;
     enums/Enums.test;
     equatable-struct/EquatableStruct.test;
     extension-methods/ExtensionMethods.test;
