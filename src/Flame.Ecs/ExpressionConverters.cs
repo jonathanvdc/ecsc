@@ -1948,6 +1948,51 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a call to the and-bits operator, which can be a bitwise and
+        /// or an address-of operation.
+        /// </summary>
+        public static IExpression ConvertAndOrAddressOf(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 2, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            if (Node.ArgCount == 2)
+            {
+                return CreateBinary(
+                    Operator.And,
+                    Converter.ConvertValue(Node.Args[0], Scope),
+                    Converter.ConvertValue(Node.Args[1], Scope),
+                    Scope.Function,
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range),
+                    NodeHelpers.ToSourceLocation(Node.Args[1].Range));
+            }
+            else
+            {
+                var variable = Converter.ConvertValue(Node.Args[0], Scope);
+                var address = variable.CreateAddressOfExpression(
+                    Scope,
+                    NodeHelpers.ToSourceLocation(Node.Args[0].Range))
+                    .ResultOrLog(Scope.Log);
+                var addressType = address.Type;
+                if (addressType.GetIsPointer())
+                {
+                    return new ReinterpretCastExpression(
+                        address,
+                        addressType.AsPointerType().ElementType.MakePointerType(
+                            PointerKind.TransientPointer));
+                }
+                else
+                {
+                    return address;
+                }
+            }
+        }
+
+        /// <summary>
         /// Converts the given logical-and expression.
         /// </summary>
         public static IExpression ConvertLogicalAnd(

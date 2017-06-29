@@ -691,7 +691,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.GE, ExpressionConverters.CreateBinaryOpConverter(Operator.CheckGreaterThanOrEqual));
                 result.AddExprConverter(CodeSymbols.Shl, ExpressionConverters.CreateBinaryOpConverter(Operator.LeftShift));
                 result.AddExprConverter(CodeSymbols.Shr, ExpressionConverters.CreateBinaryOpConverter(Operator.RightShift));
-                result.AddExprConverter(CodeSymbols.AndBits, ExpressionConverters.CreateBinaryOpConverter(Operator.And));
+                result.AddExprConverter(CodeSymbols.AndBits, ExpressionConverters.ConvertAndOrAddressOf);
                 result.AddExprConverter(CodeSymbols.OrBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Or));
                 result.AddExprConverter(CodeSymbols.XorBits, ExpressionConverters.CreateBinaryOpConverter(Operator.Xor));
                 result.AddExprConverter(CodeSymbols.And, ExpressionConverters.ConvertLogicalAnd);
