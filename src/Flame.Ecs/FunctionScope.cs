@@ -768,6 +768,8 @@ namespace Flame.Ecs
                     case ConversionKind.DynamicCast:
                     case ConversionKind.Identity:
                     case ConversionKind.ReinterpretCast:
+                    case ConversionKind.ImplicitPointerCast:
+                    case ConversionKind.ExplicitPointerCast:
                         return true;
                     default:
                         break;
@@ -790,6 +792,8 @@ namespace Flame.Ecs
                     case ConversionKind.DynamicCast:
                     case ConversionKind.Identity:
                     case ConversionKind.ReinterpretCast:
+                    case ConversionKind.ImplicitPointerCast:
+                    case ConversionKind.ExplicitPointerCast:
                         return true;
                     default:
                         break;

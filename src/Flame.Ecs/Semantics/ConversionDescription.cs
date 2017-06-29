@@ -72,10 +72,19 @@ namespace Flame.Ecs.Semantics
         DynamicCast,
 
         /// <summary>
-        /// A reinterpret cast is used to perform this 
-        /// conversion.
+        /// A reinterpret cast is used to perform an implicit reference conversion.
         /// </summary>
         ReinterpretCast,
+
+        /// <summary>
+        /// A reinterpret cast is used to perform an implicit pointer conversion.
+        /// </summary>
+        ImplicitPointerCast,
+
+        /// <summary>
+        /// A reinterpret cast is used to perform an explicit pointer conversion.
+        /// </summary>
+        ExplicitPointerCast,
 
         /// <summary>
         /// An implicit user-defined conversion is used to perform
@@ -147,7 +156,9 @@ namespace Flame.Ecs.Semantics
             get
             {
                 return Kind == ConversionKind.DynamicCast
-                || Kind == ConversionKind.ReinterpretCast; 
+                || Kind == ConversionKind.ReinterpretCast
+                || Kind == ConversionKind.ImplicitPointerCast
+                || Kind == ConversionKind.ExplicitPointerCast;
             }
         }
 
@@ -191,12 +202,14 @@ namespace Flame.Ecs.Semantics
                     case ConversionKind.ExplicitUserDefined:
                     case ConversionKind.ExplicitStaticCast:
                     case ConversionKind.ExplicitBoxingConversion:
+                    case ConversionKind.ExplicitPointerCast:
                     case ConversionKind.NumberToEnumStaticCast:
                     case ConversionKind.EnumToNumberStaticCast:
                     case ConversionKind.EnumToEnumStaticCast:
                     case ConversionKind.UnboxValueConversion:
                         return true;
                     case ConversionKind.ReinterpretCast:
+                    case ConversionKind.ImplicitPointerCast:
                     case ConversionKind.ImplicitUserDefined:
                     case ConversionKind.ImplicitStaticCast:
                     case ConversionKind.ImplicitBoxingConversion:
@@ -218,7 +231,7 @@ namespace Flame.Ecs.Semantics
         /// <summary>
         /// A conversion description for an identity conversion.
         /// </summary>
-        public static readonly ConversionDescription Identity 
+        public static readonly ConversionDescription Identity
             = new SimpleConversionDescription(ConversionKind.Identity);
 
         /// <summary>
@@ -282,6 +295,18 @@ namespace Flame.Ecs.Semantics
             = new SimpleConversionDescription(ConversionKind.ReinterpretCast);
 
         /// <summary>
+        /// A conversion description for implicit pointer casts.
+        /// </summary>
+        public static readonly ConversionDescription ImplicitPointerCast
+            = new SimpleConversionDescription(ConversionKind.ImplicitPointerCast);
+
+        /// <summary>
+        /// A conversion description for explicit pointer casts.
+        /// </summary>
+        public static readonly ConversionDescription ExplicitPointerCast
+            = new SimpleConversionDescription(ConversionKind.ExplicitPointerCast);
+
+        /// <summary>
         /// Creates a conversion description for an implicit user-defined cast.
         /// </summary>
         /// <param name="ConversionMethod">
@@ -300,12 +325,12 @@ namespace Flame.Ecs.Semantics
         /// A user-defined conversion description.
         /// </returns>
         public static UserDefinedConversionDescription ImplicitUserDefined(
-            IMethod ConversionMethod, 
-            ConversionDescription PreConversion, 
+            IMethod ConversionMethod,
+            ConversionDescription PreConversion,
             ConversionDescription PostConversion)
         {
             return new UserDefinedConversionDescription(
-                ConversionKind.ImplicitUserDefined, 
+                ConversionKind.ImplicitUserDefined,
                 ConversionMethod,
                 PreConversion,
                 PostConversion);
@@ -330,12 +355,12 @@ namespace Flame.Ecs.Semantics
         /// A user-defined conversion description.
         /// </returns>
         public static UserDefinedConversionDescription ExplicitUserDefined(
-            IMethod ConversionMethod, 
-            ConversionDescription PreConversion, 
+            IMethod ConversionMethod,
+            ConversionDescription PreConversion,
             ConversionDescription PostConversion)
         {
             return new UserDefinedConversionDescription(
-                ConversionKind.ExplicitUserDefined, 
+                ConversionKind.ExplicitUserDefined,
                 ConversionMethod,
                 PreConversion,
                 PostConversion);
@@ -420,6 +445,8 @@ namespace Flame.Ecs.Semantics
                                 Value.Type.GetParent()),
                             TargetType);
                     case ConversionKind.ReinterpretCast:
+                    case ConversionKind.ImplicitPointerCast:
+                    case ConversionKind.ExplicitPointerCast:
                         return new ReinterpretCastExpression(Value, TargetType);
                     case ConversionKind.None:
                     default:
@@ -517,12 +544,12 @@ namespace Flame.Ecs.Semantics
         {
             if (ConversionMethod.IsStatic)
                 return new InvocationExpression(
-                    ConversionMethod, null, 
+                    ConversionMethod, null,
                     new IExpression[] { Value });
             else
                 return new InvocationExpression(
-                    ConversionMethod, 
-                    ExpressionConverters.AsTargetExpression(Value), 
+                    ConversionMethod,
+                    ExpressionConverters.AsTargetExpression(Value),
                     null);
         }
 
@@ -533,16 +560,16 @@ namespace Flame.Ecs.Semantics
             return PostConversion.Convert(
                 CreateCall(
                     PreConversion.Convert(
-                        Value, 
+                        Value,
                         GetConversionMethodParameterType(
-                            ConversionMethod))), 
+                            ConversionMethod))),
                 TargetType);
         }
 
         public override string ToString()
         {
             return string.Format(
-                "[UserDefinedConversionDescription: Kind={0}, ConversionMethod={1}, PreConversion={2}, PostConversion={3}]", 
+                "[UserDefinedConversionDescription: Kind={0}, ConversionMethod={1}, PreConversion={2}, PostConversion={3}]",
                 Kind, ConversionMethod, PreConversion, PostConversion);
         }
     }

@@ -78,11 +78,13 @@ namespace Flame.Ecs.Semantics
 
         /// <summary>
         /// Checks if the given type is a C# reference type.
-        /// This excludes enum types.
+        /// This excludes enum and non-box pointer types.
         /// </summary>
         public static bool IsCSharpReferenceType(IType Type)
         {
-            return Type.GetIsReferenceType() && !Type.GetIsEnum();
+            return Type.GetIsReferenceType()
+                && !Type.GetIsEnum()
+                && !ConversionExpression.Instance.IsNonBoxPointer(Type);
         }
 
         /// <summary>
@@ -284,7 +286,52 @@ namespace Flame.Ecs.Semantics
                 }
             }
 
-            // TODO: pointer conversions
+            // This is what the C# spec has to say about pointer conversions:
+            //
+            //     In an unsafe context, the set of available implicit conversions (Implicit conversions)
+            //     is extended to include the following implicit pointer conversions:
+            //
+            //         * From any pointer_type to the type void*.
+            //         * From the null literal to any pointer_type.
+            //
+            //     Additionally, in an unsafe context, the set of available explicit conversions (Explicit
+            //     conversions) is extended to include the following explicit pointer conversions:
+            //
+            //         * From any pointer_type to any other pointer_type.
+            //         * From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer_type.
+            //         * From any pointer_type to sbyte, byte, short, ushort, int, uint, long, or ulong.
+
+            if (IsTransientPointer(SourceType))
+            {
+                if (IsTransientPointer(TargetType))
+                {
+                    if (TargetType.AsPointerType().ElementType == PrimitiveTypes.Void)
+                    {
+                        // From any pointer_type to the type void*. (implicit)
+                        return ConversionDescription.ImplicitPointerCast;
+                    }
+                    else
+                    {
+                        // From any pointer_type to any other pointer_type. (explicit)
+                        return ConversionDescription.ExplicitPointerCast;
+                    }
+                }
+                else if (TargetType == PrimitiveTypes.Null)
+                {
+                    // From the null literal to any pointer_type. (implicit)
+                    return ConversionDescription.ImplicitPointerCast;
+                }
+                else if (TargetType.GetIsInteger())
+                {
+                    // From any pointer_type to sbyte, byte, short, ushort, int, uint, long, or ulong. (explicit)
+                    return ConversionDescription.ExplicitStaticCast;
+                }
+            }
+            else if (IsTransientPointer(TargetType) && SourceType.GetIsInteger())
+            {
+                // From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer_type. (explicit)
+                return ConversionDescription.ExplicitStaticCast;
+            }
 
             return NoConversion(SourceType, TargetType);
         }
@@ -1277,6 +1324,16 @@ namespace Flame.Ecs.Semantics
         public static bool IsReferencePointer(IType Type)
         {
             return Type.GetIsPointer() && Type.AsPointerType().PointerKind.Equals(PointerKind.ReferencePointer);
+        }
+
+        /// <summary>
+        /// Tests if the given type is a transient pointer type.
+        /// </summary>
+        /// <param name="Type">The type to test for transient-pointerness.</param>
+        /// <returns><c>true</c> if the given type is a transient pointer type; otherwise, <c>false</c>.</returns>
+        public static bool IsTransientPointer(IType Type)
+        {
+            return Type.GetIsPointer() && Type.AsPointerType().PointerKind.Equals(PointerKind.TransientPointer);
         }
 
         private static readonly Dictionary<KeyValuePair<IType, IType>, ConversionDescription> primitiveConversions =
