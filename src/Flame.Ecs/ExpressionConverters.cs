@@ -1812,6 +1812,63 @@ namespace Flame.Ecs
                 }
             }
 
+            // Pointer arithmetic.
+            if (BinaryOperatorResolution.TryGetPointerOperatorType(
+                Op, lTy, rTy, out opTy))
+            {
+                // The C# spec states the following on pointer arithmetic:
+                //
+                //     In an unsafe context, the + and - operators (Addition operator and
+                //     Subtraction operator) can be applied to values of all pointer
+                //     types except void*. Thus, for every pointer type T*, the following
+                //     operators are implicitly defined:
+                //
+                //         T* operator +(T* x, int y);
+                //         T* operator +(T* x, uint y);
+                //         T* operator +(T* x, long y);
+                //         T* operator +(T* x, ulong y);
+                //
+                //         T* operator +(int x, T* y);
+                //         T* operator +(uint x, T* y);
+                //         T* operator +(long x, T* y);
+                //         T* operator +(ulong x, T* y);
+                //
+                //         T* operator -(T* x, int y);
+                //         T* operator -(T* x, uint y);
+                //         T* operator -(T* x, long y);
+                //         T* operator -(T* x, ulong y);
+                //
+                //         long operator -(T* x, T* y);
+
+                if (Op.Equals(Operator.Subtract) && opTy.GetIsInteger())
+                {
+                    return new DivideExpression(
+                        new SubtractExpression(
+                            new StaticCastExpression(lExpr, opTy),
+                            new StaticCastExpression(rExpr, opTy)),
+                        new SizeOfExpression(lTy.AsPointerType().ElementType));
+                }
+                else if (lTy.GetIsPointer())
+                {
+                    return DirectBinaryExpression.Instance.Create(
+                        lExpr, Op, rExpr);
+                }
+                else
+                {
+                    // The result of a simple binary IR op is always the LHS. So, to
+                    // produce the right return type, we need to swap the LHS and RHS.
+                    // Swapping them is legal, because only addition supports integer
+                    // values as RHS for pointer arithmetic.
+
+                    var temp = new SSAVariable("tmp", lExpr.Type);
+                    return new InitializedExpression(
+                        temp.CreateSetStatement(lExpr),
+                        new AddExpression(
+                            rExpr,
+                            temp.CreateGetExpression()));
+                }
+            }
+
             // User-defined operators.
             // TODO: maybe also consider supporting non-static operators?
             var candidates =

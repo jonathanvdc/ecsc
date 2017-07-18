@@ -54,11 +54,120 @@ namespace Flame.Ecs.Semantics
             && HaveReferenceEquality(Left, Right);
         }
 
+        /// <summary>
+        /// Tries to get the type of value obtained by applying a pointer
+        /// arithmetic operator to a pair of types.
+        /// </summary>
+        /// <param name="Op">The (pointer arithmetic) operator to apply.</param>
+        /// <param name="Left">The type of the left-hand side expression.</param>
+        /// <param name="Right">The type of the right-hand side expression.</param>
+        /// <param name="Result">
+        /// If successful, a call to this method stores the resulting type
+        /// of the pointer arithmetic operation in this parameter.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if [Left] [Op] [Right] is a valid pointer arithmetic operator;
+        /// otherwise, </c>false</c>.
+        /// </returns>
+        public static bool TryGetPointerOperatorType(
+            Operator Op, IType Left, IType Right,
+            out IType Result)
+        {
+            // The C# spec states the following on pointer arithmetic:
+            //
+            //     In an unsafe context, the + and - operators (Addition operator and
+            //     Subtraction operator) can be applied to values of all pointer
+            //     types except void*. Thus, for every pointer type T*, the following
+            //     operators are implicitly defined:
+            //
+            //         T* operator +(T* x, int y);
+            //         T* operator +(T* x, uint y);
+            //         T* operator +(T* x, long y);
+            //         T* operator +(T* x, ulong y);
+            //
+            //         T* operator +(int x, T* y);
+            //         T* operator +(uint x, T* y);
+            //         T* operator +(long x, T* y);
+            //         T* operator +(ulong x, T* y);
+            //
+            //         T* operator -(T* x, int y);
+            //         T* operator -(T* x, uint y);
+            //         T* operator -(T* x, long y);
+            //         T* operator -(T* x, ulong y);
+            //
+            //         long operator -(T* x, T* y);
+
+            if (Op.Equals(Operator.Add) || Op.Equals(Operator.Subtract))
+            {
+                if (Left.GetIsPointer()
+                    && Right.GetIsInteger())
+                {
+                    Result = Left;
+                }
+                else if (Right.GetIsPointer()
+                    && Left.GetIsInteger()
+                    && Op.Equals(Operator.Add))
+                {
+                    Result = Right;
+                }
+                else
+                {
+                    Result = null;
+                }
+                return Result != null
+                    && !Result.AsPointerType().ElementType.Equals(PrimitiveTypes.Void);
+            }
+
+            if (Op.Equals(Operator.Subtract)
+                && Left.GetIsPointer()
+                && Right.GetIsPointer()
+                && Left.AsPointerType().ElementType.Equals(
+                    Right.AsPointerType().ElementType)
+                && !Left.AsPointerType().ElementType.Equals(
+                    PrimitiveTypes.Void))
+            {
+                // TODO: maybe this should be ptrdiff_t, which is long for
+                // the CLR back-end. Gotta figure out how to communicate
+                // what ptrdiff_t is from the back-end to the front-end first,
+                // though.
+                Result = PrimitiveTypes.Int64;
+                return true;
+            }
+
+            Result = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the underlying type of the given enum type,
+        /// provided that it is an enum type.
+        /// </summary>
+        /// <param name="EnumType">The enum type.</param>
+        /// <returns>The enum type's underlying type.</returns>
         public static IType GetUnderlyingType(IType EnumType)
         {
             return EnumType.GetParent();
         }
 
+        /// <summary>
+        /// Tries to get the type of value obtained by applying an enum
+        /// operator to a pair of types.
+        /// </summary>
+        /// <param name="Op">The (enum) operator to apply.</param>
+        /// <param name="Left">The type of the left-hand side expression.</param>
+        /// <param name="Right">The type of the right-hand side expression.</param>
+        /// <param name="UnderlyingType">
+        /// If successful, a call to this method stores the underlying type
+        /// of the enum operation in this parameter.
+        /// </param>
+        /// <param name="Result">
+        /// If successful, a call to this method stores the resulting type
+        /// of the enum operation in this parameter.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if [Left] [Op] [Right] is a valid enum operator; otherwise,
+        /// </c>false</c>.
+        /// </returns>
         public static bool TryGetEnumOperatorType(
             Operator Op, IType Left, IType Right, 
             out IType UnderlyingType, out IType Result)
