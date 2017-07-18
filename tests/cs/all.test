@@ -44,6 +44,7 @@ tests
     overrides/Overrides.test;
     params-methods/ParamsMethods.test;
     partial/Partial.test;
+    pointer-arithmetic/PointerArithmetic.test;
     prop-init/PropInit.test;
     properties/Properties.test;
     readonly-fields/ReadOnlyFields.test;
