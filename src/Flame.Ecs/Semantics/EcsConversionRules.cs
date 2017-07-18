@@ -1081,6 +1081,8 @@ namespace Flame.Ecs.Semantics
                     return ConversionDescription.EnumToEnumStaticCast;
                 case ConversionKind.ReinterpretCast:
                     return ConversionDescription.DynamicCast;
+                case ConversionKind.ImplicitPointerCast:
+                    return ConversionDescription.ExplicitPointerCast;
                 default:
                     throw new InvalidOperationException("Cannot invert conversion kind '" + Description.Kind + "'");
             }
