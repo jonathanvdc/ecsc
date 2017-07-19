@@ -158,9 +158,10 @@ namespace Flame.Ecs.Semantics
                 return ConversionDescription.Identity;
             }
             else if (PrimitiveTypes.Null.Equals(SourceType)
-                && IsCSharpReferenceType(TargetType))
+                && (IsCSharpReferenceType(TargetType)
+                    || IsTransientPointer(TargetType)))
             {
-                // Convert 'null' to any reference type, no
+                // Convert 'null' to any reference type or transient pointer type, no
                 // questions asked.
                 return ConversionDescription.ReinterpretCast;
             }
