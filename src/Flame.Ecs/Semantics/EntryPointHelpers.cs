@@ -118,24 +118,34 @@ namespace Flame.Ecs.Semantics
         /// Tests if the given method has the right signature to be an entry point.
         /// </summary>
         /// <param name="Method">The method to examine.</param>
+        /// <param name="IgnorePrototype">
+        /// If this parameter is <c>true</c>, then the return type and parameter list of a method
+        /// are not taken into consideration to determine if it is an entry point.
+        /// </param>
         /// <returns>
         /// <c>true</c> if the given method could be an entry point; otherwise, <c>false</c>.
         /// </returns>
-        public static bool HasEntryPointSignature(IMethod Method)
+        public static bool HasEntryPointSignature(IMethod Method, bool IgnorePrototype)
         {
             return IsEntryPointName(Method.Name)
                 && Method.IsStatic
-                && IsEntryPointReturnType(Method.ReturnType)
-                && IsEntryPointParameterList(Method.Parameters)
+                && (IgnorePrototype || IsEntryPointReturnType(Method.ReturnType))
+                && (IgnorePrototype || IsEntryPointParameterList(Method.Parameters))
                 && !Method.GetRecursiveGenericParameters().Any();
         }
 
         /// <summary>
         /// Infers the entry point of a C# assembly.
         /// </summary>
-        /// <param name="Assembly"></param>
-        /// <returns></returns>
-        public static IMethod InferEntryPoint(IAssembly Assembly, ICompilerLog Log)
+        /// <param name="Assembly">The assembly to find the entry point for.</param>
+        /// <param name="IgnorePrototype">
+        /// If this parameter is <c>true</c>, then the return type and parameter list of a method
+        /// are not taken into consideration to determine if it is an entry point.
+        /// </param>
+        /// <returns>
+        /// An entry point if the assembly contains at least one entry point; otherwise, <c>null</c>.
+        /// </returns>
+        public static IMethod InferEntryPoint(IAssembly Assembly, bool IgnorePrototype, ICompilerLog Log)
         {
             IMethod result = null;
             foreach (var type in Assembly.CreateBinder().GetTypes())
@@ -144,7 +154,7 @@ namespace Flame.Ecs.Semantics
                 {
                     if (IsEntryPointName(method.Name))
                     {
-                        if (HasEntryPointSignature(method))
+                        if (HasEntryPointSignature(method, IgnorePrototype))
                         {
                             if (result != null)
                             {

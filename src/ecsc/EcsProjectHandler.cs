@@ -88,7 +88,8 @@ namespace ecsc
             var asm = new LazyDescribedAssembly(new SimpleName(name), extBinder.Environment, descAsm =>
             {
                 descAsm.AddNamespace(mainNs);
-                descAsm.EntryPoint = EntryPointHelpers.InferEntryPoint(descAsm, Parameters.Log);
+                bool ignorePrototype = Parameters.Log.Options.GetFlag("ignore-main-prototype", false);
+                descAsm.EntryPoint = EntryPointHelpers.InferEntryPoint(descAsm, ignorePrototype, Parameters.Log);
                 AddAssemblyAttributes(descAsm, mainNs);
             });
 
