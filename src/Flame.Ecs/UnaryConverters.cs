@@ -31,7 +31,8 @@ namespace Flame.Ecs
         /// Creates an expression converter for increment/decrement expressions.
         /// </summary>
         public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateIncDecExpressionConverter(
-            string OperatorName, Func<IValue, IType, LocalScope, SourceLocation, IExpression> CreatePrimitiveExpression)
+            string OperatorName,
+            Func<IValue, IType, LocalScope, SourceLocation, IExpression> CreatePrimitiveExpression)
         {
             return (node, scope, converter) =>
             {
@@ -48,21 +49,38 @@ namespace Flame.Ecs
                 {
                     return CreatePrimitiveExpression(innerExpr, innerTy, scope, loc);
                 }
-                else
+                else if (innerTy.GetIsPointer())
                 {
-                    // TODO: user-defined operators
-
-                    // Assume that all types that are not eligible primitive types,
-                    // cannot be 
-                    scope.Log.LogError(new LogEntry(
-                        "type error",
-                        NodeHelpers.HighlightEven(
-                            "the '", OperatorName, "' operator cannot be applied to an operand of type '", 
-                            scope.Function.Global.NameAbbreviatedType(innerTy), "'."),
-                        loc));
-                    return innerExpr.CreateGetExpressionOrError(scope, loc);
+                    var ptrTy = innerTy.AsPointerType();
+                    if (ptrTy.PointerKind.Equals(PointerKind.TransientPointer)
+                        && !ptrTy.ElementType.Equals(PrimitiveTypes.Void))
+                    {
+                        return CreatePrimitiveExpression(innerExpr, innerTy, scope, loc);
+                    }
                 }
+
+                // TODO: user-defined operators
+                scope.Log.LogError(new LogEntry(
+                    "type error",
+                    NodeHelpers.HighlightEven(
+                        "the '", OperatorName, "' operator cannot be applied to an operand of type '",
+                        scope.Function.Global.NameAbbreviatedType(innerTy), "'."),
+                    loc));
+                return innerExpr.CreateGetExpressionOrError(scope, loc);
             };
+        }
+
+        private static IExpression CreateIncrementRhs(IType Type, int Increment)
+        {
+            if (Type.GetIsPointer())
+            {
+                return new IntegerExpression(Increment);
+            }
+            else
+            {
+                return new StaticCastExpression(
+                    new IntegerExpression(Increment), Type).Simplify();
+            }
         }
 
         private static IExpression CreateAddOrSubExpression(
@@ -71,16 +89,14 @@ namespace Flame.Ecs
             if (Increment < 0)
             {
                 return new SubtractExpression(
-                    Value, 
-                    new StaticCastExpression(
-                        new IntegerExpression(-Increment), Type).Optimize());
+                    Value,
+                    CreateIncrementRhs(Type, -Increment));
             }
             else
             {
                 return new AddExpression(
-                    Value, 
-                    new StaticCastExpression(
-                        new IntegerExpression(Increment), Type).Optimize());
+                    Value,
+                    CreateIncrementRhs(Type, Increment));
             }
         }
 
@@ -96,7 +112,7 @@ namespace Flame.Ecs
                     return ExpressionConverters.CreateUncheckedAssignment(
                         variable,
                         CreateAddOrSubExpression(
-                            variable.CreateGetExpressionOrError(scope, loc), 
+                            variable.CreateGetExpressionOrError(scope, loc),
                             ty, Increment),
                         scope, loc);
                 });
@@ -105,7 +121,7 @@ namespace Flame.Ecs
         public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPrefixIncrement =
             CreatePrefixIncDecConverter("++", 1);
 
-        public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPrefixDecrement = 
+        public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPrefixDecrement =
             CreatePrefixIncDecConverter("--", -1);
 
         /// <summary>
@@ -136,7 +152,7 @@ namespace Flame.Ecs
         /// Creates a postfix increment/decrement expression.
         /// </summary>
         private static IExpression CreateGeneralPostfixIncDecExpr(
-            IValue Variable, IType Type, int Increment, 
+            IValue Variable, IType Type, int Increment,
             ILocalScope Scope, SourceLocation Location)
         {
             // Create the following expression:
@@ -154,7 +170,7 @@ namespace Flame.Ecs
                 new BlockStatement(new IStatement[]
                 {
                     Variable.CreateSetStatementOrError(
-                        CreateAddOrSubExpression(local.CreateGetExpression(), Type, Increment), 
+                        CreateAddOrSubExpression(local.CreateGetExpression(), Type, Increment),
                         Scope, Location),
                     local.CreateReleaseStatement()
                 }));
@@ -179,7 +195,7 @@ namespace Flame.Ecs
         public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPostfixIncrement =
             CreatePostfixIncDecConverter("++", 1);
 
-        public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPostfixDecrement = 
+        public static readonly Func<LNode, LocalScope, NodeConverter, IExpression> ConvertPostfixDecrement =
             CreatePostfixIncDecConverter("--", -1);
 
         #endregion
@@ -219,7 +235,7 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         NodeHelpers.HighlightEven(
-                            "wrong number of indexes '", dimExprs.Count.ToString(), "' inside ", 
+                            "wrong number of indexes '", dimExprs.Count.ToString(), "' inside ",
                             "[]", ", expected '", dims.ToString(), "'."),
                         loc));
                     return new ExpressionValue(new UnknownExpression(elemTy));
@@ -242,7 +258,7 @@ namespace Flame.Ecs
             }
             else
             {
-                var indexers = 
+                var indexers =
                     Scope.Function.GetInstanceIndexers(containerTy)
                         .Select(
                             p => new IndexerDelegateExpression(
@@ -253,7 +269,7 @@ namespace Flame.Ecs
                 if (indexers.Length == 0)
                 {
                     Scope.Log.LogError(new LogEntry(
-                        "type error", 
+                        "type error",
                         NodeHelpers.HighlightEven(
                             "cannot apply indexing with '", "[]",
                             "' to an expression of type '",
@@ -305,7 +321,7 @@ namespace Flame.Ecs
         /// issues.
         /// </summary>
         public static IExpression CreateUnary(
-            Operator Op, IExpression Operand, 
+            Operator Op, IExpression Operand,
             FunctionScope Scope,
             SourceLocation Location)
         {
@@ -319,7 +335,7 @@ namespace Flame.Ecs
                     Scope.Global.Log.LogError(new LogEntry(
                         "operator application",
                         NodeHelpers.HighlightEven(
-                            "operator '", Op.Name, "' cannot be applied to an operand of type '", 
+                            "operator '", Op.Name, "' cannot be applied to an operand of type '",
                             Scope.Global.NameAbbreviatedType(ty), "'."),
                         Location));
                     return new UnknownExpression(ty);
@@ -351,8 +367,8 @@ namespace Flame.Ecs
                     return VoidExpression.Instance;
 
                 return CreateUnary(
-                    Op, 
-                    conv.ConvertExpression(node.Args[0], scope), 
+                    Op,
+                    conv.ConvertExpression(node.Args[0], scope),
                     scope.Function,
                     NodeHelpers.ToSourceLocation(node.Args[0].Range));
             };
@@ -374,17 +390,17 @@ namespace Flame.Ecs
                 if (node.ArgCount == 1)
                 {
                     return CreateUnary(
-                        Op, 
-                        conv.ConvertExpression(node.Args[0], scope), 
+                        Op,
+                        conv.ConvertExpression(node.Args[0], scope),
                         scope.Function,
                         NodeHelpers.ToSourceLocation(node.Args[0].Range));
                 }
                 else
                 {
                     return ExpressionConverters.CreateBinary(
-                        Op, 
-                        conv.ConvertValue(node.Args[0], scope), 
-                        conv.ConvertValue(node.Args[1], scope), 
+                        Op,
+                        conv.ConvertValue(node.Args[0], scope),
+                        conv.ConvertValue(node.Args[1], scope),
                         scope.Function,
                         NodeHelpers.ToSourceLocation(node.Args[0].Range),
                         NodeHelpers.ToSourceLocation(node.Args[1].Range));

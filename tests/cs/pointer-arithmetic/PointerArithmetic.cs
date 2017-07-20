@@ -16,6 +16,8 @@ public static class Program
             int val = *(byteBuf + i);
             Console.WriteLine(val);
         }
+        byteBuf++;
+        --byteBuf;
         Marshal.FreeHGlobal(buf);
     }
 }
