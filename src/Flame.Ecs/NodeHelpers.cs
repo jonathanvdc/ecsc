@@ -145,6 +145,38 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Checks that the given node is a call node that calls the given symbol.
+        /// </summary>
+        public static bool CheckCall(LNode Node, Symbol Target, ICompilerLog Log)
+        {
+            if (!Node.IsCall)
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node type",
+                    HighlightEven(
+                        "syntax node '", Node.Name.Name, "' was not a ",
+                        "call", " node, expected a call to '",
+                        Target.Name, "'."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else if (!Node.Calls(Target))
+            {
+                Log.LogError(new LogEntry(
+                    "unexpected node type",
+                    HighlightEven(
+                        "syntax node calls '", Node.Name.Name,
+                        "', expected a call to '", Target.Name, "'."),
+                    ToSourceLocation(Node.Range)));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Checks the given node's arity.
         /// </summary>
         public static bool CheckArity(LNode Node, int Arity, ICompilerLog Log)

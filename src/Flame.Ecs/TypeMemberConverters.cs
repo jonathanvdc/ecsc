@@ -26,6 +26,14 @@ namespace Flame.Ecs
         public static Tuple<IParameter, LNode> ConvertParameter(
             LNode Node, LocalScope Scope, NodeConverter Converter)
         {
+            if (!NodeHelpers.CheckCall(Node, CodeSymbols.Var, Scope.Log)
+                || !NodeHelpers.CheckArity(Node, 2, Scope.Log))
+            {
+                return Tuple.Create<IParameter, LNode>(
+                    new DescribedParameter("", ErrorType.Instance),
+                    null);
+            }
+
             var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope.Function.Global);
             var paramTy = Converter.ConvertType(Node.Args[0], Scope);
             if (paramTy == null)
