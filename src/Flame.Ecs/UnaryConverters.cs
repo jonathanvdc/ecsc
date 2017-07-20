@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Flame.Compiler;
 using Flame.Compiler.Expressions;
@@ -246,15 +247,59 @@ namespace Flame.Ecs
                     var ty = item.Item1.Type;
                     if (!ty.GetIsInteger() && !PrimitiveTypes.Char.Equals(ty))
                     {
-                        Scope.Log.LogError(new LogEntry(
+                        return new ErrorValue(new LogEntry(
                             "type error",
-                            NodeHelpers.HighlightEven(
-                                "index inside ", "[]", " of type '", Scope.Function.Global.NameAbbreviatedType(ty),
-                                "' was not an integer."),
-                            loc));
+                                NodeHelpers.HighlightEven(
+                                    "index inside ", "[]", " of type '", Scope.Function.Global.NameAbbreviatedType(ty),
+                                    "' was not an integer."),
+                                loc));
                     }
                 }
                 return new VariableValue(new ElementVariable(containerExpr, dimExprs.Select(t => t.Item1)));
+            }
+            else if (EcsConversionRules.IsTransientPointer(containerTy))
+            {
+                var containerExpr = containerVal.CreateGetExpressionOrError(Scope, loc);
+                var elemTy = containerTy.AsPointerType().ElementType;
+
+                if (elemTy == PrimitiveTypes.Void)
+                {
+                    return new ErrorValue(new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "indexing cannot be applied to '", Scope.Function.Global.NameAbbreviatedType(elemTy),
+                            "' pointers."),
+                        loc));
+                }
+
+                if (dimExprs.Count != 1)
+                {
+                    return new ErrorValue(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "a pointer value ('", Scope.Function.Global.NameAbbreviatedType(containerTy),
+                            "') can only be indexed by exactly ", "1", " index; found ",
+                            dimExprs.Count.ToString(CultureInfo.InvariantCulture), "."),
+                        loc));
+                }
+
+                var index = dimExprs[0].Item1;
+
+                if (!index.Type.GetIsInteger())
+                {
+                    var typeRenderer = Scope.Function.Global.CreateAbbreviatingRenderer(containerTy, index.Type);
+                    return new ErrorValue(new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "a pointer value ('", typeRenderer.Name(containerTy),
+                            "') can only be indexed by an integer index; actual index type: '",
+                            typeRenderer.Name(index.Type), "'."),
+                        loc));
+                }
+
+                return new VariableValue(
+                    new AtAddressVariable(
+                        new AddExpression(containerExpr, index)));
             }
             else
             {

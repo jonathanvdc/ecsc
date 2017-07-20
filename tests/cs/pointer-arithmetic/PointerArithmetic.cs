@@ -13,8 +13,7 @@ public static class Program
         }
         for (byte i = 0; i < 4; i++)
         {
-            int val = *(byteBuf + i);
-            Console.WriteLine(val);
+            Console.WriteLine((int)byteBuf[i]);
         }
         byteBuf++;
         --byteBuf;
