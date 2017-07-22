@@ -6,5 +6,4 @@ tests
     cs-errors/all.test;
     warnings/all.test;
     ecs/all.test;
-    wasm/all.test;
 }
