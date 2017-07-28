@@ -9,6 +9,17 @@ namespace EcscMacros
     public static class EcscSymbols
     {
         /// <summary>
+        /// A builtin attribute node type that marks its parent node as hidden.
+        /// Hidden members are not directly inaccessible from user code, but
+        /// can be accessed by the compiler.
+        /// </summary>
+        /// <remarks>
+        /// Usage:
+        ///     [#builtin_hidden] public static string StringFromConstPtr(byte* ptr) { ... }
+        /// </remarks>
+        public static readonly Symbol BuiltinHidden = GSymbol.Get("#builtin_hidden");
+
+        /// <summary>
         /// A builtin node type that produces the declaring type of its argument.
         /// </summary>
         /// <remarks>
