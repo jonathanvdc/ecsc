@@ -438,6 +438,11 @@ namespace Flame.Ecs
         public static IValue AccessMember(
             IValue Target, ITypeMember Member, GlobalScope Scope)
         {
+            if (Member.GetIsHidden())
+            {
+                return null;
+            }
+
             if (Member is IField)
             {
                 return new FieldValue((IField)Member, Target);
