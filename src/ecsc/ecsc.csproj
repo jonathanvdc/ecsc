@@ -131,9 +131,6 @@
     <Reference Include="Flame.Verification">
       <HintPath>..\packages\Flame.Front.0.9.15\lib\net45\Flame.Verification.dll</HintPath>
     </Reference>
-    <Reference Include="Flame.Wasm">
-      <HintPath>..\packages\Flame.Front.0.9.15\lib\net45\Flame.Wasm.dll</HintPath>
-    </Reference>
     <Reference Include="Flame.XmlDocs">
       <HintPath>..\packages\Flame.Front.0.9.15\lib\net45\Flame.XmlDocs.dll</HintPath>
     </Reference>
