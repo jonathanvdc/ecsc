@@ -2,6 +2,7 @@
 tests
 {
     alt-class/AltClass.test;
+    builtin-hidden/BuiltinHidden.test;
     generic-alt-class/GenericAltClass.test;
     ienumerable-params/IEnumerableParams.test;
     static-if/StaticIf.test;

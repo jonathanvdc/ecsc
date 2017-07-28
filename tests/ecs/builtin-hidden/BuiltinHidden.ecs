@@ -1,0 +1,16 @@
+using System;
+using static System.Console;
+
+public static class Program
+{
+    [#builtin_hidden]
+    public static void WriteLine(string str)
+    {
+        Console.WriteLine("Hello world");
+    }
+
+    public static void Main()
+    {
+        WriteLine("Howdy partner");
+    }
+}
