@@ -36,9 +36,10 @@ namespace Flame.Ecs.Semantics
                 return new ConversionDescription[] { ConversionDescription.Identity };
             }
 
-            if (Source is IntegerExpression)
+            var innerExpr = Source.GetEssentialExpression();
+            if (innerExpr is IntegerExpression)
             {
-                var srcLiteral = ((IntegerExpression)Source).Value;
+                var srcLiteral = ((IntegerExpression)innerExpr).Value;
                 var targetSpec = TargetType.GetIntegerSpec();
                 if (targetSpec != null && targetSpec.IsRepresentible(srcLiteral.Value))
                 {
@@ -49,8 +50,7 @@ namespace Flame.Ecs.Semantics
             // Handle method group conversions.
             if (TargetType.GetIsDelegate())
             {
-                var sourceDelegates = IntersectionExpression.GetIntersectedExpressions(
-                    Source.GetEssentialExpression())
+                var sourceDelegates = IntersectionExpression.GetIntersectedExpressions(innerExpr)
                     .Where(item => item.Type is MethodType)
                     .ToArray();
                 if (sourceDelegates.Length > 0)
@@ -1074,6 +1074,8 @@ namespace Flame.Ecs.Semantics
                     return Description;
                 case ConversionKind.ImplicitBoxingConversion:
                     return ConversionDescription.UnboxValueConversion;
+                case ConversionKind.ImplicitStaticCast:
+                    return ConversionDescription.ExplicitStaticCast;
                 case ConversionKind.NumberToEnumStaticCast:
                     return ConversionDescription.EnumToNumberStaticCast;
                 case ConversionKind.EnumToNumberStaticCast:
@@ -1452,9 +1454,9 @@ namespace Flame.Ecs.Semantics
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.String), ConversionDescription.None },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Char), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int8), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int16), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int32), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int64), ConversionDescription.ExplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int16), ConversionDescription.ImplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int32), ConversionDescription.ImplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.Int64), ConversionDescription.ImplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.UInt8), ConversionDescription.Identity },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.UInt16), ConversionDescription.ImplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt8, PrimitiveTypes.UInt32), ConversionDescription.ImplicitStaticCast },
@@ -1468,8 +1470,8 @@ namespace Flame.Ecs.Semantics
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Char), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int8), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int16), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int32), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int64), ConversionDescription.ExplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int32), ConversionDescription.ImplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.Int64), ConversionDescription.ImplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.UInt8), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.UInt16), ConversionDescription.Identity },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt16, PrimitiveTypes.UInt32), ConversionDescription.ImplicitStaticCast },
@@ -1484,7 +1486,7 @@ namespace Flame.Ecs.Semantics
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.Int8), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.Int16), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.Int32), ConversionDescription.ExplicitStaticCast },
-                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.Int64), ConversionDescription.ExplicitStaticCast },
+                { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.Int64), ConversionDescription.ImplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.UInt8), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.UInt16), ConversionDescription.ExplicitStaticCast },
                 { new KeyValuePair<IType, IType>(PrimitiveTypes.UInt32, PrimitiveTypes.UInt32), ConversionDescription.Identity },

@@ -244,7 +244,7 @@ namespace Flame.Ecs.Semantics
         /// A conversion description for explicit static casts.
         /// </summary>
         public static readonly ConversionDescription ExplicitStaticCast
-            = new SimpleConversionDescription(ConversionKind.ImplicitStaticCast);
+            = new SimpleConversionDescription(ConversionKind.ExplicitStaticCast);
 
         /// <summary>
         /// A conversion description for implicit boxing conversions.
