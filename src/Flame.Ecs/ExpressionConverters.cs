@@ -3370,6 +3370,28 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a root type expression, i.e., #object.
+        /// </summary>
+        public static IType ConvertRootType(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            var rootTy = Scope.Function.Global.Environment.RootType;
+            if (rootTy != null)
+            {
+                return rootTy;
+            }
+            else
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "no root type",
+                    NodeHelpers.HighlightEven(
+                        "type '", "object", "' cannot be resolved because the " +
+                        "environment does not define a root type."),
+                    NodeHelpers.ToSourceLocation(Node.Range)));
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Converts a builtin static-if-expression node (type #builtin_static_if).
         /// </summary>
         public static IExpression ConvertBuiltinStaticIfExpression(LNode Node, LocalScope Scope, NodeConverter Converter)

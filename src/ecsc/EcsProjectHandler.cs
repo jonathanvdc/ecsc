@@ -218,7 +218,6 @@ namespace ecsc
             ICompilerLog Log, IAssembly DeclaringAssembly)
         {
             var converter = NodeConverter.DefaultNodeConverter;
-            NodeConverter.AddEnvironmentConverters(converter, Binder.Environment);
             var globalScope = new GlobalScope(
                 Binder, new EcsConversionRules(Binder.Environment),
                 Log, EcsTypeRenderer.Instance,
