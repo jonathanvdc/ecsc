@@ -18,7 +18,7 @@ namespace Flame.Ecs.Semantics
         /// cast to, for the given combination of initial operand types.
         /// A boolean is returned that tells whether the lookup was successful.
         /// If so, then a 'null' result type indicates that the given operation
-        /// is illegal. 
+        /// is illegal.
         /// </summary>
         public static bool TryGetPrimitiveOperatorType(
             Operator Op, IType Left, IType Right, out IType Result)
@@ -30,7 +30,7 @@ namespace Flame.Ecs.Semantics
         }
 
         /// <summary>
-        /// Checks if the given pair of types have 
+        /// Checks if the given pair of types have
         /// reference equality.
         /// </summary>
         public static bool HaveReferenceEquality(
@@ -42,7 +42,7 @@ namespace Flame.Ecs.Semantics
 
         /// <summary>
         /// Determines if an application of the given operator
-        /// to the given pair of types could be reference 
+        /// to the given pair of types could be reference
         /// equality, assuming that one of these types is
         /// implicitly convertible to the other.
         /// </summary>
@@ -169,7 +169,7 @@ namespace Flame.Ecs.Semantics
         /// </c>false</c>.
         /// </returns>
         public static bool TryGetEnumOperatorType(
-            Operator Op, IType Left, IType Right, 
+            Operator Op, IType Left, IType Right,
             out IType UnderlyingType, out IType Result)
         {
             bool lEnum = Left.GetIsEnum();
@@ -335,7 +335,7 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Float32), PrimitiveTypes.Float32 },
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Float64), PrimitiveTypes.Float64 },
 
-            // Int64			
+            // Int64
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Char), PrimitiveTypes.Int64 },
@@ -446,19 +446,19 @@ namespace Flame.Ecs.Semantics
         private static readonly Dictionary<Tuple<IType, IType>, IType> additionTypes = new Dictionary<Tuple<IType, IType>, IType>()
         {
             // String
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.String), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Boolean), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Char), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int8), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int16), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int32), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int64), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt8), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt16), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt32), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt64), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float32), PrimitiveTypes.String },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float64), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.String), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Boolean), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Char), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int8), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int16), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int32), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int64), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt8), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt16), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt32), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt64), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float32), PrimitiveTypes.String },
+            // { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float64), PrimitiveTypes.String },
 
             // Boolean
             { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.String), PrimitiveTypes.String },
@@ -535,7 +535,7 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Float32), PrimitiveTypes.Float32 },
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Float64), PrimitiveTypes.Float64 },
 
-            // Int64			
+            // Int64
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.String), PrimitiveTypes.String },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Char), PrimitiveTypes.Int64 },
@@ -645,23 +645,7 @@ namespace Flame.Ecs.Semantics
         // null indicates an error
         private static readonly Dictionary<Tuple<IType, IType>, IType> shiftTypes = new Dictionary<Tuple<IType, IType>, IType>()
         {
-            // String
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.String), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Boolean), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Char), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int8), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int16), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int32), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Int64), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt8), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt16), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt32), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.UInt64), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float32), null },
-            { Tuple.Create(PrimitiveTypes.String, PrimitiveTypes.Float64), null },
-
             // Boolean
-            { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.Char), null },
             { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.Int8), null },
@@ -676,7 +660,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Boolean, PrimitiveTypes.Float64), null },
 
             // Char
-            { Tuple.Create(PrimitiveTypes.Char, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Char, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Char, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.Char, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -691,7 +674,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Char, PrimitiveTypes.Float64), null },
 
             // Int8
-            { Tuple.Create(PrimitiveTypes.Int8, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Int8, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int8, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.Int8, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -706,7 +688,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int8, PrimitiveTypes.Float64), null },
 
             // Int16
-            { Tuple.Create(PrimitiveTypes.Int16, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Int16, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int16, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.Int16, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -721,7 +702,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int16, PrimitiveTypes.Float64), null },
 
             // Int32
-            { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -736,7 +716,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int32, PrimitiveTypes.Float64), null },
 
             // Int64
-            { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Char), PrimitiveTypes.Int64 },
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Int8), PrimitiveTypes.Int64 },
@@ -751,7 +730,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Int64, PrimitiveTypes.Float64), null },
 
             // UInt8
-            { Tuple.Create(PrimitiveTypes.UInt8, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.UInt8, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.UInt8, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.UInt8, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -766,7 +744,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.UInt8, PrimitiveTypes.Float64), null },
 
             // UInt16
-            { Tuple.Create(PrimitiveTypes.UInt16, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.UInt16, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.UInt16, PrimitiveTypes.Char), PrimitiveTypes.Int32 },
             { Tuple.Create(PrimitiveTypes.UInt16, PrimitiveTypes.Int8), PrimitiveTypes.Int32 },
@@ -781,7 +758,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.UInt16, PrimitiveTypes.Float64), null },
 
             // UInt32
-            { Tuple.Create(PrimitiveTypes.UInt32, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.UInt32, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.UInt32, PrimitiveTypes.Char), PrimitiveTypes.UInt32 },
             { Tuple.Create(PrimitiveTypes.UInt32, PrimitiveTypes.Int8), PrimitiveTypes.UInt32 },
@@ -796,7 +772,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.UInt32, PrimitiveTypes.Float64), null },
 
             // UInt64
-            { Tuple.Create(PrimitiveTypes.UInt64, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.UInt64, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.UInt64, PrimitiveTypes.Char), PrimitiveTypes.UInt64 },
             { Tuple.Create(PrimitiveTypes.UInt64, PrimitiveTypes.Int8), PrimitiveTypes.UInt64 },
@@ -811,7 +786,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.UInt64, PrimitiveTypes.Float64), null },
 
             // Float32
-            { Tuple.Create(PrimitiveTypes.Float32, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Float32, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Float32, PrimitiveTypes.Char), null },
             { Tuple.Create(PrimitiveTypes.Float32, PrimitiveTypes.Int8), null },
@@ -826,7 +800,6 @@ namespace Flame.Ecs.Semantics
             { Tuple.Create(PrimitiveTypes.Float32, PrimitiveTypes.Float64), null },
 
             // Float64
-            { Tuple.Create(PrimitiveTypes.Float64, PrimitiveTypes.String), null },
             { Tuple.Create(PrimitiveTypes.Float64, PrimitiveTypes.Boolean), null },
             { Tuple.Create(PrimitiveTypes.Float64, PrimitiveTypes.Char), null },
             { Tuple.Create(PrimitiveTypes.Float64, PrimitiveTypes.Int8), null },
@@ -1212,7 +1185,7 @@ namespace Flame.Ecs.Semantics
             { Operator.Xor, logicalTypes }
         };
 
-        private static readonly Dictionary<Tuple<Operator, EnumOperand, EnumOperand>, EnumOperand> enumOpTypes = 
+        private static readonly Dictionary<Tuple<Operator, EnumOperand, EnumOperand>, EnumOperand> enumOpTypes =
             new Dictionary<Tuple<Operator, EnumOperand, EnumOperand>, EnumOperand>()
             {
                 { Tuple.Create(Operator.Add, EnumOperand.EnumType, EnumOperand.UnderlyingType), EnumOperand.EnumType },
