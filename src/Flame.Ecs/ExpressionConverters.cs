@@ -1751,10 +1751,10 @@ namespace Flame.Ecs
                 && (PrimitiveTypes.String.Equals(lTy) || PrimitiveTypes.String.Equals(rTy)))
             {
                 return new ConcatExpression(new IExpression[]
-                    {
-                        ValueToString(Left, Scope, LeftLocation),
-                        ValueToString(Right, Scope, RightLocation)
-                    });
+                {
+                    ValueToString(Left, Scope, LeftLocation),
+                    ValueToString(Right, Scope, RightLocation)
+                });
             }
 
             var lExpr = Left.CreateGetExpressionOrError(Scope, LeftLocation);
