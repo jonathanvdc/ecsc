@@ -7,6 +7,6 @@ install:
   - nuget restore src/ecsc.sln
 script:
   # Build ecsc
-  - xbuild /p:Configuration=Release src/ecsc.sln
+  - msbuild /p:Configuration=Release src/ecsc.sln
   # Run the tests
   - mono bin/compare-test/compare-test.exe all-tests-mono.test -j
