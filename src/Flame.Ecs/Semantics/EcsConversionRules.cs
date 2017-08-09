@@ -204,9 +204,9 @@ namespace Flame.Ecs.Semantics
             var envSourceType = Environment.GetEquivalentType(SourceType);
             var envTargetType = Environment.GetEquivalentType(TargetType);
             if (IsCSharpReferenceType(envSourceType)
-                && (IsCSharpValueType(envTargetType) ||
-                    (envTargetType.GetIsGenericParameter()
-                    && !IsCSharpReferenceType(envTargetType)))
+                && (IsCSharpValueType(envTargetType)
+                    || (envTargetType.GetIsGenericParameter()
+                        && !IsCSharpReferenceType(envTargetType)))
                 && envTargetType.Is(envSourceType))
             {
                 // Here's what the C# spec says about unboxing conversions:
