@@ -25,11 +25,11 @@ cd ecsc
 Next, update the NuGet packages, and compile the `ecsc` solution.
 Visual Studio users should be able to open `src/ecsc.sln`, switch to 'Release' mode, and hit 'Build Solution'.
 
-For mono users, that's
+If you'd rather use the command-line, that's
 
 ```
 nuget restore src/ecsc.sln
-xbuild /p:Configuration=Release src/ecsc.sln
+msbuild /p:Configuration=Release src/ecsc.sln
 ```
 
 You should be all set now. You may also want to add `ecsc` to your `PATH` environment variable, but I'll leave that up to you.
