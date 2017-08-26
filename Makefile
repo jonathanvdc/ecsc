@@ -6,7 +6,7 @@ all-source-files = \
 all: src/ecsc/bin/Release/ecsc.exe
 
 src/ecsc/bin/Release/ecsc.exe: $(all-source-files)
-	msbuild /p:Configuration=Release src/ecsc.sln
+	msbuild /p:Configuration=Release /verbosity:quiet /nologo src/ecsc.sln
 	touch $@
 
 .PHONY: nuget
