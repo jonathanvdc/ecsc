@@ -1794,10 +1794,8 @@ namespace Flame.Ecs
                     }
                 }
 
-                return DirectBinaryExpression.Instance.Create(
-                    Scope.ConvertImplicit(lExpr, opTy, LeftLocation),
-                    Op,
-                    Scope.ConvertImplicit(rExpr, opTy, RightLocation));
+                return CreatePrimitiveBinaryExpression(
+                    Op, lExpr, rExpr, opTy, Scope, LeftLocation, RightLocation);
             }
 
             // Enum operators
@@ -1933,6 +1931,28 @@ namespace Flame.Ecs
                 // with as type the lhs's type.
                 return LogNoBinaryOperator(lTy, Op, rTy, LeftLocation, RightLocation, globalScope);
             }
+        }
+
+        private static IExpression CreatePrimitiveBinaryExpression(
+            Operator Op,
+            IExpression Left,
+            IExpression Right,
+            IType OpType,
+            FunctionScope Scope,
+            SourceLocation LeftLocation,
+            SourceLocation RightLocation)
+        {
+            // Shift operators are special because they have asymmetric operator
+            // types in C# but symmetric operator types in Flame IR.
+            var convRhs =
+                Op.Equals(Operator.LeftShift) || Op.Equals(Operator.RightShift)
+                ? Scope.ConvertExplicit(Right, OpType, RightLocation)
+                : Scope.ConvertImplicit(Right, OpType, RightLocation);
+
+            return DirectBinaryExpression.Instance.Create(
+                Scope.ConvertImplicit(Left, OpType, LeftLocation),
+                Op,
+                convRhs);
         }
 
         /// <summary>
@@ -2280,10 +2300,8 @@ namespace Flame.Ecs
                     && opTy != null && Scope.HasExplicitConversion(opTy, lhsType))
                 {
                     return Scope.ConvertExplicit(
-                        DirectBinaryExpression.Instance.Create(
-                            Scope.ConvertImplicit(lhsExpr, opTy, LeftLocation),
-                            Op,
-                            Scope.ConvertImplicit(rhsExpr, opTy, RightLocation)),
+                        CreatePrimitiveBinaryExpression(
+                            Op, lhsExpr, rhsExpr, opTy, Scope, LeftLocation, RightLocation),
                         lhsType,
                         LeftLocation.Concat(RightLocation));
                 }
