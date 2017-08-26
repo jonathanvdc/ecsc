@@ -13,6 +13,8 @@ src/ecsc/bin/Release/ecsc.exe: $(all-source-files)
 nuget:
 	nuget restore src/ecsc.sln
 
+include flame-make-scripts/use-compare-test.mk
+
 .PHONY: test
-test:
-	compare-test all-tests-mono.test -j
+test: | compare-test
+	$(COMPARE_TEST) all-tests-mono.test -j
