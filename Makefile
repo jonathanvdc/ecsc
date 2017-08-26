@@ -12,3 +12,7 @@ src/ecsc/bin/Release/ecsc.exe: $(all-source-files)
 .PHONY: nuget
 nuget:
 	nuget restore src/ecsc.sln
+
+.PHONY: test
+test:
+	compare-test all-tests-mono.test -j
