@@ -16,5 +16,5 @@ nuget:
 include flame-make-scripts/use-compare-test.mk
 
 .PHONY: test
-test: | compare-test
+test: all | compare-test
 	$(COMPARE_TEST) all-tests-mono.test -j
