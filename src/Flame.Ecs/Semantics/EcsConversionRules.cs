@@ -37,13 +37,17 @@ namespace Flame.Ecs.Semantics
             }
 
             var innerExpr = Source.GetEssentialExpression();
-            if (innerExpr is IntegerExpression)
+            if (innerExpr.Type.GetIsInteger() && innerExpr.GetIsConstant())
             {
-                var srcLiteral = ((IntegerExpression)innerExpr).Value;
-                var targetSpec = TargetType.GetIntegerSpec();
-                if (targetSpec != null && targetSpec.IsRepresentible(srcLiteral.Value))
+                var srcLiteral = innerExpr.Evaluate();
+                if (srcLiteral != null)
                 {
-                    return new ConversionDescription[] { ConversionDescription.ImplicitStaticCast };
+                    var targetSpec = TargetType.GetIntegerSpec();
+                    if (targetSpec != null
+                        && targetSpec.IsRepresentible(srcLiteral.GetValue<IntegerValue>().Value))
+                    {
+                        return new ConversionDescription[] { ConversionDescription.ImplicitStaticCast };
+                    }
                 }
             }
 

@@ -11,6 +11,7 @@ tests
     cast/Cast.test;
     concat/Concat.test;
     const/Const.test;
+    const-int-conversions/ConstIntConversions.test;
     constructor/Constructor.test;
     dereference/Dereference.test;
     enums/Enums.test;
