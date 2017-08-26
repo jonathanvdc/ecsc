@@ -1,12 +1,10 @@
 language: csharp
 dist: trusty
 install:
-  - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.4/compare-test.zip > compare-test.zip
-  - mkdir -p bin/compare-test
-  - unzip compare-test.zip -d bin/compare-test
-  - nuget restore src/ecsc.sln
+  # Restore nuget packages
+  - make nuget
 script:
   # Build ecsc
-  - msbuild /p:Configuration=Release src/ecsc.sln
+  - make
   # Run the tests
-  - mono bin/compare-test/compare-test.exe all-tests-mono.test -j
+  - make test
