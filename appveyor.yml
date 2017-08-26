@@ -4,6 +4,7 @@ cache:
   - C:\Users\appveyor\AppData\Local\NuGet\Cache
 
 install:
+  # Grab compare-test.
   - curl -L https://github.com/jonathanvdc/compare-test/releases/download/v0.1.4/compare-test.zip > compare-test.zip
   - mkdir bin
   - 7z x compare-test.zip -obin\compare-test
@@ -12,12 +13,14 @@ install:
 build_script:
   - set VERNUM=0.1.1
   - echo %APPVEYOR_REPO_TAG%
+
   # Build packages as VERNUM-ci{build}
   - ps: if ($env:APPVEYOR_REPO_TAG -eq $True) { $env:PKG_VERSION = $env:VERNUM; } else { $env:PKG_VERSION = "$($env:VERNUM)-ci$($env:APPVEYOR_BUILD_NUMBER)"; }
   - echo %PKG_VERSION%
 
   - set ASM_VERSION=%VERNUM%.%APPVEYOR_BUILD_NUMBER%
   - echo %ASM_VERSION%
+
   # Build ecsc
   - msbuild /p:Configuration=Release src\ecsc.sln
 
