@@ -1736,6 +1736,13 @@ namespace Flame.Ecs
         /// and two source locations are used to highlight potential
         /// issues.
         /// </summary>
+        /// <param name="Op">The operator to apply.</param>
+        /// <param name="Left">The left-hand side operand.</param>
+        /// <param name="Right">The right-hand side operand.</param>
+        /// <param name="Scope">The function scope in which the binary operator application is analyzed.</param>
+        /// <param name="LeftLocation">The source location of the left-hand side operand.</param>
+        /// <param name="RightLocation">The source location of the right-hand side operand.</param>
+        /// <returns>An expression that represents the operator applied to the operands.</returns>
         public static IExpression CreateBinary(
             Operator Op, IValue Left, IValue Right,
             FunctionScope Scope,
@@ -2185,6 +2192,15 @@ namespace Flame.Ecs
         /// </summary>
         public static Func<LNode, LocalScope, NodeConverter, IExpression> CreateCompoundAssignmentConverter(Operator Op)
         {
+            // TODO: evaluate the LHS only once. The spec says:
+            //
+            //     The term "evaluated only once" means that in the evaluation of `x op y`, the
+            //     results of any constituent expressions of `x` are temporarily saved and then
+            //     reused when performing the assignment to `x`. For example, in the assignment
+            //     `A()[B()] += C()`, where `A` is a method returning `int[]`, and `B` and `C`
+            //     are methods returning `int`, the methods are invoked only once, in the order
+            //     `A`, `B`, `C`.
+
             return (node, scope, conv) =>
             {
                 if (!NodeHelpers.CheckArity(node, 2, scope.Log))
@@ -2196,7 +2212,7 @@ namespace Flame.Ecs
                 var leftLoc = NodeHelpers.ToSourceLocation(node.Args[0].Range);
                 var rightLoc = NodeHelpers.ToSourceLocation(node.Args[1].Range);
 
-                var result = CreateBinary(
+                var result = CreateCompoundBinary(
                     Op, lhs, rhs, scope.Function, leftLoc, rightLoc);
 
                 return CreateUncheckedAssignment(
@@ -2204,6 +2220,76 @@ namespace Flame.Ecs
                         result, lhs.Type, rightLoc),
                     scope, leftLoc.Concat(rightLoc));
             };
+        }
+
+        /// <summary>
+        /// Applies a binary operator to two values within the context
+        /// of a compound assignment.
+        /// </summary>
+        /// <param name="Op">The operator to apply.</param>
+        /// <param name="Left">The left-hand side operand.</param>
+        /// <param name="Right">The right-hand side operand.</param>
+        /// <param name="Scope">The function scope in which the binary operator application is analyzed.</param>
+        /// <param name="LeftLocation">The source location of the left-hand side operand.</param>
+        /// <param name="RightLocation">The source location of the right-hand side operand.</param>
+        /// <returns>An expression that represents the operator applied to the operands.</returns>
+        private static IExpression CreateCompoundBinary(
+            Operator Op,
+            IValue Left,
+            IValue Right,
+            FunctionScope Scope,
+            SourceLocation LeftLocation,
+            SourceLocation RightLocation)
+        {
+            // You'd think that `x op= y` is just syntactic sugar for `x = x op y`.
+            // But that's not exactly true.
+            //
+            // The C# spec states the following
+            //
+            //     An operation of the form `x op= y` is processed by applying binary operator
+            //     overload resolution as if the operation was written `x op y`. Then,
+            //
+            //     *  If the return type of the selected operator is implicitly convertible to
+            //        the type of `x`, the operation is evaluated as `x = x op y`, except that `x`
+            //        is evaluated only once.
+            //
+            //     *  Otherwise, if the selected operator is a predefined operator, if the return
+            //        type of the selected operator is explicitly convertible to the type of `x`,
+            //        and if `y` is implicitly convertible to the type of `x` or the operator is a
+            //        shift operator, then the operation is evaluated as `x = (T)(x op y)`, where
+            //        `T` is the type of `x`, except that `x` is evaluated only once.
+            //
+            //     *  Otherwise, the compound assignment is invalid, and a binding-time error
+            //        occurs.
+            //
+            // So `byte b = 1; b |= 0x80;` is legal but `byte b = 1; b = b | 0x80;` is not.
+            //
+            // We'll handle the special case of the second bullet here and defer to the
+            // binary operator resolution mechanism for everything else.
+
+            var lhsExpr = Left.CreateGetExpressionOrError(Scope, LeftLocation);
+            var rhsExpr = Right.CreateGetExpressionOrError(Scope, RightLocation);
+
+            var lhsType = Left.Type;
+            if (Op.Equals(Operator.LeftShift)
+                || Op.Equals(Operator.RightShift)
+                || Scope.HasImplicitConversion(rhsExpr, lhsType))
+            {
+                IType opTy;
+                if (BinaryOperatorResolution.TryGetPrimitiveOperatorType(Op, Left.Type, Right.Type, out opTy)
+                    && opTy != null && Scope.HasExplicitConversion(opTy, lhsType))
+                {
+                    return Scope.ConvertExplicit(
+                        DirectBinaryExpression.Instance.Create(
+                            Scope.ConvertImplicit(lhsExpr, opTy, LeftLocation),
+                            Op,
+                            Scope.ConvertImplicit(rhsExpr, opTy, RightLocation)),
+                        lhsType,
+                        LeftLocation.Concat(RightLocation));
+                }
+            }
+
+            return CreateBinary(Op, Left, Right, Scope, LeftLocation, RightLocation);
         }
 
         /// <summary>

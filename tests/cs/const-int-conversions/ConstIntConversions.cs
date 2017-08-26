@@ -7,5 +7,8 @@ public static class Program
     public static void Main()
     {
         Console.WriteLine(PageSize);
+        byte x = 1;
+        x |= 0x80;
+        Console.WriteLine(x);
     }
 }

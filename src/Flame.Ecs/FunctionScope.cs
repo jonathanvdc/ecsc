@@ -707,6 +707,16 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Finds out whether a value of the given source type
+        /// can be converted implicitly or explicitly to the
+        /// given target type.
+        /// </summary>
+        public bool HasExplicitConversion(IType From, IType To)
+        {
+            return ClassifyConversion(From, To).Any();
+        }
+
+        /// <summary>
+        /// Finds out whether a value of the given source type
         /// can be converted implicitly to the given target type.
         /// </summary>
         public bool HasImplicitConversion(IType From, IType To)
