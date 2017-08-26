@@ -11,7 +11,7 @@ src/ecsc/bin/Release/ecsc.exe: $(all-source-files)
 
 .PHONY: nuget
 nuget:
-	nuget restore src/ecsc.sln
+	nuget restore src/ecsc.sln -Verbosity quiet
 
 include flame-make-scripts/use-compare-test.mk
 
