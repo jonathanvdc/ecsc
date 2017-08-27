@@ -337,6 +337,15 @@ namespace Flame.Ecs.Semantics
                 // From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer_type. (explicit)
                 return ConversionDescription.ExplicitStaticCast;
             }
+            else if (IsReferencePointer(SourceType)
+                && IsReferencePointer(TargetType)
+                && SourceType.AsPointerType().ElementType.Equals(
+                    TargetType.AsPointerType().ElementType))
+            {
+                // To simplify method overloading logic, we say that `ref T` has an
+                // identity conversion to `ref T`, but no conversions apart from that.
+                return ConversionDescription.Identity;
+            }
 
             return NoConversion(SourceType, TargetType);
         }
@@ -1298,23 +1307,23 @@ namespace Flame.Ecs.Semantics
 
             for (int i = 0; i < firstParamList.Length; i++)
             {
+                // We can simply check if the second type has an identity or implicit
+                // reference conversion to the first type; if either parameter is `ref`
+                // or `out`, then there will be an identity conversion iff their types
+                // are equal. If the types of `ref`/`out` parameters are not equal,
+                // then there will be no conversion between their types.
+                //
+                // In other words, our implementation of `ClassifyBuiltinConversion`
+                // already handles cases like this.
+
                 var firstType = firstParamList[i].ParameterType;
                 var secondType = secondParamList[i].ParameterType;
-                if (IsReferencePointer(firstType) || IsReferencePointer(secondType))
+                var paramConv = ClassifyBuiltinConversion(secondType, firstType);
+
+                if (paramConv.Kind != ConversionKind.Identity
+                    && paramConv.Kind != ConversionKind.ReinterpretCast)
                 {
-                    if (!firstType.IsEquivalent(secondType))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    var paramConv = ClassifyBuiltinConversion(secondType, firstType);
-                    if (paramConv.Kind != ConversionKind.Identity
-                        && paramConv.Kind != ConversionKind.ReinterpretCast)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
