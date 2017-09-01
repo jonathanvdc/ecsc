@@ -334,6 +334,32 @@ namespace EcscMacros
             // { temp = lhs; #result([lhs = ] temp == null ? rhs : temp) }
             return F.Braces(storeTemp, F.Result(ternary));
         }
+
+        [LexicalMacro(
+            "#fn(@``, ~ClassName, #(), ...)",
+            "lowers a finalizer declaration to an override of `void Finalize()`",
+            "#fn",
+            Mode = MacroMode.Passive | MacroMode.Normal)]
+        public static LNode LowerFinalizerDeclaration(LNode Node, IMacroContext Sink)
+        {
+            if (!Node.CallsMin(CodeSymbols.Fn, 3))
+            {
+                return Reject(Sink, Node, "#fn' takes at least three arguments.");
+            }
+
+            if (!Node.Args[0].IsIdNamed(GSymbol.Empty)
+                || !Node.Args[1].Calls(CodeSymbols.NotBits, 1))
+            {
+                return null;
+            }
+
+            // Turn `[...] #fn(@``, ~ClassName, #(), ...)` into
+            // `[#protected, #override, ...] #fn(#void, Finalize, #(), ...)`
+
+            return Node.WithArgChanged(0, F.Void)
+                .WithArgChanged(1, F.Id("Finalize"))
+                .PlusAttrs(F.Id(CodeSymbols.Protected), F.Id(CodeSymbols.Override));
+        }
     }
 }
 
