@@ -19,6 +19,7 @@ tests
     extension-methods/ExtensionMethods.test;
     exception-handling/ExceptionHandling.test;
     field/Field.test;
+    finalizer/Finalizer.test;
     flow/Flow.test;
     foreach/Foreach.test;
     fractal/Fractal.test;
