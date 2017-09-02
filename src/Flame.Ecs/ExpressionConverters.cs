@@ -3586,6 +3586,37 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a builtin reference-to-pointer expression (type #builtin_ref_to_ptr).
+        /// </summary>
+        public static IExpression ConvertBuiltinRefToPtrExpression(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+                return ErrorTypeExpression;
+
+            var expr = Converter.ConvertExpression(Node.Args[0], Scope);
+            var exprType = expr.Type;
+            if (!exprType.GetIsReferenceType()
+                || ConversionExpression.Instance.IsNonBoxPointer(exprType))
+            {
+                Scope.Log.LogError(
+                    new LogEntry(
+                        "type error",
+                        NodeHelpers.HighlightEven(
+                            "type '",
+                            Scope.Function.Global.NameAbbreviatedType(exprType),
+                            "' is not a reference type."),
+                        NodeHelpers.ToSourceLocation(Node.Range)));
+                return ErrorTypeExpression;
+            }
+            else
+            {
+                return new ReinterpretCastExpression(
+                    expr,
+                    PrimitiveTypes.Void.MakePointerType(PointerKind.TransientPointer));
+            }
+        }
+
+        /// <summary>
         /// Converts a builtin decltype node (type #builtin_decltype).
         /// </summary>
         public static IType ConvertBuiltinDecltype(LNode Node, LocalScope Scope, NodeConverter Converter)

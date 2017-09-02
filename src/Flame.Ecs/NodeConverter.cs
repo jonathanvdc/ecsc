@@ -670,6 +670,7 @@ namespace Flame.Ecs
                 result.AliasAttribute(EcscMacros.EcscSymbols.BuiltinHidden, PrimitiveAttributes.Instance.HiddenAttribute);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIf, ExpressionConverters.ConvertBuiltinStaticIfExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
+                result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinRefToPtr, ExpressionConverters.ConvertBuiltinRefToPtrExpression);
                 result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDecltype, ExpressionConverters.ConvertBuiltinDecltype);
                 result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningDisable, ExpressionConverters.ConvertBuiltinDisableWarning);
                 result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningRestore, ExpressionConverters.ConvertBuiltinRestoreWarning);
