@@ -1367,9 +1367,12 @@ namespace Flame.Ecs
             anonTy.AddAttribute(new SourceLocationAttribute(Location));
 
             // Add a base type if that's appropriate.
-            var rootTy = Scope.Function.Global.Binder.Environment.RootType;
-            if (rootTy != null)
-                anonTy.AddBaseType(rootTy);
+            foreach (var baseType in Scope.Function.Global.Binder.Environment.GetDefaultBaseTypes(
+                anonTy, anonTy.BaseTypes))
+            {
+                anonTy.AddBaseType(baseType);
+            }
+            var rootTy = anonTy.GetParent();
 
             // Synthesize a constructor.
             var ctor = new DescribedBodyMethod("this", anonTy);
@@ -3450,7 +3453,7 @@ namespace Flame.Ecs
 
             var usingBody = Converter.ConvertScopedStatement(Node.Args[1], childScope);
 
-            // Now, build an IR tree that is equivalent to like this:
+            // Now, build an IR tree that is equivalent to this:
             //
             //
             // initStmt;
