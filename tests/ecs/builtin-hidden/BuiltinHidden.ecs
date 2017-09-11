@@ -4,13 +4,20 @@ using static System.Console;
 public static class Program
 {
     [#builtin_hidden]
-    public static void WriteLine(string str)
+    public static void Write(string str)
     {
-        Console.WriteLine("Hello world");
+        Console.Write("Hello world");
+    }
+
+    [#builtin_attribute(HiddenAttribute)]
+    public static void WriteLine()
+    {
+        Console.WriteLine("Wrong call");
     }
 
     public static void Main()
     {
-        WriteLine("Howdy partner");
+        Write("Howdy partner");
+        WriteLine();
     }
 }
