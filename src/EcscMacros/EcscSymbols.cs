@@ -81,6 +81,14 @@ namespace EcscMacros
         public static readonly Symbol BuiltinRefToPtr = GSymbol.Get("#builtin_ref_to_ptr");
 
         /// <summary>
+        /// A builtin node type that defines an intrinsic attribute.
+        /// </summary>
+        /// <returns>
+        /// Usage: #builtin_attribute(SomeAttribute, args...);
+        /// </returns>
+        public static readonly Symbol BuiltinAttribute = GSymbol.Get("#builtin_attribute");
+
+        /// <summary>
         /// Disposes a local variable, if it implements IDisposable.
         /// </summary>
         public static readonly Symbol DisposeLocal = GSymbol.Get("#dispose_local");

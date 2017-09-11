@@ -668,6 +668,7 @@ namespace Flame.Ecs
 
                 // Ecsc builtins
                 result.AliasAttribute(EcscMacros.EcscSymbols.BuiltinHidden, PrimitiveAttributes.Instance.HiddenAttribute);
+                result.AddAttributeConverter(EcscSymbols.BuiltinAttribute, AttributeConverters.ConvertBuiltinAttribute);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIf, ExpressionConverters.ConvertBuiltinStaticIfExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinRefToPtr, ExpressionConverters.ConvertBuiltinRefToPtrExpression);

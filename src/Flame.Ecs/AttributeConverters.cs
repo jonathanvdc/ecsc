@@ -91,7 +91,7 @@ namespace Flame.Ecs
         /// </summary>
         /// <returns>The analyzed custom attribute.</returns>
         /// <param name="Node">The custom attribute node.</param>
-        /// <param name="Scope">The global scope.</param>
+        /// <param name="Scope">The scope in which the attribute is analyzed.</param>
         /// <param name="Converter">The node converter.</param>
         public static IEnumerable<IAttribute> ConvertCustomAttribute(
             LNode Node, LocalScope Scope, NodeConverter Converter)
@@ -133,7 +133,7 @@ namespace Flame.Ecs
                                     "argument is not a primitive value or " +
                                     "cannot be evaluated at compile-time."),
                                 argPair.B.Item2));
-                            return null;
+                            return Enumerable.Empty<IAttribute>();
                         }
                         boundArgs.Add(bArg);
                     }
@@ -143,6 +143,46 @@ namespace Flame.Ecs
 
             // Something went wrong. Return nothing.
             return Enumerable.Empty<IAttribute>();
+        }
+
+        /// <summary>
+        /// Converts the given intrinsic attribute node (type #builtin_attribute).
+        /// </summary>
+        /// <param name="Node">The intrinsic attribute node to convert.</param>
+        /// <param name="Scope">The scope in which the attribute is analyzed.</param>
+        /// <param name="Converter">The node converter.</param>
+        /// <returns>A sequence of attributes.</returns>
+        public static IEnumerable<IAttribute> ConvertBuiltinAttribute(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log)
+                || !NodeHelpers.CheckId(Node.Args[0], Scope.Log))
+            {
+                return Enumerable.Empty<IAttribute>();
+            }
+
+            var attributeName = Node.Args[0].Name.Name;
+
+            var args = new List<IBoundObject>(Node.Args.Count - 1);
+            foreach (var argNode in Node.Args.Skip(1))
+            {
+                var expr = Converter.ConvertExpression(argNode, Scope);
+                var exprObj = expr.EvaluateOrNull();
+                if (exprObj == null)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "cannot evaluate",
+                        NodeHelpers.HighlightEven(
+                            "argument is not a primitive value or " +
+                            "cannot be evaluated at compile-time."),
+                        NodeHelpers.ToSourceLocation(argNode.Range)));
+                    return Enumerable.Empty<IAttribute>();
+                }
+
+                args.Add(exprObj);
+            }
+
+            return new IAttribute[] { new IntrinsicAttribute(attributeName, args) };
         }
     }
 }
