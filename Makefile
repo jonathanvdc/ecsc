@@ -15,6 +15,11 @@ nuget:
 
 include flame-make-scripts/use-compare-test.mk
 
+COMPARE_TEST_ARGS:=-j
+ifneq ($(TEST_FILTER),)
+COMPARE_TEST_ARGS:=$(COMPARE_TEST_ARGS) --filter $(TEST_FILTER)
+endif
+
 .PHONY: test
 test: all | compare-test
-	$(COMPARE_TEST) all-tests-mono.test -j
+	$(COMPARE_TEST) all-tests-mono.test $(COMPARE_TEST_ARGS)
