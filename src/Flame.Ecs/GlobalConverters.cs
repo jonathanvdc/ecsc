@@ -361,11 +361,10 @@ namespace Flame.Ecs
                 return innerScope;
             }, (descTy, innerScope) =>
             {
-                if (!descTy.GetIsInterface() && descTy.GetParent() == null)
+                foreach (var extraBaseType in Scope.Binder.Environment.GetDefaultBaseTypes(
+                    descTy, descTy.BaseTypes))
                 {
-                    var rootType = Scope.Binder.Environment.RootType;
-                    if (rootType != null)
-                        descTy.AddBaseType(rootType);
+                    descTy.AddBaseType(extraBaseType);
                 }
                 return innerScope;
             }, (descTy, innerScope) =>
