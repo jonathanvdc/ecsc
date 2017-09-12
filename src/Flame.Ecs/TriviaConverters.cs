@@ -3,6 +3,7 @@ using Loyc.Syntax;
 using Flame.Compiler;
 using EcscMacros;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Flame.Ecs
 {
@@ -24,10 +25,46 @@ namespace Flame.Ecs
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
                 // Early-out here. Documentation comment nodes should contain
                 // exactly one string literal.
-                return null;
+                return Enumerable.Empty<IAttribute>();
 
             var docLiteral = Node.Args[0];
-            if (!docLiteral.IsLiteral)
+            string doc = ParseDocumentationCommentLiteral(docLiteral, Scope);
+            if (doc == null)
+            {
+                return Enumerable.Empty<IAttribute>();
+            }
+            else
+            {
+                return Scope.Function.Global.DocumentationParser.Parse(
+                    doc,
+                    NodeHelpers.ToSourceLocation(docLiteral.Range),
+                    Scope.Log);
+            }
+        }
+
+        private static string ParseDocumentationCommentLiteral(
+            LNode Node, LocalScope Scope)
+        {
+            if (Node.Calls(CodeSymbols.Add))
+            {
+                var childLiterals = Node.Args
+                    .Select(n => ParseDocumentationCommentLiteral(n, Scope))
+                    .ToArray();
+
+                if (childLiterals.Contains(null))
+                {
+                    return null;
+                }
+                else
+                {
+                    return string.Concat(childLiterals);
+                }
+            }
+            else if (Node.IsLiteral)
+            {
+                return Node.Value.ToString();
+            }
+            else
             {
                 Scope.Log.LogWarning(
                     new LogEntry(
@@ -36,15 +73,9 @@ namespace Flame.Ecs
                             "expected literal in documentation comment ('",
                             EcscSymbols.TriviaDocumentationComment.Name,
                             "') node."),
-                        NodeHelpers.ToSourceLocation(docLiteral.Range)));
+                        NodeHelpers.ToSourceLocation(Node.Range)));
                 return null;
             }
-
-            string doc = docLiteral.Value.ToString();
-            return Scope.Function.Global.DocumentationParser.Parse(
-                doc,
-                NodeHelpers.ToSourceLocation(docLiteral.Range),
-                Scope.Log);
         }
     }
 }
