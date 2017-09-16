@@ -27,8 +27,8 @@ configs
 init
 {
     compiler = $ecsc;
-    Filename = GenericAltClass;
+    Filename = BuiltinDelegateType;
     Executable = bin/$(Filename).exe;
     Args = ;
-    return = @($echo None)@($echo Some 42)@($echo Some 24)@($echo None);
+    return = 16;
 }

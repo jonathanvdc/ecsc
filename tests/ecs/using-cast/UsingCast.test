@@ -1,5 +1,5 @@
 // A compare-test test description.
-// This test using EC#-specific features, so it can only compare ecsc
+// This test uses EC#-specific features, so it can only compare ecsc
 // with itself.
 
 build

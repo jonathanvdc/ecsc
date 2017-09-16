@@ -1,0 +1,21 @@
+using System;
+using static System.Console;
+using IntMap = #builtin_delegate_type(int, int);
+
+public static class Program
+{
+    private static int Apply(IntMap f, int x)
+    {
+        return f(x);
+    }
+
+    private static int Square(int x)
+    {
+        return x * x;
+    }
+
+    public static void Main()
+    {
+        WriteLine(Apply(Square, 4));
+    }
+}
