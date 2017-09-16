@@ -41,7 +41,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type resolution",
                     NodeHelpers.HighlightEven(
-                        "cannot resolve parameter type '", Node.Args[0].ToString(), 
+                        "cannot resolve parameter type '", Node.Args[0].ToString(),
                         "' for parameter '", name.ToString(), "'."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 paramTy = PrimitiveTypes.Void;
@@ -94,7 +94,7 @@ namespace Flame.Ecs
                         "type error",
                         NodeHelpers.HighlightEven(
                             "parameter '", name.ToString(), "' was annotated " +
-                            "with the '", "params", "' modifier, but its type ('", 
+                            "with the '", "params", "' modifier, but its type ('",
                             Scope.Function.Global.NameAbbreviatedType(paramTy), "') was neither an " +
                             "array nor an enumerable type."),
                         NodeHelpers.ToSourceLocation(paramsNode.Range)));
@@ -110,7 +110,7 @@ namespace Flame.Ecs
                             "EC# extension",
                             paramsEnumerableWarn.CreateMessage(
                                 new MarkupNode("#group", NodeHelpers.HighlightEven(
-                                    "non-array '", "params", 
+                                    "non-array '", "params",
                                     "' parameters are an EC# extension. "))),
                             NodeHelpers.ToSourceLocation(paramsNode.Range)));
                     }
@@ -170,7 +170,7 @@ namespace Flame.Ecs
             GlobalScope Scope, NodeConverter Converter)
         {
             return AnalyzeTypeMemberAttributes(
-                Attributes, DeclaringType, Scope, 
+                Attributes, DeclaringType, Scope,
                 Converter, _ => false);
         }
 
@@ -180,7 +180,7 @@ namespace Flame.Ecs
         /// type member attribute tuple.
         /// </summary>
         private static void UpdateTypeMemberAttributes(
-            Tuple<IEnumerable<IAttribute>, bool> Attributes, 
+            Tuple<IEnumerable<IAttribute>, bool> Attributes,
             LazyDescribedTypeMember Target)
         {
             Target.IsStatic = Attributes.Item2;
@@ -198,7 +198,7 @@ namespace Flame.Ecs
         {
             UpdateTypeMemberAttributes(
                 AnalyzeTypeMemberAttributes(
-                    Attributes, Target.DeclaringType, 
+                    Attributes, Target.DeclaringType,
                     Scope, Converter, HandleSpecial),
                 Target);
         }
@@ -266,7 +266,7 @@ namespace Flame.Ecs
                                     NodeHelpers.HighlightEven(
                                         "the '", "this", "' attribute defines an" +
                                         "extension method, but enclosing type '",
-                                        Target.DeclaringType.Name.ToString(), "' is not '", 
+                                        Target.DeclaringType.Name.ToString(), "' is not '",
                                         "static", "'.")
                                     .Concat(new MarkupNode[]
                                     {
@@ -294,7 +294,7 @@ namespace Flame.Ecs
                             "syntax error",
                             NodeHelpers.HighlightEven(
                                 "only the first parameter of method '",
-                                Target.Name.ToString(), "' can have the '", 
+                                Target.Name.ToString(), "' can have the '",
                                 "this", "' attribute."),
                             NodeHelpers.ToSourceLocation(item.Range)));
                     }
@@ -345,18 +345,18 @@ namespace Flame.Ecs
             ITypeMember Member, IType ReturnType, GlobalScope Scope)
         {
             return new FunctionScope(
-                Scope, ThisVariable.GetThisType(Member.DeclaringType), 
+                Scope, ThisVariable.GetThisType(Member.DeclaringType),
                 null, ReturnType, new Dictionary<Symbol, IVariable>());
         }
 
         private static void LogStaticVirtualMethodError(
-            string MemberKind, ITypeMember Member, string VirtualAttribute, 
+            string MemberKind, ITypeMember Member, string VirtualAttribute,
             SourceLocation Location, ICompilerLog Log)
         {
             Log.LogError(new LogEntry(
                 "syntax error",
                 NodeHelpers.HighlightEven(
-                    "'", "static", "' " + MemberKind + " '", Member.Name.ToString(), 
+                    "'", "static", "' " + MemberKind + " '", Member.Name.ToString(),
                     "' cannot be marked '", VirtualAttribute, "'."),
                 Location));
         }
@@ -369,7 +369,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        "modifier '", Node.Name.Name, "' cannot be applied to '", 
+                        "modifier '", Node.Name.Name, "' cannot be applied to '",
                         "interface", "' members."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
             }
@@ -382,7 +382,7 @@ namespace Flame.Ecs
         /// </summary>
         /// <returns>An override-node, new-node pair.</returns>
         private static Tuple<LNode, LNode> UpdateVirtualTypeMemberAttributes(
-            string MemberKind, IEnumerable<LNode> Attributes, 
+            string MemberKind, IEnumerable<LNode> Attributes,
             LazyDescribedTypeMember Target,
             GlobalScope Scope, NodeConverter Converter,
             Func<LNode, bool> HandleSpecial)
@@ -439,8 +439,8 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        MemberKind + " '", Target.Name.ToString(), "' cannot be marked both '", 
-                        (abstractNode != null ? "abstract" : "virtual"), 
+                        MemberKind + " '", Target.Name.ToString(), "' cannot be marked both '",
+                        (abstractNode != null ? "abstract" : "virtual"),
                         "' and '", "sealed", "'."),
                     NodeHelpers.ToSourceLocation(sealedNode.Range)));
             }
@@ -450,7 +450,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        MemberKind + " '", Target.Name.ToString(), "' cannot be marked both '", 
+                        MemberKind + " '", Target.Name.ToString(), "' cannot be marked both '",
                         "new", "' and '", "override", "'."),
                     NodeHelpers.ToSourceLocation(newNode.Range)));
             }
@@ -460,8 +460,8 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        MemberKind + " '", Target.Name.ToString(), "' cannot be '", 
-                        "sealed", "' because it is not an '", 
+                        MemberKind + " '", Target.Name.ToString(), "' cannot be '",
+                        "sealed", "' because it is not an '",
                         "override", "'."),
                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
             }
@@ -471,23 +471,23 @@ namespace Flame.Ecs
                 // Static methods can't be abstract, virtual or override.
                 if (abstractNode != null)
                     LogStaticVirtualMethodError(
-                        MemberKind, Target, "abstract", 
-                        NodeHelpers.ToSourceLocation(abstractNode.Range), 
+                        MemberKind, Target, "abstract",
+                        NodeHelpers.ToSourceLocation(abstractNode.Range),
                         Scope.Log);
                 if (virtualNode != null)
                     LogStaticVirtualMethodError(
-                        MemberKind, Target, "virtual", 
-                        NodeHelpers.ToSourceLocation(virtualNode.Range), 
+                        MemberKind, Target, "virtual",
+                        NodeHelpers.ToSourceLocation(virtualNode.Range),
                         Scope.Log);
                 if (overrideNode != null)
                     LogStaticVirtualMethodError(
-                        MemberKind, Target, "override", 
-                        NodeHelpers.ToSourceLocation(overrideNode.Range), 
+                        MemberKind, Target, "override",
+                        NodeHelpers.ToSourceLocation(overrideNode.Range),
                         Scope.Log);
                 if (newNode != null)
                     LogStaticVirtualMethodError(
-                        MemberKind, Target, "new", 
-                        NodeHelpers.ToSourceLocation(newNode.Range), 
+                        MemberKind, Target, "new",
+                        NodeHelpers.ToSourceLocation(newNode.Range),
                         Scope.Log);
             }
 
@@ -499,8 +499,8 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         NodeHelpers.HighlightEven(
-                            MemberKind + " '", Target.Name.ToString(), "' cannot be '", 
-                            "abstract", "' because its declaring type is not '", 
+                            MemberKind + " '", Target.Name.ToString(), "' cannot be '",
+                            "abstract", "' because its declaring type is not '",
                             "abstract", "', either."),
                         NodeHelpers.ToSourceLocation(overrideNode.Range)));
                 }
@@ -556,7 +556,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        "a user-defined conversion operator must be marked '", 
+                        "a user-defined conversion operator must be marked '",
                         "static", "'."),
                     OperatorDef.GetSourceLocation()));
             }
@@ -591,7 +591,7 @@ namespace Flame.Ecs
             // takes place.'
             var declTy = FunctionScope.DereferenceOrId(
                 ThisVariable.GetThisType(OperatorDef.DeclaringType));
-            
+
             if (!sourceType.Equals(declTy) && !targetType.Equals(declTy))
             {
                 Scope.Log.LogError(new LogEntry(
@@ -624,8 +624,8 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        "a conversion from '", renderer.Name(sourceType), 
-                        "' to '", renderer.Name(targetType), 
+                        "a conversion from '", renderer.Name(sourceType),
+                        "' to '", renderer.Name(targetType),
                         "' already exists."),
                     OperatorDef.GetSourceLocation()));
             }
@@ -635,7 +635,7 @@ namespace Flame.Ecs
         /// Converts an '#fn' function declaration node.
         /// </summary>
         public static GlobalScope ConvertFunction(
-            LNode Node, LazyDescribedType DeclaringType, 
+            LNode Node, LazyDescribedType DeclaringType,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckMinArity(Node, 3, Scope.Log)
@@ -652,13 +652,13 @@ namespace Flame.Ecs
                 // Take care of the generic parameters next.
                 var innerScope = GlobalConverters.ConvertGenericParameterDefs(
                     name.GenericParameters, methodDef, Scope, Converter,
-                    genParamName => 
+                    genParamName =>
                     {
                         var genParam = new DescribedGenericParameter(genParamName, methodDef);
                         methodDef.AddGenericParameter(genParam);
                         return genParam;
                     },
-                    (genParam, constraint) => 
+                    (genParam, constraint) =>
                     {
                         ((DescribedGenericParameter)genParam).AddConstraint(constraint);
                     });
@@ -670,7 +670,7 @@ namespace Flame.Ecs
                 // new, implicit and explicit are specific to methods, so we'll handle those here.
                 attrNodePair = UpdateVirtualTypeMemberAttributes(
                     "method", Node.Attrs, methodDef, innerScope, Converter,
-                    node => 
+                    node =>
                     {
                         if (node.IsIdNamed(CodeSymbols.Implicit))
                         {
@@ -696,7 +696,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "user-defined operator '", name.Name.Name, "' must be declared '", 
+                                "user-defined operator '", name.Name.Name, "' must be declared '",
                                 "static", "' and '", "public", "'."),
                             methodDef.GetSourceLocation()));
                     }
@@ -712,20 +712,20 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "syntax error",
                                 NodeHelpers.HighlightEven(
-                                    "user-defined conversion operators cannot be both '", 
+                                    "user-defined conversion operators cannot be both '",
                                     "implicit", "' and '", "explicit", "'."),
                                 NodeHelpers.ToSourceLocation(implicitCastNode.Range)));
                         }
                         methodDef.AddAttribute(new OperatorAttribute(Operator.ConvertExplicit));
                     }
-                    else 
+                    else
                     {
                         if (implicitCastNode == null)
                         {
                             Scope.Log.LogError(new LogEntry(
                                 "syntax error",
                                 NodeHelpers.HighlightEven(
-                                    "user-defined conversion operators must be either '", 
+                                    "user-defined conversion operators must be either '",
                                     "implicit", "' or '", "explicit", "'."),
                                 methodDef.GetSourceLocation()));
                         }
@@ -734,13 +734,13 @@ namespace Flame.Ecs
                         methodDef.AddAttribute(new OperatorAttribute(Operator.ConvertImplicit));
                     }
                 }
-                else if (implicitCastNode != null 
+                else if (implicitCastNode != null
                     || explicitCastNode != null)
                 {
                     Scope.Log.LogError(new LogEntry(
                         "syntax error",
                         NodeHelpers.HighlightEven(
-                            "only user-defined conversions can be '", 
+                            "only user-defined conversions can be '",
                             "implicit", "' or '", "explicit", "'."),
                             NodeHelpers.ToSourceLocation(
                                 (implicitCastNode ?? explicitCastNode).Range)));
@@ -753,8 +753,8 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "type resolution",
                         NodeHelpers.HighlightEven(
-                            "cannot resolve return type '", 
-                            Node.Args[0].ToString(), "' for method '", 
+                            "cannot resolve return type '",
+                            Node.Args[0].ToString(), "' for method '",
                             name.Name.Name, "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                     retType = PrimitiveTypes.Void;
@@ -769,7 +769,7 @@ namespace Flame.Ecs
                 // declaring type.
                 if (op.IsDefined)
                 {
-                    if (!methodDef.Parameters.Any(p => 
+                    if (!methodDef.Parameters.Any(p =>
                         p.ParameterType.Equals(
                             FunctionScope.GetThisExpressionType(
                                 methodDef.DeclaringType))))
@@ -777,7 +777,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "user-defined operator",
                             NodeHelpers.HighlightEven(
-                                "at least one of the parameters of user-defined operator '", 
+                                "at least one of the parameters of user-defined operator '",
                                 name.Name.Name,
                                 "' must be the containing type."),
                             methodDef.GetSourceLocation()));
@@ -812,8 +812,8 @@ namespace Flame.Ecs
                                 Scope.Log.LogError(new LogEntry(
                                     "no base method",
                                     NodeHelpers.HighlightEven(
-                                        "method '", methodDef.Name.ToString(), "' is marked '", "override", 
-                                        "', but base type '", Scope.NameAbbreviatedType(parentTy), 
+                                        "method '", methodDef.Name.ToString(), "' is marked '", "override",
+                                        "', but base type '", Scope.NameAbbreviatedType(parentTy),
                                         "' does not define any (visible) methods that match its signature."),
                                     NodeHelpers.ToSourceLocation(overrideNode.Range)));
                             }
@@ -823,8 +823,8 @@ namespace Flame.Ecs
                                 Scope.Log.LogWarning(new LogEntry(
                                     "redundant attribute",
                                     NodeHelpers.HighlightEven(
-                                        "method '", methodDef.Name.ToString(), "' is marked '", "new", 
-                                        "', but base type '", Scope.NameAbbreviatedType(parentTy), 
+                                        "method '", methodDef.Name.ToString(), "' is marked '", "new",
+                                        "', but base type '", Scope.NameAbbreviatedType(parentTy),
                                         "' does not define any (visible) methods that match its signature. ")
                                     .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
                                     NodeHelpers.ToSourceLocation(newNode.Range)));
@@ -852,8 +852,8 @@ namespace Flame.Ecs
                                         Scope.Log.LogError(new LogEntry(
                                             "signature mismatch",
                                             NodeHelpers.HighlightEven(
-                                                "method '", methodDef.Name.ToString(), "' is marked '", 
-                                                "override", "', but its base method was neither '", 
+                                                "method '", methodDef.Name.ToString(), "' is marked '",
+                                                "override", "', but its base method was neither '",
                                                 "abstract", "' nor '", "virtual", "'."),
                                             methodDef.GetSourceLocation()));
                                     }
@@ -873,7 +873,7 @@ namespace Flame.Ecs
                                         (baseMethods.Length == 1 ? "a base method" : baseMethods.Length + " base methods") +
                                         ". Consider using the '", "new", "' keyword if hiding was intentional. ")
                                     .Concat(new MarkupNode[]
-                                        { 
+                                        {
                                             EcsWarnings.HiddenMemberWarning.CauseNode,
                                             methodDef.GetSourceLocation().CreateDiagnosticsNode()
                                         })
@@ -890,9 +890,9 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "method '", methodDef.Name.ToString(), "' is marked '", 
-                                "override", "' but its declaring type '", 
-                                Scope.NameAbbreviatedType(DeclaringType), 
+                                "method '", methodDef.Name.ToString(), "' is marked '",
+                                "override", "' but its declaring type '",
+                                Scope.NameAbbreviatedType(DeclaringType),
                                 "' does not have a base type."),
                             NodeHelpers.ToSourceLocation(overrideNode.Range)));
                     }
@@ -926,7 +926,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "'", "interface", "' method '", methodDef.Name.ToString(), 
+                                "'", "interface", "' method '", methodDef.Name.ToString(),
                                 "' cannot have a body."),
                             methodDef.GetSourceLocation()));
                     }
@@ -935,7 +935,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "method '", methodDef.Name.ToString(), "' cannot both be marked '", 
+                                "method '", methodDef.Name.ToString(), "' cannot both be marked '",
                                 isExtern ? "extern" : "abstract", "' and have a body."),
                             methodDef.GetSourceLocation()));
                     }
@@ -945,8 +945,8 @@ namespace Flame.Ecs
                     var funScope = CreateFunctionScope(methodDef, innerScope);
                     var localScope = new LocalScope(funScope);
                     methodDef.Body = ExpressionConverters.AutoReturn(
-                        methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);  
+                        methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope),
+                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);
                 }
                 else
                 {
@@ -955,9 +955,9 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "method '", methodDef.Name.ToString(), 
-                                "' must have a body because it is not marked '", 
-                                "abstract", "', '", "extern", "' or '", "partial", 
+                                "method '", methodDef.Name.ToString(),
+                                "' must have a body because it is not marked '",
+                                "abstract", "', '", "extern", "' or '", "partial",
                                 "', and is not an '", "interface", "' member."),
                             methodDef.GetSourceLocation()));
                     }
@@ -975,7 +975,7 @@ namespace Flame.Ecs
         /// Converts a '#cons' constructor declaration node.
         /// </summary>
         public static GlobalScope ConvertConstructor(
-            LNode Node, LazyDescribedType DeclaringType, 
+            LNode Node, LazyDescribedType DeclaringType,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
@@ -1010,8 +1010,8 @@ namespace Flame.Ecs
                 // Analyze the function body.
                 var localScope = new LocalScope(funScope);
                 methodDef.Body = ExpressionConverters.AutoReturn(
-                    methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope), 
-                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);  
+                    methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope),
+                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);
             });
 
             // Finally, add the function to the declaring type.
@@ -1038,7 +1038,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "syntax error",
                     NodeHelpers.HighlightEven(
-                        "an '", "interface", 
+                        "an '", "interface",
                         "' cannot contain fields or constants."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
             }
@@ -1046,7 +1046,7 @@ namespace Flame.Ecs
             // Analyze attributes lazily, but only analyze them _once_.
             // A shared lazy object does just that.
             LNode constNode = null, readonlyNode = null;
-            var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() => 
+            var lazyAttrPair = new Lazy<Tuple<IEnumerable<IAttribute>, bool>>(() =>
                 AnalyzeTypeMemberAttributes(attrNodes, DeclaringType, Scope, Converter, node =>
             {
                 if (node.IsIdNamed(CodeSymbols.Const))
@@ -1078,7 +1078,7 @@ namespace Flame.Ecs
 
                 var valNode = decomp.Item2;
                 var field = new LazyDescribedField(
-                                new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
+                                new SimpleName(decomp.Item1.Name.Name), DeclaringType,
                                 fieldDef =>
                     {
                         // Set the field's type.
@@ -1107,7 +1107,7 @@ namespace Flame.Ecs
                                             "this '", "static", "' attribute is redundant, because '",
                                             "const", "' implies '", "static", "'. ")
                                     .Concat(new MarkupNode[]
-                                        { 
+                                        {
                                             EcsWarnings.RedundantStaticAttributeWarning.CauseNode,
                                             NodeHelpers.ToSourceLocation(staticNode.Range).CreateDiagnosticsNode(),
                                             NodeHelpers.ToSourceLocation(constNode.Range).CreateRemarkDiagnosticsNode("'const' attribute: ")
@@ -1125,7 +1125,7 @@ namespace Flame.Ecs
                         {
                             fieldDef.Value = Converter.ConvertExpression(
                                 valNode, new LocalScope(
-                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                                CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)),
                                 fieldDef.FieldType);
                         }
                     });
@@ -1154,7 +1154,7 @@ namespace Flame.Ecs
 
             // Analyze the propert's type here, because we may want
             // to share this with an optional backing field.
-            var lazyRetType = new Lazy<IType>(() => 
+            var lazyRetType = new Lazy<IType>(() =>
                 Converter.ConvertType(Node.Args[0], Scope, DeclaringType));
 
             // We'll also share the location attribute, which need
@@ -1172,7 +1172,7 @@ namespace Flame.Ecs
                 && !DeclaringType.GetIsInterface())
             {
                 backingField = new LazyDescribedField(
-                    new SimpleName(name.ToString() + "$value"), 
+                    new SimpleName(name.ToString() + "$value"),
                     DeclaringType, fieldDef =>
                 {
                     fieldDef.FieldType = lazyRetType.Value ?? PrimitiveTypes.Void;
@@ -1189,7 +1189,7 @@ namespace Flame.Ecs
                         // Optionally initialize the field
                         fieldDef.Value = Converter.ConvertExpression(
                             Node.Args[4], new LocalScope(
-                            CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)), 
+                            CreateTypeMemberScope(fieldDef, fieldDef.FieldType, Scope)),
                             fieldDef.FieldType);
                     }
                 });
@@ -1200,7 +1200,7 @@ namespace Flame.Ecs
             // Create the property/indexer.
             // Note that all indexers are actually called 'Item'.
             var def = new LazyDescribedProperty(
-                          isIndexer ? new SimpleName("Item") : name, 
+                          isIndexer ? new SimpleName("Item") : name,
                           DeclaringType, propDef =>
             {
                 if (lazyRetType.Value == null)
@@ -1208,8 +1208,8 @@ namespace Flame.Ecs
                     Scope.Log.LogError(new LogEntry(
                         "type resolution",
                         NodeHelpers.HighlightEven(
-                            "cannot resolve property type '", 
-                            Node.Args[0].ToString(), "' for property '", 
+                            "cannot resolve property type '",
+                            Node.Args[0].ToString(), "' for property '",
                             name.ToString(), "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 }
@@ -1228,7 +1228,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "indexer '", name.ToString(), 
+                                "indexer '", name.ToString(),
                                 "' cannot be '", "static", "'."),
                             locAttr.Location));
                         return;
@@ -1246,7 +1246,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "parameter '", pair.Item1.Name.ToString(), 
+                                "parameter '", pair.Item1.Name.ToString(),
                                 "' cannot have a '", "this", "' attribute, " +
                                 "because it is defined by an indexer."),
                             NodeHelpers.ToSourceLocation(item.Range)));
@@ -1255,7 +1255,7 @@ namespace Flame.Ecs
 
                 // Resolve base properties.
                 var basePropSpec = FindBaseProperties(
-                                       propDef, name, virtAttrNodes.Item1, 
+                                       propDef, name, virtAttrNodes.Item1,
                                        virtAttrNodes.Item2, Scope);
 
                 if (Node.Args[3].Calls(CodeSymbols.Braces))
@@ -1267,7 +1267,7 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "property or indexer '", name.ToString(), 
+                                "property or indexer '", name.ToString(),
                                 "' must have at least one accessor."),
                             locAttr.Location));
                         return;
@@ -1310,7 +1310,7 @@ namespace Flame.Ecs
                             {
                                 // Synthesize a 'get' accessor.
                                 var getAcc = SynthesizeAccessor(
-                                                 AccessorType.GetAccessor, propDef, 
+                                                 AccessorType.GetAccessor, propDef,
                                                  propDef.PropertyType, basePropSpec,
                                                  Scope, accAttrs);
 
@@ -1323,7 +1323,7 @@ namespace Flame.Ecs
                             {
                                 // Synthesize a 'set' accessor.
                                 var setAcc = SynthesizeAccessor(
-                                                 AccessorType.SetAccessor, propDef, 
+                                                 AccessorType.SetAccessor, propDef,
                                                  PrimitiveTypes.Void, basePropSpec,
                                                  Scope, accAttrs);
 
@@ -1354,8 +1354,8 @@ namespace Flame.Ecs
                                 Scope.Log.LogError(new LogEntry(
                                     "syntax error",
                                     NodeHelpers.HighlightEven(
-                                        "accessor '", accNode.Name.Name, 
-                                        "' cannot have a body, because its enclosing property '", 
+                                        "accessor '", accNode.Name.Name,
+                                        "' cannot have a body, because its enclosing property '",
                                         name.Name, "' is an auto-property."),
                                     NodeHelpers.ToSourceLocation(accNode.Range)));
                             }
@@ -1394,7 +1394,7 @@ namespace Flame.Ecs
 
                     var localScope = new LocalScope(CreateFunctionScope(getAcc, Scope));
                     getAcc.Body = ExpressionConverters.AutoReturn(
-                        getAcc.ReturnType, 
+                        getAcc.ReturnType,
                         Converter.ConvertExpression(Node.Args[3], localScope),
                             locAttr.Location, localScope.Function);
                 }
@@ -1412,7 +1412,7 @@ namespace Flame.Ecs
             Log.LogError(new LogEntry(
                 "syntax error",
                 NodeHelpers.HighlightEven(
-                    "expected a '", "get", "' or '", 
+                    "expected a '", "get", "' or '",
                     "set", "' accessor."),
                 Location));
         }
@@ -1432,16 +1432,16 @@ namespace Flame.Ecs
             var thisTy = thisVar.Type;
             if (thisTy.GetIsPointer())
                 thisTy = thisTy.AsPointerType().ElementType;
-            
+
             var genericThisTy = thisTy as GenericTypeBase;
             var genField = genericThisTy != null
                 ? new GenericInstanceField(
-                               Field, genericThisTy.Resolver, 
+                               Field, genericThisTy.Resolver,
                                genericThisTy)
                 : Field;
 
             return new FieldVariable(
-                genField, 
+                genField,
                 Field.IsStatic ? null : thisVar.CreateGetExpression());
         }
 
@@ -1450,12 +1450,12 @@ namespace Flame.Ecs
         /// kind and return type, for the given property.
         /// </summary>
         private static DescribedBodyAccessor SynthesizeAccessor(
-            AccessorType Kind, IProperty DeclaringProperty, 
+            AccessorType Kind, IProperty DeclaringProperty,
             IType ReturnType, BasePropertySpec BaseProperties,
             GlobalScope Scope)
         {
             return SynthesizeAccessor(
-                Kind, DeclaringProperty, ReturnType, 
+                Kind, DeclaringProperty, ReturnType,
                 BaseProperties, Scope,
                 Enumerable.Empty<IAttribute>());
         }
@@ -1465,7 +1465,7 @@ namespace Flame.Ecs
         /// kind and return type, for the given property.
         /// </summary>
         private static DescribedBodyAccessor SynthesizeAccessor(
-            AccessorType Kind, IProperty DeclaringProperty, 
+            AccessorType Kind, IProperty DeclaringProperty,
             IType ReturnType, BasePropertySpec BaseProperties,
             GlobalScope Scope, IEnumerable<IAttribute> Attributes)
         {
@@ -1496,7 +1496,7 @@ namespace Flame.Ecs
             GlobalScope Scope, NodeConverter Converter)
         {
             return Converter.ConvertAttributeListWithAccess(
-                Attributes, DeclaringProperty.GetAccess(), 
+                Attributes, DeclaringProperty.GetAccess(),
                 DeclaringProperty.DeclaringType.GetIsInterface(),
                 _ => false, Scope.CreateLocalScope(DeclaringProperty.DeclaringType));
         }
@@ -1555,16 +1555,16 @@ namespace Flame.Ecs
             {
                 // The given node is neither a 'get' nor a 'set' call.
                 LogInvalidAccessorName(
-                    Scope.Log, 
+                    Scope.Log,
                     NodeHelpers.ToSourceLocation(Node.Range));
                 return;
             }
-            
+
             if (!usesArrowSyntax && !NodeHelpers.CheckMaxArity(Node, 1, Scope.Log))
                 return;
 
-            var accKind = isGetter 
-                ? AccessorType.GetAccessor 
+            var accKind = isGetter
+                ? AccessorType.GetAccessor
                 : AccessorType.SetAccessor;
             var def = new LazyDescribedAccessor(
                           accKind, DeclaringProperty, methodDef =>
@@ -1579,7 +1579,7 @@ namespace Flame.Ecs
 
                 // Getters return the property's type,
                 // setters always return value.
-                accDef.ReturnType = isGetter 
+                accDef.ReturnType = isGetter
                     ? DeclaringProperty.PropertyType
                     : PrimitiveTypes.Void;
 
@@ -1603,7 +1603,7 @@ namespace Flame.Ecs
                 var localScope = new LocalScope(
                     CreateFunctionScope(accDef, Scope));
 
-                bool isAbstract = DeclaringProperty.GetIsAbstract() 
+                bool isAbstract = DeclaringProperty.GetIsAbstract()
                     || DeclaringProperty.DeclaringType.GetIsInterface();
 
                 if (accessorBody == null)
@@ -1616,7 +1616,7 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "syntax error",
                                 NodeHelpers.HighlightEven(
-                                    "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                    "accessor '", accDef.AccessorType.Name.ToLower(),
                                     "' cannot have a method body, because it is " +
                                     "declared in an '", "interface", "'."),
                                 NodeHelpers.ToSourceLocation(Node.Range)));
@@ -1626,7 +1626,7 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "syntax error",
                                 NodeHelpers.HighlightEven(
-                                    "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                    "accessor '", accDef.AccessorType.Name.ToLower(),
                                     "' cannot have a method body, because it is " +
                                     "marked '", "abstract", "'."),
                                 NodeHelpers.ToSourceLocation(Node.Range)));
@@ -1641,16 +1641,16 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "syntax error",
                             NodeHelpers.HighlightEven(
-                                "accessor '", accDef.AccessorType.Name.ToLower(), 
+                                "accessor '", accDef.AccessorType.Name.ToLower(),
                                 "' must have a method body, because it is not '",
-                                "abstract", "', and its declaring type is not an '", 
+                                "abstract", "', and its declaring type is not an '",
                                 "interface", "'."),
                             NodeHelpers.ToSourceLocation(Node.Range)));
                     }
                     // Analyze the body.
                     accDef.Body = ExpressionConverters.AutoReturn(
-                        accDef.ReturnType, Converter.ConvertExpression(accessorBody, localScope), 
-                        NodeHelpers.ToSourceLocation(accessorBody.Range), localScope.Function);  
+                        accDef.ReturnType, Converter.ConvertExpression(accessorBody, localScope),
+                        NodeHelpers.ToSourceLocation(accessorBody.Range), localScope.Function);
                 }
             });
 
@@ -1667,8 +1667,8 @@ namespace Flame.Ecs
         private class BasePropertySpec
         {
             public BasePropertySpec(
-                IReadOnlyList<IProperty> BaseProperties, 
-                IReadOnlyList<IProperty> InterfaceProperties, 
+                IReadOnlyList<IProperty> BaseProperties,
+                IReadOnlyList<IProperty> InterfaceProperties,
                 LNode OverrideNode, LNode NewNode)
             {
                 this.BaseProperties = BaseProperties;
@@ -1691,7 +1691,7 @@ namespace Flame.Ecs
         /// for the given property with the given name, and attribute nodes.
         /// </summary>
         private static BasePropertySpec FindBaseProperties(
-            IProperty Property, SimpleName Name, 
+            IProperty Property, SimpleName Name,
             LNode OverrideNode, LNode NewNode, GlobalScope Scope)
         {
             var basePropList = new List<IProperty>();
@@ -1720,8 +1720,8 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "no base property",
                                 NodeHelpers.HighlightEven(
-                                    "property '", Name.ToString(), "' is marked '", "override", 
-                                    "', but base type '", Scope.NameAbbreviatedType(parentTy), 
+                                    "property '", Name.ToString(), "' is marked '", "override",
+                                    "', but base type '", Scope.NameAbbreviatedType(parentTy),
                                     "' does not define any (visible) properties that match its signature."),
                                 NodeHelpers.ToSourceLocation(OverrideNode.Range)));
                         }
@@ -1731,8 +1731,8 @@ namespace Flame.Ecs
                             Scope.Log.LogWarning(new LogEntry(
                                 "redundant attribute",
                                 NodeHelpers.HighlightEven(
-                                    "property '", Name.ToString(), "' is marked '", "new", 
-                                    "', but base type '", Scope.NameAbbreviatedType(parentTy), 
+                                    "property '", Name.ToString(), "' is marked '", "new",
+                                    "', but base type '", Scope.NameAbbreviatedType(parentTy),
                                     "' does not define any (visible) properties that match its signature. ")
                                 .Concat(new MarkupNode[] { EcsWarnings.RedundantNewAttributeWarning.CauseNode }),
                                 NodeHelpers.ToSourceLocation(NewNode.Range)));
@@ -1771,7 +1771,7 @@ namespace Flame.Ecs
                                 (baseProperties.Length == 1 ? "a base property" : baseProperties.Length + " base properties") +
                                 ". Consider using the '", "new", "' keyword if hiding was intentional. ")
                                 .Concat(new MarkupNode[]
-                                { 
+                                {
                                     EcsWarnings.HiddenMemberWarning.CauseNode,
                                     Property.GetSourceLocation().CreateDiagnosticsNode()
                                 })
@@ -1819,7 +1819,7 @@ namespace Flame.Ecs
             IAccessor Accessor, BasePropertySpec Spec, GlobalScope Scope)
         {
             return FindBaseAccessors(
-                Accessor, Spec.BaseProperties, Spec.InterfaceProperties, 
+                Accessor, Spec.BaseProperties, Spec.InterfaceProperties,
                 Spec.OverrideNode, Spec.NewNode, Scope);
         }
 
@@ -1831,7 +1831,7 @@ namespace Flame.Ecs
             IAccessor Accessor, IEnumerable<IProperty> BaseProperties,
             IEnumerable<IProperty> InterfaceProperties,
             LNode OverrideNode, LNode NewNode, GlobalScope Scope)
-        {   
+        {
             var declProp = Accessor.DeclaringProperty;
 
             var results = new List<IAccessor>();
@@ -1871,10 +1871,10 @@ namespace Flame.Ecs
                                 Scope.Log.LogError(new LogEntry(
                                     "signature mismatch",
                                     NodeHelpers.HighlightEven(
-                                        "property '", declProp.Name.ToString(), "' is marked '", 
-                                        "override", "', but the '", 
-                                        Accessor.AccessorType.ToString().ToLower(), 
-                                        "' accessor's base method was neither '", "abstract", 
+                                        "property '", declProp.Name.ToString(), "' is marked '",
+                                        "override", "', but the '",
+                                        Accessor.AccessorType.ToString().ToLower(),
+                                        "' accessor's base method was neither '", "abstract",
                                         "' nor '", "virtual", "'."),
                                     Accessor.GetSourceLocation()));
                             }
@@ -1892,9 +1892,9 @@ namespace Flame.Ecs
                 results.AddRange(InterfaceProperties
                     .Select(p => p.GetAccessor(Accessor.AccessorType))
                     .Where(m => m != null));
-                
+
             }
-        
+
             return results;
         }
     }
