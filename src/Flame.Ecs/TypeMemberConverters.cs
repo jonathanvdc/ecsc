@@ -914,55 +914,7 @@ namespace Flame.Ecs
                 }
             }, methodDef =>
             {
-                bool isExtern = methodDef.HasAttribute(
-                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
-                bool isInterface = methodDef.DeclaringType.GetIsInterface();
-                bool isAbstractOrExtern = methodDef.GetIsAbstract() || isExtern;
-
-                if (Node.ArgCount > 3)
-                {
-                    if (isInterface)
-                    {
-                        Scope.Log.LogError(new LogEntry(
-                            "syntax error",
-                            NodeHelpers.HighlightEven(
-                                "'", "interface", "' method '", methodDef.Name.ToString(),
-                                "' cannot have a body."),
-                            methodDef.GetSourceLocation()));
-                    }
-                    else if (isAbstractOrExtern)
-                    {
-                        Scope.Log.LogError(new LogEntry(
-                            "syntax error",
-                            NodeHelpers.HighlightEven(
-                                "method '", methodDef.Name.ToString(), "' cannot both be marked '",
-                                isExtern ? "extern" : "abstract", "' and have a body."),
-                            methodDef.GetSourceLocation()));
-                    }
-
-                    // Analyze the function body.
-                    var innerScope = CreateGenericScope(methodDef, Scope);
-                    var funScope = CreateFunctionScope(methodDef, innerScope);
-                    var localScope = new LocalScope(funScope);
-                    methodDef.Body = ExpressionConverters.AutoReturn(
-                        methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope),
-                        NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);
-                }
-                else
-                {
-                    if (!isAbstractOrExtern && !isInterface)
-                    {
-                        Scope.Log.LogError(new LogEntry(
-                            "syntax error",
-                            NodeHelpers.HighlightEven(
-                                "method '", methodDef.Name.ToString(),
-                                "' must have a body because it is not marked '",
-                                "abstract", "', '", "extern", "' or '", "partial",
-                                "', and is not an '", "interface", "' member."),
-                            methodDef.GetSourceLocation()));
-                    }
-                    methodDef.Body = EmptyStatement.Instance;
-                }
+                ConvertMethodBody(methodDef, Node.ArgCount > 3 ? Node.Args[3] : null, Scope, Converter);
             });
 
             // Finally, add the function to the declaring type.
@@ -978,8 +930,11 @@ namespace Flame.Ecs
             LNode Node, LazyDescribedType DeclaringType,
             GlobalScope Scope, NodeConverter Converter)
         {
-            if (!NodeHelpers.CheckArity(Node, 4, Scope.Log))
+            if (!NodeHelpers.CheckMinArity(Node, 3, Scope.Log)
+                || !NodeHelpers.CheckMaxArity(Node, 4, Scope.Log))
+            {
                 return Scope;
+            }
 
             // Handle the constructor's name first.
             var name = NameNodeHelpers.ToSimpleIdentifier(Node.Args[1], Scope);
@@ -1005,19 +960,83 @@ namespace Flame.Ecs
                        Node.Args[2].Args, methodDef, innerScope, Converter);
             }, _ => { }, methodDef =>
             {
-                var innerScope = CreateGenericScope(methodDef, Scope);
-                var funScope = CreateFunctionScope(methodDef, innerScope);
-                // Analyze the function body.
-                var localScope = new LocalScope(funScope);
-                methodDef.Body = ExpressionConverters.AutoReturn(
-                    methodDef.ReturnType, Converter.ConvertExpression(Node.Args[3], localScope),
-                    NodeHelpers.ToSourceLocation(Node.Args[3].Range), funScope);
+                ConvertMethodBody(methodDef, Node.ArgCount > 3 ? Node.Args[3] : null, Scope, Converter);
             });
 
             // Finally, add the function to the declaring type.
             DeclaringType.AddMethod(def);
 
             return Scope;
+        }
+
+        /// <summary>
+        /// Analyzes the given method definition's body.
+        /// </summary>
+        /// <param name="Method">A method definition.</param>
+        /// <param name="Body">
+        /// The method body for the method; <c>null</c> if the method has no method body.
+        /// </param>
+        /// <param name="Scope">A global scope.</param>
+        /// <param name="Converter">A node converter.</param>
+        private static void ConvertMethodBody(
+            LazyDescribedMethod Method,
+            LNode Body,
+            GlobalScope Scope,
+            NodeConverter Converter)
+        {
+            bool isExtern = Method.HasAttribute(
+                PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+            bool isInterface = Method.DeclaringType.GetIsInterface();
+            bool isAbstractOrExtern = Method.GetIsAbstract() || isExtern;
+
+            string methodType = Method.IsConstructor ? "constructor" : "method";
+
+            if (Body == null)
+            {
+                if (!isAbstractOrExtern && !isInterface)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            methodType + " '", Method.Name.ToString(),
+                            "' must have a body because it is not marked '",
+                            "abstract", "', '", "extern", "' or '", "partial",
+                            "', and is not an '", "interface", "' member."),
+                        Method.GetSourceLocation()));
+                }
+                Method.Body = EmptyStatement.Instance;
+            }
+            else
+            {
+                if (isInterface)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            "'", "interface", "' " + methodType + " '",
+                            Method.Name.ToString(),
+                            "' cannot have a body."),
+                        Method.GetSourceLocation()));
+                }
+                else if (isAbstractOrExtern)
+                {
+                    Scope.Log.LogError(new LogEntry(
+                        "syntax error",
+                        NodeHelpers.HighlightEven(
+                            methodType + " '", Method.Name.ToString(),
+                            "' cannot both be marked '",
+                            isExtern ? "extern" : "abstract", "' and have a body."),
+                        Method.GetSourceLocation()));
+                }
+
+                // Analyze the function body.
+                var innerScope = CreateGenericScope(Method, Scope);
+                var funScope = CreateFunctionScope(Method, innerScope);
+                var localScope = new LocalScope(funScope);
+                Method.Body = ExpressionConverters.AutoReturn(
+                    Method.ReturnType, Converter.ConvertExpression(Body, localScope),
+                    NodeHelpers.ToSourceLocation(Body.Range), funScope);
+            }
         }
 
         /// <summary>
