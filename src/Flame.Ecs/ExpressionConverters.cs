@@ -3632,6 +3632,31 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a builtin delegate type node (type #builtin_delegate_type).
+        /// </summary>
+        public static IType ConvertBuiltinDelegateType(LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckMinArity(Node, 1, Scope.Log))
+            {
+                return null;
+            }
+
+            var types = Node.Args
+                .Select(n => Converter.ConvertCheckedTypeOrError(n, Scope))
+                .ToArray();
+
+            var signature = new DescribedMethod("", null);
+            signature.IsStatic = true;
+            signature.ReturnType = types[types.Length - 1];
+            for (int i = 0; i < types.Length - 1; i++)
+            {
+                signature.AddParameter(new DescribedParameter("param" + i, types[i]));
+            }
+
+            return MethodType.Create(signature);
+        }
+
+        /// <summary>
         /// Parses the given node as a warning name.
         /// </summary>
         /// <param name="NameNode">The node to parse.</param>

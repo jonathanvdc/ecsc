@@ -28,6 +28,14 @@ namespace EcscMacros
         public static readonly Symbol BuiltinDecltype = GSymbol.Get("#builtin_decltype");
 
         /// <summary>
+        /// A builtin node type that produces a delegate type.
+        /// </summary>
+        /// <remarks>
+        /// Usage: #builtin_delegate_type(int, double, int); // == #builtin_decltype((int x, double y) => default(int))
+        /// </remarks>
+        public static readonly Symbol BuiltinDelegateType = GSymbol.Get("#builtin_delegate_type");
+
+        /// <summary>
         /// A builtin node type that tries to evaluate a condition at compile-time.
         /// One out of two nodes is then analyzed based on this condition. 
         /// If the condition cannot be evaluated at compile-time, an error is produced.

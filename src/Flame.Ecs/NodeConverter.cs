@@ -132,12 +132,12 @@ namespace Flame.Ecs
         /// Converts the given type reference node.
         /// If the type it describes cannot be resolved
         /// unambiguously, then the error is reported,
-        /// and the void type is returned.
+        /// and the error type is returned.
         /// </summary>
         public IType ConvertCheckedTypeOrError(
             LNode Node, GlobalScope Scope, IType DeclaringType)
         {
-            return ConvertCheckedType(Node, Scope, DeclaringType) ?? PrimitiveTypes.Void;
+            return ConvertCheckedType(Node, Scope, DeclaringType) ?? ErrorType.Instance;
         }
 
         /// <summary>
@@ -673,6 +673,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinStaticIsArray, ExpressionConverters.ConvertBuiltinStaticIsArrayExpression);
                 result.AddExprConverter(EcscMacros.EcscSymbols.BuiltinRefToPtr, ExpressionConverters.ConvertBuiltinRefToPtrExpression);
                 result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDecltype, ExpressionConverters.ConvertBuiltinDecltype);
+                result.AddTypeConverter(EcscMacros.EcscSymbols.BuiltinDelegateType, ExpressionConverters.ConvertBuiltinDelegateType);
                 result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningDisable, ExpressionConverters.ConvertBuiltinDisableWarning);
                 result.AddTypeOrExprConverter(EcscMacros.EcscSymbols.BuiltinWarningRestore, ExpressionConverters.ConvertBuiltinRestoreWarning);
 
