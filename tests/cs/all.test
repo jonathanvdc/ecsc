@@ -13,6 +13,7 @@ tests
     const/Const.test;
     const-int-conversions/ConstIntConversions.test;
     constructor/Constructor.test;
+    delegate-typedef/DelegateTypedef.test;
     dereference/Dereference.test;
     enums/Enums.test;
     equatable-struct/EquatableStruct.test;
