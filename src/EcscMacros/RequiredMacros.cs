@@ -17,16 +17,42 @@ namespace EcscMacros
         static LNodeFactory F = new LNodeFactory(new EmptySourceFile("RequiredMacros.cs"));
 
         /// <summary>
-        /// Gets the sequence of prologue nodes for EC#.
+        /// Gets the sequence of prologue nodes for EC# code compiled by ecsc.
         /// </summary>
-        public static IEnumerable<LNode> EcscPrologue = new LNode[]
-        {
-            F.Call(
-                GSymbol.Get("#importMacros"),
-                F.Id("EcscMacros"))
-        };
+        /// <param name="EnvironmentName">The name of the environment.</param>
+        public static IEnumerable<LNode> GetEcscPrologue(string EnvironmentName) =>
+            new LNode[]
+            {
+                F.Call(
+                    GSymbol.Get("#importMacros"),
+                    F.Id("EcscMacros")),
+                F.Call(
+                    GSymbol.Get("#importMacros"),
+                    F.Dot(
+                        GSymbol.Get("EcscMacros"),
+                        GetEnvironmentNameSymbol(EnvironmentName)))
+            };
 
-        static LNode Reject(IMessageSink sink, LNode at, string msg)
+        private static Symbol GetEnvironmentNameSymbol(string EnvironmentName)
+        {
+            // This function turns an environment name like 'clr' or 'LLVM' into
+            // 'Clr' and 'Llvm', respectively.
+
+            if (string.IsNullOrEmpty(EnvironmentName))
+            {
+                return GSymbol.Empty;
+            }
+
+            var split = EnvironmentName
+                .Split(new char[] { '/', '-', '.' }, 2);
+
+            var lowerEnvName = split[0].ToLowerInvariant();
+            return GSymbol.Get(
+                char.ToUpperInvariant(lowerEnvName[0]) +
+                lowerEnvName.Substring(1));
+        }
+
+        private static LNode Reject(IMessageSink sink, LNode at, string msg)
         {
             sink.Write(Severity.Error, at, msg);
             return null;

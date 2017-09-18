@@ -51,9 +51,15 @@
     <Compile Include="EcscSymbols.cs" />
     <Compile Include="RedefinedMacros.cs" />
     <Compile Include="DocumentationMacros.cs" />
+    <Compile Include="Clr\ClrMacros.cs" />
+    <Compile Include="Llvm\LlvmMacros.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Clr\" />
+    <Folder Include="Llvm\" />
   </ItemGroup>
 </Project>
