@@ -1,10 +1,10 @@
 using System;
 
-public delegate int IntMap(int x);
+public delegate T2 Map<T1, T2>(T1 x);
 
 public static class Program
 {
-    private static int Apply(IntMap f, int x)
+    private static int Apply(Map<int, int> f, int x)
     {
         return f(x);
     }
