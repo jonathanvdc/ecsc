@@ -984,8 +984,11 @@ namespace Flame.Ecs
             GlobalScope Scope,
             NodeConverter Converter)
         {
-            bool isExtern = Method.HasAttribute(
-                PrimitiveAttributes.Instance.ImportAttribute.AttributeType);
+            bool isExtern =
+                Method.HasAttribute(
+                    PrimitiveAttributes.Instance.ImportAttribute.AttributeType)
+                || Method.HasAttribute(
+                    PrimitiveAttributes.Instance.RuntimeImplementedAttribute.AttributeType);
             bool isInterface = Method.DeclaringType.GetIsInterface();
             bool isAbstractOrExtern = Method.GetIsAbstract() || isExtern;
 
