@@ -117,8 +117,10 @@ namespace ecsc
         }
 
         private static async Task<INamespaceBranch> ParseCompilationUnitsAsync(
-            List<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-            IBinder Binder, IAssembly DeclaringAssembly)
+            List<IProjectSourceItem> SourceItems,
+            CompilationParameters Parameters,
+            IBinder Binder,
+            IAssembly DeclaringAssembly)
         {
             var sink = new CompilerLogMessageSink(Parameters.Log, new SourceDocumentCache());
             var processor = new MacroProcessor(sink, typeof(LeMP.Prelude.BuiltinMacros));
@@ -127,7 +129,7 @@ namespace ecsc
             processor.AddMacros(typeof(EcscMacros.RequiredMacros).Assembly, false);
 
             var parsed = await ParseCompilationUnitsAsync(
-                SourceItems, Parameters, processor, sink);
+                SourceItems, Parameters, Binder, processor, sink);
             return AnalyzeCompilationUnits(parsed, Binder, Parameters.Log, DeclaringAssembly);
         }
 
@@ -165,8 +167,11 @@ namespace ecsc
         }
 
         private static ParsedDocument ParseCompilationUnit(
-            IProjectSourceItem SourceItem, CompilationParameters Parameters,
-            MacroProcessor Processor, CompilerLogMessageSink Sink)
+            IProjectSourceItem SourceItem,
+            CompilationParameters Parameters,
+            IBinder Binder,
+            MacroProcessor Processor,
+            CompilerLogMessageSink Sink)
         {
             Parameters.Log.LogEvent(new LogEntry("Status", "parsing '" + SourceItem.SourceIdentifier + "'"));
 
@@ -177,7 +182,7 @@ namespace ecsc
 
             // Register, parse and expand macros.
             var parsedDoc = SourceHelpers.RegisterAndParse(code, GetParser(SourceItem), Sink)
-                .ExpandMacros(Processor, EcscMacros.RequiredMacros.EcscPrologue);
+                .ExpandMacros(Processor, EcscMacros.RequiredMacros.GetEcscPrologue(Binder.Environment.Name));
 
             // Optionally print expanded code.
             if (Parameters.Log.Options.GetOption<bool>("E", false))
@@ -198,8 +203,11 @@ namespace ecsc
         }
 
         private static Task<IEnumerable<ParsedDocument>> ParseCompilationUnitsAsync(
-            IReadOnlyList<IProjectSourceItem> SourceItems, CompilationParameters Parameters,
-            MacroProcessor Processor, CompilerLogMessageSink Sink)
+            IReadOnlyList<IProjectSourceItem> SourceItems,
+            CompilationParameters Parameters,
+            IBinder Binder,
+            MacroProcessor Processor,
+            CompilerLogMessageSink Sink)
         {
             var units = new Task<ParsedDocument>[SourceItems.Count];
             for (int i = 0; i < units.Length; i++)
@@ -207,7 +215,7 @@ namespace ecsc
                 var item = SourceItems[i];
                 units[i] = Task.Run(() =>
                     ParseCompilationUnit(
-                        item, Parameters, Processor, Sink));
+                        item, Parameters, Binder, Processor, Sink));
             }
             return Task.WhenAll(units).ContinueWith(t =>
                 t.Result.Where(x => !x.IsEmpty));
