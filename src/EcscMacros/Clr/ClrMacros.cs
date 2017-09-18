@@ -77,7 +77,7 @@ namespace EcscMacros.Clr
             var ctor = F.Call(
                 CodeSymbols.Constructor,
                 F.Id(GSymbol.Empty),
-                name,
+                F.Id(CodeSymbols.This),
                 F.List(
                     F.Var(F.Id(CodeSymbols.Object), "object"),
                     F.Var(intPtr, "funcPtr")))

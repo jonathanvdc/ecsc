@@ -61,7 +61,7 @@ namespace EcscMacros.Llvm
             var ctor = F.Call(
                 CodeSymbols.Constructor,
                 F.Id(GSymbol.Empty),
-                name,
+                F.Id(CodeSymbols.This),
                 F.List(),
                 F.Braces())
                 .PlusAttr(F.Id(CodeSymbols.Private));
