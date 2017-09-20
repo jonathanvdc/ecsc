@@ -27,6 +27,7 @@ tests
     generic-constraints/GenericConstraints.test;
     generic-parameter-object/GenericParameterObject.test;
     generics/Generics.test;
+    goto/Goto.test;
     hello-world/HelloWorld.test;
     in-place-construction/InPlaceConstruction.test;
     inc-dec/IncDec.test;
