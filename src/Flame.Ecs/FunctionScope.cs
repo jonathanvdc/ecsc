@@ -9,14 +9,14 @@ using Flame.Compiler.Variables;
 using Flame.Ecs.Semantics;
 using Pixie;
 using Flame.Ecs.Diagnostics;
+using Flame.Compiler.Statements;
 
 namespace Flame.Ecs
 {
     /// <summary>
-    /// A data structure that represents the top-level scope
-    /// of a function-like member. An enclosing type and
-    /// a sequence of parameter variables are stored, but
-    /// no local variables can be declared in this type of scope. 
+    /// A data structure that represents the top-level scope of a function-like
+    /// member. An enclosing type and a sequence of parameter variables are stored,
+    /// but no local variables can be declared in this type of scope.
     /// </summary>
     public sealed class FunctionScope : ILocalScope
     {
@@ -45,6 +45,7 @@ namespace Flame.Ecs
             this.CurrentMethod = CurrentMethod;
             this.ReturnType = ReturnType;
             this.ParameterVariables = ParameterVariables;
+            this.Labels = new FunctionLabelManager();
         }
 
         /// <summary>
@@ -56,7 +57,7 @@ namespace Flame.Ecs
         /// <summary>
         /// Gets the type of a hypothetical 'this' pointer:
         /// the enclosing type, optionally instantiated by
-        /// its own generic parameters. Additionally, 
+        /// its own generic parameters. Additionally,
         /// value types have a pointer current type.
         /// </summary>
         public IType CurrentType { get; private set; }
@@ -100,6 +101,12 @@ namespace Flame.Ecs
         /// that are defined in this scope.
         /// </summary>
         public IEnumerable<Symbol> VariableNames { get { return ParameterVariables.Keys; } }
+
+        /// <summary>
+        /// Gets the function label manager for this scope.
+        /// </summary>
+        /// <returns>The function label manager.</returns>
+        public FunctionLabelManager Labels { get; private set; }
 
         /// <summary>
         /// Gets the variable with the given name.
@@ -216,7 +223,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Gets all members with the given name that can be accessed
-        /// on an instance of the given type. 
+        /// on an instance of the given type.
         /// </summary>
         public IEnumerable<ITypeMember> GetInstanceMembers(IType Type, string Name)
         {
@@ -238,7 +245,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Gets all extension methods with the given name that can be accessed
-        /// on an instance of the given type. 
+        /// on an instance of the given type.
         /// </summary>
         public IEnumerable<ITypeMember> GetExtensionMembers(IType Type, string Name)
         {
@@ -248,8 +255,8 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Gets all instance and extension members with the given name that 
-        /// can be accessed on an instance of the given type. 
+        /// Gets all instance and extension members with the given name that
+        /// can be accessed on an instance of the given type.
         /// </summary>
         /// <returns>The instance and extension members.</returns>
         /// <param name="Type">The type to access members on.</param>
@@ -308,7 +315,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Gets all static members with the given name that can be 
+        /// Gets all static members with the given name that can be
         /// found via unqualified name lookup.
         /// </summary>
         public IEnumerable<ITypeMember> GetUnqualifiedStaticMembers(string Name)
@@ -354,7 +361,7 @@ namespace Flame.Ecs
         }
 
         /// <summary>
-        /// Gets all operators defined by the given type (or one of its ancestors) 
+        /// Gets all operators defined by the given type (or one of its ancestors)
         /// that can be accessed on the given type's name.
         /// </summary>
         public IEnumerable<IMethod> GetOperators(IType Type, Operator Op)
@@ -380,7 +387,7 @@ namespace Flame.Ecs
 
         /// <summary>
         /// Dereferences the given type if it is a pointer type.
-        /// Otherwise, the type itself is returned. 
+        /// Otherwise, the type itself is returned.
         /// </summary>
         public static IType DereferenceOrId(IType Type)
         {
@@ -833,6 +840,7 @@ namespace Flame.Ecs
             result.CurrentMethod = CurrentMethod;
             result.ReturnType = ReturnType;
             result.ParameterVariables = ParameterVariables;
+            result.Labels = Labels;
             return result;
         }
 
@@ -866,6 +874,175 @@ namespace Flame.Ecs
         public FunctionScope RestoreWarnings(params string[] WarningNames)
         {
             return WithGlobalScope(Global.RestoreWarnings(WarningNames));
+        }
+    }
+
+    /// <summary>
+    /// Tags and stores all labels within the scope of a function.
+    /// </summary>
+    public sealed class FunctionLabelManager
+    {
+        /// <summary>
+        /// Creates a new function label manager.
+        /// </summary>
+        public FunctionLabelManager()
+        {
+            this.tags = new Dictionary<Symbol, UniqueTag>();
+            this.marks = new Dictionary<UniqueTag, SourceLocation>();
+            this.gotos = new Dictionary<UniqueTag, List<SourceLocation>>();
+        }
+
+        private Dictionary<Symbol, UniqueTag> tags;
+        private Dictionary<UniqueTag, SourceLocation> marks;
+        private Dictionary<UniqueTag, List<SourceLocation>> gotos;
+
+        private UniqueTag GetOrCreateTag(Symbol Label)
+        {
+            UniqueTag tag;
+            if (!tags.TryGetValue(Label, out tag))
+            {
+                tag = new UniqueTag(Label.Name);
+                tags[Label] = tag;
+                gotos[tag] = new List<SourceLocation>();
+            }
+            return tag;
+        }
+
+        /// <summary>
+        /// Creates a statement that branches to the given label.
+        /// </summary>
+        /// <param name="Label">The label to branch to.</param>
+        /// <param name="Location">The source location of the goto.</param>
+        /// <returns>A goto statement.</returns>
+        public IStatement CreateGotoStatement(Symbol Label, SourceLocation Location)
+        {
+            var tag = GetOrCreateTag(Label);
+            gotos[tag].Add(Location);
+            return new GotoLabelStatement(tag);
+        }
+
+        /// <summary>
+        /// Creates a statement that marks the given label.
+        /// </summary>
+        /// <param name="Label">The label to mark.</param>
+        /// <param name="Location">The source location of the label.</param>
+        /// <param name="Log">A log to send errors to.</param>
+        /// <returns>A mark statement.</returns>
+        public IStatement CreateMarkStatement(Symbol Label, SourceLocation Location, ICompilerLog Log)
+        {
+            var tag = GetOrCreateTag(Label);
+            SourceLocation existingMark;
+            if (marks.TryGetValue(tag, out existingMark))
+            {
+                Log.LogError(new LogEntry(
+                    "label redefinition",
+                    NodeHelpers.CreateRedefinitionMessage(
+                        NodeHelpers.HighlightEven(
+                            "label '", Label.Name, "' is defined more than once."),
+                        Location,
+                        existingMark)));
+            }
+            marks[tag] = Location;
+            return new MarkLabelStatement(tag);
+        }
+
+        /// <summary>
+        /// Issues diagnostics that clarify that the given label
+        /// has been referenced but was never marked.
+        /// </summary>
+        /// <param name="Tag">The tag of the block that was not marked.</param>
+        /// <param name="Gotos">A list of gotos that reference the label.</param>
+        /// <param name="Log">A log to send errors to.</param>
+        /// <param name="AllLabels">A sequence of all labels in the function.</param>
+        private static void ReportNotMarked(
+            UniqueTag Tag,
+            List<SourceLocation> Gotos,
+            ICompilerLog Log,
+            IEnumerable<string> AllLabels)
+        {
+            string suggestedName = NameSuggestionHelpers.SuggestName(Tag.Name, AllLabels);
+            var message = suggestedName == null
+                ? NodeHelpers.HighlightEven(
+                    "", "goto", " statement targets undefined label '",
+                    Tag.Name, "'.")
+                : NodeHelpers.HighlightEven(
+                    "", "goto", " statement targets undefined label '",
+                    Tag.Name, "'. Did you mean '", suggestedName, "'?");
+
+            foreach (var location in Gotos)
+            {
+                Log.LogError(
+                    new LogEntry(
+                        "undefined label",
+                        message,
+                        location));
+            }
+        }
+
+        /// <summary>
+        /// Checks that all labels referenced by goto statements have been marked
+        /// by mark statements.
+        /// </summary>
+        /// <param name="Log">A log to send errors to.</param>
+        /// <returns>
+        /// <c>true</c> if all referenced labels have been marked; otherwise, <c>false</c>.
+        /// </returns>
+        public bool CheckAllMarked(ICompilerLog Log)
+        {
+            IEnumerable<string> allLabels = null;
+            foreach (var pair in gotos)
+            {
+                if (!marks.ContainsKey(pair.Key))
+                {
+                    if (allLabels == null)
+                    {
+                        allLabels = MarkedLabelsAsStrings;
+                    }
+                    ReportNotMarked(pair.Key, pair.Value, Log, allLabels);
+                }
+            }
+            return allLabels == null;
+        }
+
+        private IEnumerable<string> MarkedLabelsAsStrings
+        {
+            get
+            {
+                var results = new HashSet<string>();
+                foreach (var pair in marks)
+                {
+                    results.Add(pair.Key.Name);
+                }
+                return results;
+            }
+        }
+
+        /// <summary>
+        /// Checks that all labels defined by mark statements that have been
+        /// used by goto statements.
+        /// </summary>
+        /// <param name="Log">A log to send warnings to.</param>
+        /// <returns>
+        /// <c>true</c> if all defined labels have been used; otherwise, <c>false</c>.
+        /// </returns>
+        public bool CheckAllUsed(ICompilerLog Log)
+        {
+            bool allUsed = true;
+            foreach (var pair in gotos)
+            {
+                SourceLocation markLocation;
+                if (pair.Value.Count == 0 && marks.TryGetValue(pair.Key, out markLocation))
+                {
+                    Log.LogWarning(
+                        new LogEntry(
+                            "unused label",
+                            NodeHelpers.HighlightEven(
+                                "label '", pair.Key.Name, "' is defined but never used."),
+                            markLocation));
+                    allUsed = false;
+                }
+            }
+            return allUsed;
         }
     }
 }

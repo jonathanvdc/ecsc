@@ -97,8 +97,8 @@ namespace Flame.Ecs
             return new MarkupNode[]
             {
                 new MarkupNode("#group", Message),
-                OriginalDefinition.CreateDiagnosticsNode(),
-                NewDefinition.CreateRemarkDiagnosticsNode("previous declaration: ")
+                NewDefinition.CreateDiagnosticsNode(),
+                OriginalDefinition.CreateRemarkDiagnosticsNode("previous declaration: ")
             };
         }
 
@@ -113,7 +113,7 @@ namespace Flame.Ecs
                     "unexpected node type",
                     HighlightEven(
                         "syntax node '", Node.Name.Name, "' was not an ",
-                        "identifier", " node, expected an identifier node."),
+                        "identifier", " node; expected an identifier node."),
                     ToSourceLocation(Node.Range)));
                 return false;
             }

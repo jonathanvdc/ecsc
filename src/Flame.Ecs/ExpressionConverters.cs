@@ -423,6 +423,9 @@ namespace Flame.Ecs
         /// </summary>
         public static IStatement AutoReturn(IType ReturnType, IExpression Body, SourceLocation Location, FunctionScope Scope)
         {
+            Scope.Labels.CheckAllMarked(Scope.Global.Log);
+            Scope.Labels.CheckAllUsed(Scope.Global.Log);
+
             if (ReturnType == null || ReturnType.Equals(PrimitiveTypes.Void))
                 return new BlockStatement(new[] { ToStatement(Body), new ReturnStatement() });
             else if (!Body.Type.Equals(PrimitiveTypes.Void))
@@ -2666,6 +2669,55 @@ namespace Flame.Ecs
             {
                 return ToExpression(new ContinueStatement(flow.ContinueTag));
             }
+        }
+
+        /// <summary>
+        /// Converts a goto statement (type #goto) and wraps it in an expression.
+        /// </summary>
+        public static IExpression ConvertGotoExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            var label = Node.Args[0];
+
+            if (!NodeHelpers.CheckId(label, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            return ToExpression(
+                Scope.Function.Labels.CreateGotoStatement(
+                    label.Name,
+                    NodeHelpers.ToSourceLocation(label.Range)));
+        }
+
+        /// <summary>
+        /// Converts a label statement (type #label) and wraps it in an expression.
+        /// </summary>
+        public static IExpression ConvertLabelExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            var label = Node.Args[0];
+
+            if (!NodeHelpers.CheckId(label, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            return ToExpression(
+                Scope.Function.Labels.CreateMarkStatement(
+                    label.Name,
+                    NodeHelpers.ToSourceLocation(label.Range),
+                    Scope.Log));
         }
 
         /// <summary>
