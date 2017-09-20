@@ -7,14 +7,13 @@ public static class Program
 {
     public static void Main()
     {
-        int x = 200, y = 4;
+        int x = 200;
         int count = 0;
-        string[] array = new string[x * y];
+        string[] array = new string[x];
 
         // Initialize the array:
         for (int i = 0; i < x; i++)
-            for (int j = 0; j < y; j++)
-                array[i * y + j] = (++count).ToString();
+            array[i] = (++count).ToString();
 
         // Input a string:
         string myNumber = "49";
@@ -22,12 +21,9 @@ public static class Program
         // Search:
         for (int i = 0; i < x; i++)
         {
-            for (int j = 0; j < y; j++)
+            if (array[i].Equals(myNumber))
             {
-                if (array[i * y + j].Equals(myNumber))
-                {
-                    goto Found;
-                }
+                goto Found;
             }
         }
 
