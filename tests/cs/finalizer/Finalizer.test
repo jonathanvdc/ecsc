@@ -26,12 +26,12 @@ configs
     ReferenceDebug
     {
         compiler = $csc;
-        Flags = /debug+ /out:$(Executable);
+        Flags = /debug+ /nowarn:CS0414 /out:$(Executable);
     }
     ReferenceRelease
     {
         compiler = $csc;
-        Flags = /optimize+ /out:$(Executable);
+        Flags = /optimize+ /nowarn:CS0414 /out:$(Executable);
     }
 }
 
