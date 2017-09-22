@@ -18,11 +18,11 @@ configs
         compiler = $ecsc;
         Flags = -Og -platform clr -o $(Executable);
     }
-    EcscO3
-    {
-        compiler = $ecsc;
-        Flags = -O3 -platform clr -o $(Executable);
-    }
+    // EcscO3
+    // {
+    //     compiler = $ecsc;
+    //     Flags = -O3 -platform clr -o $(Executable);
+    // }
     ReferenceDebug
     {
         compiler = $csc;
