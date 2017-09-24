@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Flame.Collections;
 using Flame.Ecs.Values;
+using EcscMacros;
 
 namespace Flame.Ecs
 {
@@ -1023,20 +1024,29 @@ namespace Flame.Ecs
                 NodeHelpers.CheckArity(Node, 2, Scope.Log);
 
                 var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope);
-                return new TypeOrExpression(new IType[] { elemTy.MakeArrayType(arrayDims) });
+                return new TypeOrExpression(elemTy.MakeArrayType(arrayDims));
             }
 
-            // Perhaps not. How about a pointer?
+            // Not an array. How about a pointer?
             if (target.IsIdNamed(CodeSymbols._Pointer))
             {
                 NodeHelpers.CheckArity(Node, 2, Scope.Log);
 
                 var elemTy = Converter.ConvertCheckedTypeOrError(args[0], Scope);
-                return new TypeOrExpression(new IType[] { elemTy.MakePointerType(PointerKind.TransientPointer) });
+                return new TypeOrExpression(elemTy.MakePointerType(PointerKind.TransientPointer));
+            }
+
+            // Maybe we encountered a delegate type.
+            if (target.IsIdNamed(EcscSymbols.BuiltinDelegateType))
+            {
+                return new TypeOrExpression(
+                    ConvertBuiltinDelegateType(
+                        target.WithArgs(args.ToArray<LNode>()),
+                        Scope,
+                        Converter));
             }
 
             // Why, it must be a generic instance, then.
-
             var tArgs = args.Select(item =>
                 Converter.ConvertCheckedTypeOrError(item, Scope)).ToArray();
 

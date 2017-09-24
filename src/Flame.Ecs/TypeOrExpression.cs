@@ -22,6 +22,10 @@ namespace Flame.Ecs
             : this(Expression, Types, default(QualifiedName))
         { }
 
+        public TypeOrExpression(IType Type)
+            : this(new IType[] { Type })
+        { }
+
         public TypeOrExpression(IEnumerable<IType> Types)
             : this(null, Types, default(QualifiedName))
         { }
