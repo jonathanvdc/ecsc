@@ -165,7 +165,9 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type resolution",
                     NodeHelpers.HighlightEven(
-                        "cannot resolve type '", Node.ToString(), "'."),
+                        "cannot resolve type '",
+                        NodeHelpers.PrintTypeNode(Node),
+                        "'."),
                     NodeHelpers.ToSourceLocation(Node.Range)));
             }
             return retType;

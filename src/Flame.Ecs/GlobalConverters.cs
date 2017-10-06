@@ -20,7 +20,7 @@ namespace Flame.Ecs
         /// Converts an '#import' directive.
         /// </summary>
         public static GlobalScope ConvertImportDirective(
-            LNode Node, IMutableNamespace Namespace, 
+            LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
@@ -57,7 +57,7 @@ namespace Flame.Ecs
         /// Converts an '#alias' directive.
         /// </summary>
         public static GlobalScope ConvertAliasDirective(
-            LNode Node, IMutableNamespace Namespace, 
+            LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             // A using alias looks like this in C# and LES, respectively:
@@ -99,7 +99,7 @@ namespace Flame.Ecs
         /// Converts a '#namespace' node.
         /// </summary>
         public static GlobalScope ConvertNamespaceDefinition(
-            LNode Node, IMutableNamespace Namespace, 
+            LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
@@ -126,7 +126,7 @@ namespace Flame.Ecs
         }
 
         public static GlobalScope ConvertGenericParameterDefs(
-            IReadOnlyList<GenericParameterDef> Defs, 
+            IReadOnlyList<GenericParameterDef> Defs,
             IGenericMember DeclaringMember,
             GlobalScope Scope, NodeConverter Converter,
             Func<SimpleName, IGenericParameter> AddGenericParameter,
@@ -184,7 +184,7 @@ namespace Flame.Ecs
         /// Converts a type.
         /// </summary>
         public static GlobalScope ConvertTypeDefinition(
-            IAttribute TypeKind, LNode Node, IMutableNamespace Namespace, 
+            IAttribute TypeKind, LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
@@ -195,14 +195,14 @@ namespace Flame.Ecs
             Namespace.DefineType(name.Name, (descTy, isRedefinition) =>
             {
                 var innerScope = ConvertGenericParameterDefs(
-                    name.GenericParameters, descTy, Scope, Converter, 
-                    genParamName => 
+                    name.GenericParameters, descTy, Scope, Converter,
+                    genParamName =>
                     {
                         var genParam = new DescribedGenericParameter(genParamName, descTy);
                         descTy.AddGenericParameter(genParam);
                         return genParam;
                     },
-                    (genParam, constraint) => 
+                    (genParam, constraint) =>
                     {
                         ((DescribedGenericParameter)genParam).AddConstraint(constraint);
                     });
@@ -215,8 +215,8 @@ namespace Flame.Ecs
                         "syntax error",
                         NodeHelpers.CreateRedefinitionMessage(
                             NodeHelpers.HighlightEven(
-                                "'", "partial", "' type '", descTy.Name.ToString(), 
-                                "' is not consistently a '", "class", "', '", "struct", 
+                                "'", "partial", "' type '", descTy.Name.ToString(),
+                                "' is not consistently a '", "class", "', '", "struct",
                                 "', or '", "interface", "'."),
                             NodeHelpers.ToSourceLocation(Node.Args[0].Range),
                             descTy.GetSourceLocation())));
@@ -236,7 +236,7 @@ namespace Flame.Ecs
                     {
                         if (!descTy.HasAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute.AttributeType))
                             descTy.AddAttribute(PrimitiveAttributes.Instance.StaticTypeAttribute);
-                        
+
                         isVirtual = false;
                         return true;
                     }
@@ -270,8 +270,8 @@ namespace Flame.Ecs
                         "type redefinition",
                         NodeHelpers.CreateRedefinitionMessage(
                             NodeHelpers.HighlightEven(
-                                "type '", descTy.Name.ToString(), 
-                                "' is defined more than once, and is not '", 
+                                "type '", descTy.Name.ToString(),
+                                "' is defined more than once, and is not '",
                                 "partial", "'."),
                             NodeHelpers.ToSourceLocation(Node.Args[0].Range),
                             descTy.GetSourceLocation())));
@@ -305,8 +305,8 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "type resolution",
                             NodeHelpers.HighlightEven(
-                                "cannot resolve base type '", 
-                                item.ToString(), "' for '", 
+                                "cannot resolve base type '",
+                                NodeHelpers.PrintTypeNode(item), "' for '",
                                 name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));
                     }
@@ -332,8 +332,8 @@ namespace Flame.Ecs
                                 Scope.Log.LogError(new LogEntry(
                                     "invalid base type",
                                     NodeHelpers.HighlightEven(
-                                        "'", renderer.Name(descTy), 
-                                        "' cannot inherit from generic parameter '", 
+                                        "'", renderer.Name(descTy),
+                                        "' cannot inherit from generic parameter '",
                                         renderer.Name(innerTy), "'."),
                                     NodeHelpers.ToSourceLocation(item.Range)));
                             }
@@ -450,7 +450,7 @@ namespace Flame.Ecs
         /// Converts a '#struct' node.
         /// </summary>
         public static GlobalScope ConvertStructDefinition(
-            LNode Node, IMutableNamespace Namespace, GlobalScope Scope, 
+            LNode Node, IMutableNamespace Namespace, GlobalScope Scope,
             NodeConverter Converter)
         {
             return ConvertTypeDefinition(PrimitiveAttributes.Instance.ValueTypeAttribute, Node, Namespace, Scope, Converter);
@@ -461,7 +461,7 @@ namespace Flame.Ecs
         /// encoded as an '#enum' node.
         /// </summary>
         public static GlobalScope ConvertEnumDefinition(
-            LNode Node, IMutableNamespace Namespace, 
+            LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 3, Scope.Log))
@@ -483,12 +483,12 @@ namespace Flame.Ecs
                 {
                     // Don't allow 'enum' redefinitions.
                     Scope.Log.LogError(new LogEntry(
-                        "type redefinition", 
+                        "type redefinition",
                         NodeHelpers.CreateRedefinitionMessage(
                             NodeHelpers.HighlightEven(
-                                "type '", "enum " + descTy.Name.ToString() + 
+                                "type '", "enum " + descTy.Name.ToString() +
                                 "' is defined more than once."),
-                            NodeHelpers.ToSourceLocation(Node.Args[0].Range), 
+                            NodeHelpers.ToSourceLocation(Node.Args[0].Range),
                             descTy.GetSourceLocation())));
                     return;
                 }
@@ -527,8 +527,8 @@ namespace Flame.Ecs
                         Scope.Log.LogError(new LogEntry(
                             "type resolution",
                             NodeHelpers.HighlightEven(
-                                "cannot resolve underlying type type '", 
-                                item.ToString(), "' for '", 
+                                "cannot resolve underlying type type '",
+                                NodeHelpers.PrintTypeNode(item), "' for '",
                                 name.Name.ToString(), "'."),
                             NodeHelpers.ToSourceLocation(item.Range)));
                     }
@@ -539,7 +539,7 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "invalid underlying type",
                                 NodeHelpers.HighlightEven(
-                                    "the underlying type for an '", "enum", 
+                                    "the underlying type for an '", "enum",
                                     "' must be a primitive integer type."),
                                 NodeHelpers.ToSourceLocation(item.Range)));
                         }
@@ -553,9 +553,9 @@ namespace Flame.Ecs
                 {
                     // Convert the enum's fields.
                     var field = ConvertEnumField(
-                        item, descTy, underlyingType, Scope, 
+                        item, descTy, underlyingType, Scope,
                         Converter, pred);
-                    
+
                     if (field != null)
                     {
                         descTy.AddField(field);
@@ -568,7 +568,7 @@ namespace Flame.Ecs
         }
 
         public static LazyDescribedField ConvertEnumField(
-            LNode Node, IType DeclaringType, IType UnderlyingType, 
+            LNode Node, IType DeclaringType, IType UnderlyingType,
             GlobalScope Scope, NodeConverter Converter,
             LazyDescribedField Predecessor)
         {
@@ -578,7 +578,7 @@ namespace Flame.Ecs
 
             var valNode = decomp.Item2;
             return new LazyDescribedField(
-                new SimpleName(decomp.Item1.Name.Name), DeclaringType, 
+                new SimpleName(decomp.Item1.Name.Name), DeclaringType,
                 fieldDef =>
                 {
                     // Set the field's type.
@@ -594,7 +594,7 @@ namespace Flame.Ecs
                         valExpr = Converter.ConvertExpression(
                             valNode, new LocalScope(
                             TypeMemberConverters.CreateTypeMemberScope(
-                                fieldDef, UnderlyingType, Scope)), 
+                                fieldDef, UnderlyingType, Scope)),
                             UnderlyingType);
 
                         // Try to evaluate the expression
@@ -604,7 +604,7 @@ namespace Flame.Ecs
                             Scope.Log.LogError(new LogEntry(
                                 "invalid value",
                                 NodeHelpers.HighlightEven(
-                                    "this '", "enum", 
+                                    "this '", "enum",
                                     "' literal value was not a compile-time constant."),
                                 NodeHelpers.ToSourceLocation(decomp.Item2.Range)));
                             valExpr = null;
@@ -618,9 +618,9 @@ namespace Flame.Ecs
                     else if (Predecessor != null)
                     {
                         fieldDef.Value = new AddExpression(
-                            Predecessor.Value, 
+                            Predecessor.Value,
                             new StaticCastExpression(
-                                new IntegerExpression((int)1), 
+                                new IntegerExpression((int)1),
                                 UnderlyingType)).Optimize();
                     }
                     else
@@ -640,7 +640,7 @@ namespace Flame.Ecs
         /// <param name="Converter">The node converter.</param>
         /// <returns>The global scope.</returns>
         public static GlobalScope ConvertAssemblyAttribute(
-            LNode Node, IMutableNamespace Namespace, 
+            LNode Node, IMutableNamespace Namespace,
             GlobalScope Scope, NodeConverter Converter)
         {
             if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))

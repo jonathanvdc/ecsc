@@ -2372,7 +2372,10 @@ namespace Flame.Ecs
                     Scope.Log.LogError(
                         new LogEntry(
                             "type resolution",
-                            NodeHelpers.HighlightEven("cannot resolve variable type '", Node.ToString(), "'."),
+                            NodeHelpers.HighlightEven(
+                                "cannot resolve variable type '",
+                                NodeHelpers.PrintTypeNode(Node),
+                                "'."),
                             NodeHelpers.ToSourceLocation(varTyNode.Range)));
                     return new Tuple<IStatement, IReadOnlyList<IVariable>>(
                         EmptyStatement.Instance, new IVariable[] { });

@@ -41,7 +41,7 @@ namespace Flame.Ecs
                 Scope.Log.LogError(new LogEntry(
                     "type resolution",
                     NodeHelpers.HighlightEven(
-                        "cannot resolve parameter type '", Node.Args[0].ToString(),
+                        "cannot resolve parameter type '", NodeHelpers.PrintTypeNode(Node.Args[0]),
                         "' for parameter '", name.ToString(), "'."),
                     NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 paramTy = PrimitiveTypes.Void;
@@ -754,7 +754,7 @@ namespace Flame.Ecs
                         "type resolution",
                         NodeHelpers.HighlightEven(
                             "cannot resolve return type '",
-                            Node.Args[0].ToString(), "' for method '",
+                            NodeHelpers.PrintTypeNode(Node.Args[0]), "' for method '",
                             name.Name.Name, "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                     retType = PrimitiveTypes.Void;
@@ -1231,8 +1231,8 @@ namespace Flame.Ecs
                         "type resolution",
                         NodeHelpers.HighlightEven(
                             "cannot resolve property type '",
-                            Node.Args[0].ToString(), "' for property '",
-                            name.ToString(), "'."),
+                            NodeHelpers.PrintTypeNode(Node.Args[0]),
+                            "' for property '", name.ToString(), "'."),
                         NodeHelpers.ToSourceLocation(Node.Args[0].Range)));
                 }
                 propDef.PropertyType = lazyRetType.Value ?? PrimitiveTypes.Void;

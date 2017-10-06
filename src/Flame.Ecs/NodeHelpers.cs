@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Pixie;
 using Flame.Build;
+using Loyc.Ecs;
 
 namespace Flame.Ecs
 {
@@ -55,6 +56,16 @@ namespace Flame.Ecs
                     Text[i]);
             }
             return results;
+        }
+
+        /// <summary>
+        /// Gets a string representation for a C# type node.
+        /// </summary>
+        /// <param name="Node">The type node to print.</param>
+        /// <returns>A string representation for the type.</returns>
+        public static string PrintTypeNode(LNode Node)
+        {
+            return EcsLanguageService.Value.Print(Node).TrimEnd(';');
         }
 
         /// <summary>
