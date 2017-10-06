@@ -81,6 +81,16 @@ namespace Flame.Ecs
                 Results.Add(acc);
         }
 
+        /// <summary>
+        /// Checks if the given member is a constructor.
+        /// </summary>
+        /// <param name="Member">The member to check.</param>
+        /// <returns><c>true</c> if the given member is a constructor; otherwise, <c>false</c>.</returns>
+        private static bool IsConstructorMethod(ITypeMember Member)
+        {
+            return Member is IMethod && ((IMethod)Member).IsConstructor;
+        }
+
         private static void CreateUnqualifiedNameExpressionAccess(
             Symbol Name, IReadOnlyList<IType> TypeArguments, ILocalScope Scope,
             SourceLocation Location, HashSet<IValue> Results, ref IMethod MethodResult)
@@ -99,6 +109,11 @@ namespace Flame.Ecs
             var nameString = Name.Name;
             foreach (var item in Scope.Function.GetUnqualifiedStaticMembers(nameString))
             {
+                if (IsConstructorMethod(item))
+                {
+                    continue;
+                }
+
                 CreateMemberAccess(
                     item, TypeArguments, null, Results,
                     Scope.Function.Global, Location, ref MethodResult);
@@ -113,6 +128,11 @@ namespace Flame.Ecs
                 {
                     foreach (var item in Scope.Function.GetInstanceAndExtensionMembers(declType, nameString))
                     {
+                        if (IsConstructorMethod(item))
+                        {
+                            continue;
+                        }
+
                         CreateMemberAccess(
                             item, TypeArguments, new VariableValue(thisVar), Results,
                             Scope.Function.Global, Location, ref MethodResult);
