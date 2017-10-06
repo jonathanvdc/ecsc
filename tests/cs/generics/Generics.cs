@@ -9,6 +9,13 @@ public struct Vector2<T>
     }
 
     public T X, Y;
+
+    public override bool Equals(object obj)
+    {
+        return obj is Vector2<T>
+            && object.Equals(X, ((Vector2<T>)obj).X)
+            && object.Equals(Y, ((Vector2<T>)obj).Y);
+    }
 }
 
 public static class Program
