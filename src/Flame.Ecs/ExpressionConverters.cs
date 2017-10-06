@@ -136,15 +136,10 @@ namespace Flame.Ecs
             {
                 if (method != null)
                 {
-                    // We want to provide a diagnostic here if we
-                    // encountered a method, but it was not given
-                    // the right amount of type arguments.
-                    LogGenericArityMismatch(method, TypeArguments.Count, Scope.Function.Global, Location);
-                    // Add the error-type expression to the set, to
-                    // keep the node converter from logging a diagnostic
-                    // about the fact that the expression returned here is
-                    // not a value.
-                    return new ExpressionValue(ErrorTypeExpression);
+                    // We want to provide a diagnostic if we
+                    // encountered a method that was not given the right
+                    // amount of type parameters.
+                    return new ErrorValue(CreateGenericArityMismatchEntry(method, TypeArguments.Count, Location));
                 }
                 else
                 {
@@ -629,17 +624,25 @@ namespace Flame.Ecs
             }
         }
 
+        private static LogEntry CreateGenericArityMismatchEntry(
+            IGenericMember Declaration, int ArgumentCount,
+            SourceLocation Location)
+        {
+            // Invalid number of type arguments.
+            return new LogEntry(
+                "generic arity mismatch",
+                NodeHelpers.HighlightEven(
+                    "'", Declaration.Name.ToString(), "' takes '", Declaration.GenericParameters.Count().ToString(),
+                    "' type parameters, but was given '", ArgumentCount.ToString(), "'."),
+                Location);
+        }
+
         private static void LogGenericArityMismatch(
             IGenericMember Declaration, int ArgumentCount,
             GlobalScope Scope, SourceLocation Location)
         {
             // Invalid number of type arguments.
-            Scope.Log.LogError(new LogEntry(
-                "generic arity mismatch",
-                NodeHelpers.HighlightEven(
-                    "'", Declaration.Name.ToString(), "' takes '", Declaration.GenericParameters.Count().ToString(),
-                    "' type parameters, but was given '", ArgumentCount.ToString(), "'."),
-                Location));
+            Scope.Log.LogError(CreateGenericArityMismatchEntry(Declaration, ArgumentCount, Location));
         }
 
         private static void LogCannotInstantiate(
