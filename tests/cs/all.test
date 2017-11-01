@@ -42,6 +42,7 @@ tests
     logical-ops/LogicalOps.test;
     method-group-conversions/MethodGroupConversions.test;
     multiple-files/MultipleFiles.test;
+    nameof/Nameof.test;
     namespace/Namespace.test;
     null/Null.test;
     null-coalesce/NullCoalesce.test;
