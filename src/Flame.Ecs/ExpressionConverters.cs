@@ -2870,6 +2870,100 @@ namespace Flame.Ecs
         }
 
         /// <summary>
+        /// Converts a nameof node (type #nameof).
+        /// </summary>
+        public static IExpression ConvertNameofExpression(
+            LNode Node, LocalScope Scope, NodeConverter Converter)
+        {
+            if (!NodeHelpers.CheckArity(Node, 1, Scope.Log))
+            {
+                return ErrorTypeExpression;
+            }
+
+            // Spec says the following about nameof:
+            //
+            // The argument to nameof must be a simple name, qualified name, member access,
+            // base access with a specified member, or this access with a specified member.
+            // The argument expression identifies a code definition, but it is never evaluated.
+
+            var argNode = Node.Args[0];
+
+            if (argNode.Calls(CodeSymbols.Dot, 2) && argNode.Args[1].IsId)
+            {
+                var simpleName = argNode.Args[1].Name;
+                var lhs = Converter.ConvertTypeOrExpression(argNode.Args[0], Scope);
+                var lhsType = TypeOrExpressionToType(
+                    lhs, Scope, NodeHelpers.ToSourceLocation(argNode.Range));
+
+                if (lhsType != ErrorType.Instance)
+                {
+                    var anyMatchingMembers =
+                        Scope.Function.GetInstanceMembers(lhsType, simpleName.Name)
+                        .Concat(Scope.Function.GetStaticMembers(lhsType, simpleName.Name))
+                        .Any();
+
+                    if (!anyMatchingMembers)
+                    {
+                        Scope.Log.LogError(new LogEntry(
+                            "syntax error",
+                            NodeHelpers.HighlightEven(
+                                "type '", Scope.Function.Global.NameAbbreviatedType(lhsType),
+                                "' does not define an accessible member with name '", simpleName.Name,
+                                "'."),
+                            NodeHelpers.ToSourceLocation(argNode.Range)));
+                    }
+                }
+                return new StringExpression(simpleName.Name);
+            }
+            else if (argNode.IsId)
+            {
+                var simpleName = argNode.Name;
+                TypeOrExpressionToType(
+                    Converter.ConvertTypeOrExpression(argNode, Scope),
+                    Scope,
+                    NodeHelpers.ToSourceLocation(argNode.Range));
+                return new StringExpression(simpleName.Name);
+            }
+            else
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "syntax error",
+                    NodeHelpers.HighlightEven(
+                        "a '", "nameof",
+                        "' expression must take a simple name, " +
+                        "qualified name or member access expression as argument."),
+                    NodeHelpers.ToSourceLocation(argNode.Range)));
+                return new UnknownExpression(PrimitiveTypes.String);
+            }
+        }
+
+        private static IType TypeOrExpressionToType(
+            TypeOrExpression Value,
+            LocalScope Scope,
+            SourceLocation Location)
+        {
+            if (Value.IsExpression && !Value.IsType)
+            {
+                return Value.Expression.CreateGetExpressionOrError(
+                    Scope, Location).Type;
+            }
+            else if (Value.IsType)
+            {
+                return Value.CollapseTypes(Location, Scope.Function.Global)
+                    ?? ErrorType.Instance;
+            }
+            else
+            {
+                Scope.Log.LogError(new LogEntry(
+                    "expression resolution",
+                    NodeHelpers.HighlightEven(
+                        "expression is neither a value nor a type."),
+                    Location));
+                return ErrorType.Instance;
+            }
+        }
+
+        /// <summary>
         /// Converts an as-instance expression node (type #as).
         /// </summary>
         public static IExpression ConvertAsInstanceExpression(

@@ -660,6 +660,7 @@ namespace Flame.Ecs
                 result.AddExprConverter(CodeSymbols.Default, ExpressionConverters.ConvertDefaultExpression);
                 result.AddExprConverter(CodeSymbols.New, ExpressionConverters.ConvertNewExpression);
                 result.AddExprConverter(CodeSymbols.Sizeof, ExpressionConverters.ConvertSizeofExpression);
+                result.AddExprConverter(GSymbol.Get("nameof"), ExpressionConverters.ConvertNameofExpression);
 
                 // Cast expressions
                 result.AddExprConverter(CodeSymbols.As, ExpressionConverters.ConvertAsInstanceExpression);
