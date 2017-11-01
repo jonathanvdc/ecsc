@@ -1730,8 +1730,10 @@ namespace Flame.Ecs
                 var parentTy = declTy.GetParent();
                 if (parentTy != null)
                 {
-                    var baseProperties = funScope.GetInstanceMembers(parentTy, Name.Name)
+                    var baseProperties = 
+                        funScope.GetInstanceMembers(parentTy, Name.Name)
                         .OfType<IProperty>()
+                        .Concat(funScope.GetInstanceIndexers(parentTy))
                         .Where(m => m.HasSameCallSignature(Property))
                         .ToArray();
 
@@ -1824,6 +1826,7 @@ namespace Flame.Ecs
                 {
                     var baseMethods = funScope.GetInstanceMembers(inter, Name.Name)
                         .OfType<IProperty>()
+                        .Concat(funScope.GetInstanceIndexers(inter))
                         .Where(m => m.HasSameSignature(Property));
 
                     interfacePropList.AddRange(baseMethods);
