@@ -4,6 +4,7 @@ interface IFlyable
 {
     void Fly();
     string Name { get; }
+    string this[int i] { get; }
 }
 
 class Bird : IFlyable
@@ -14,6 +15,8 @@ class Bird : IFlyable
     }
 
     public string Name { get; private set; }
+
+    public string this[int i] => Name;
 
     public void Fly()
     {
@@ -26,6 +29,8 @@ class Plane : IFlyable
     public Plane() { }
 
     public string Name => "Plane";
+
+    public string this[int i] => Name;
 
     public void Fly()
     {
