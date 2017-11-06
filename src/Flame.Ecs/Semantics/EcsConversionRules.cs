@@ -321,21 +321,24 @@ namespace Flame.Ecs.Semantics
                         return ConversionDescription.ExplicitPointerCast;
                     }
                 }
-                else if (TargetType == PrimitiveTypes.Null)
-                {
-                    // From the null literal to any pointer_type. (implicit)
-                    return ConversionDescription.ImplicitPointerCast;
-                }
                 else if (TargetType.GetIsInteger())
                 {
                     // From any pointer_type to sbyte, byte, short, ushort, int, uint, long, or ulong. (explicit)
                     return ConversionDescription.ExplicitStaticCast;
                 }
             }
-            else if (IsTransientPointer(TargetType) && SourceType.GetIsInteger())
+            else if (IsTransientPointer(TargetType))
             {
-                // From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer_type. (explicit)
-                return ConversionDescription.ExplicitStaticCast;
+                if (SourceType.GetIsInteger())
+                {
+                    // From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer_type. (explicit)
+                    return ConversionDescription.ExplicitStaticCast;
+                }
+                else if (SourceType == PrimitiveTypes.Null)
+                {
+                    // From the null literal to any pointer_type. (implicit)
+                    return ConversionDescription.ImplicitPointerCast;
+                }
             }
             else if (IsReferencePointer(SourceType)
                 && IsReferencePointer(TargetType)
