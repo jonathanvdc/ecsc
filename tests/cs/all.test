@@ -50,6 +50,7 @@ tests
     params-methods/ParamsMethods.test;
     partial/Partial.test;
     pointer-arithmetic/PointerArithmetic.test;
+    pointer-null-compare/PointerNullCompare.test;
     prop-init/PropInit.test;
     properties/Properties.test;
     readonly-fields/ReadOnlyFields.test;
